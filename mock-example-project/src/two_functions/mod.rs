@@ -1,7 +1,7 @@
-#[cfg(not(test))]
+use mock_lib::derive::use_function_mock;
+
+#[use_function_mock]
 use crate::two_functions::service::{fetch_user, send_email};
-#[cfg(test)]
-use crate::two_functions::service::{fetch_user_mock as fetch_user, send_email_mock as send_email};
 
 mod service;
 

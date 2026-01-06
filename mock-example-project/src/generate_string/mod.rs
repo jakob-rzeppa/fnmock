@@ -1,9 +1,9 @@
 mod generate;
 
-#[cfg(not(test))]
+use mock_lib::derive::use_function_mock;
+
+#[use_function_mock]
 use generate::generate_string_from_digit;
-#[cfg(test)]
-use generate::generate_string_from_digit_mock as generate_string_from_digit;
 
 fn generate_output(digit: u8) -> Result<String, String> {
     Ok(format!("Output: {}", generate_string_from_digit(digit)?))

@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, FnArg, ItemFn, Type};
+use syn::{parse_macro_input, FnArg, ItemFn, Type, ItemUse};
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
 
@@ -127,4 +127,76 @@ pub fn mock_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     TokenStream::from(expanded)
+}
+
+fn process_use_tree(
+    tree: &syn::UseTree,
+    base_path: &mut Vec<syn::Ident>,
+) -> Vec<(syn::Ident, syn::Ident)> {
+    match tree {
+        syn::UseTree::Path(path) => {
+            base_path.push(path.ident.clone());
+            process_use_tree(&path.tree, base_path)
+        }
+        syn::UseTree::Name(name) => {
+            let fn_name = name.ident.clone();
+            let mock_fn_name = syn::Ident::new(
+                &format!("{}_mock", fn_name),
+                fn_name.span()
+            );
+            vec![(fn_name, mock_fn_name)]
+        }
+        syn::UseTree::Group(group) => {
+            let mut results = Vec::new();
+            for item in &group.items {
+                let mut path = base_path.clone();
+                results.extend(process_use_tree(item, &mut path));
+            }
+            results
+        }
+        _ => panic!("Unsupported use tree format"),
+    }
+}
+
+#[proc_macro_attribute]
+pub fn use_function_mock(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ItemUse);
+    
+    let mut base_path = Vec::new();
+    let mappings = process_use_tree(&input.tree, &mut base_path);
+    
+    // Reconstruct the base path
+    let base_path_tokens = if base_path.is_empty() {
+        quote! {}
+    } else {
+        quote! { #(#base_path)::* }
+    };
+    
+    if mappings.len() == 1 {
+        // Single import: use path::function;
+        let (fn_name, mock_fn_name) = &mappings[0];
+        let expanded = quote! {
+            #[cfg(not(test))]
+            #input
+            
+            #[cfg(test)]
+            use #base_path_tokens::#mock_fn_name as #fn_name;
+        };
+        TokenStream::from(expanded)
+    } else {
+        // Multiple imports: use path::{fn1, fn2};
+        let fn_names: Vec<_> = mappings.iter().map(|(fn_name, _)| fn_name).collect();
+        let mock_mappings: Vec<_> = mappings.iter().map(|(fn_name, mock_fn_name)| {
+            quote! { #mock_fn_name as #fn_name }
+        }).collect();
+        
+        let expanded = quote! {
+            #[cfg(not(test))]
+            #input
+            
+            #[cfg(test)]
+            use #base_path_tokens::{#(#mock_mappings),*};
+        };
+        TokenStream::from(expanded)
+    }
 }
