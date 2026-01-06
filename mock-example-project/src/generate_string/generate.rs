@@ -1,4 +1,6 @@
-#[mock_lib::derive::function_mock]
+use mock_lib::derive::function_mock;
+
+#[function_mock]
 pub fn generate_string_from_digit(digit: u8) -> Result<String, String> {
     match digit {
         0 => Ok("Zero".to_string()),
