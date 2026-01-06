@@ -1,3 +1,4 @@
+#[mock_lib::derive::function_mock]
 pub fn generate_string_from_digit(digit: u8) -> Result<String, String> {
     match digit {
         0 => Ok("Zero".to_string()),
@@ -11,49 +12,6 @@ pub fn generate_string_from_digit(digit: u8) -> Result<String, String> {
         8 => Ok("Eight".to_string()),
         9 => Ok("Nine".to_string()),
         _ => Err("Digit should be between 0 and 9".to_string())
-    }
-}
-
-#[cfg(test)]
-pub(crate) mod mock {
-    use std::cell::RefCell;
-    use mock_lib::function_mock::FunctionMock;
-
-    type GenerateStringFromDigitFunction = fn (digit: u8) -> GenerateStringFromDigitResult;
-    type GenerateStringIntoDigitParams = u8;
-    type GenerateStringFromDigitResult = Result<String, String>;
-
-    thread_local! {
-        static GENERATE_STRING_FROM_DIGIT_MOCK: RefCell<FunctionMock<
-            GenerateStringFromDigitFunction,
-            GenerateStringIntoDigitParams,
-            GenerateStringFromDigitResult
-        >> = RefCell::new(FunctionMock::new("generate_string_from_digit"));
-    }
-
-    pub fn generate_string_from_digit(digit: u8) -> Result<String, String> {
-        GENERATE_STRING_FROM_DIGIT_MOCK.with(|mock| {
-            let mut mock = mock.borrow_mut();
-            mock.call(digit)
-        })
-    }
-
-    pub(crate) mod generate_string_from_digit {
-        pub(crate) fn mock_implementation(new_f: super::GenerateStringFromDigitFunction) {
-            super::GENERATE_STRING_FROM_DIGIT_MOCK.with(|mock| { mock.borrow_mut().mock_implementation(new_f) })
-        }
-
-        pub(crate) fn clear_mock() {
-            super::GENERATE_STRING_FROM_DIGIT_MOCK.with(|mock|{ mock.borrow_mut().clear_mock() })
-        }
-
-        pub(crate) fn assert_times(expected_num_of_calls: u32) {
-            super::GENERATE_STRING_FROM_DIGIT_MOCK.with(|mock| { mock.borrow().assert_times(expected_num_of_calls) })
-        }
-
-        pub(crate) fn assert_with(params: super::GenerateStringIntoDigitParams) {
-            super::GENERATE_STRING_FROM_DIGIT_MOCK.with(|mock| { mock.borrow().assert_with(&params) })
-        }
     }
 }
 
