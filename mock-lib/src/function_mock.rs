@@ -1,19 +1,17 @@
 use std::fmt::Debug;
 
-pub struct FunctionMock<Function, Params, Result>
+pub struct FunctionMock<Params, Result>
 where
-    Params: Clone + PartialEq + Debug,
-    Function: Fn(Params) -> Result,
+    Params: Clone + PartialEq + Debug
 {
     name: String,
-    implementation: Option<Function>,
+    implementation: Option<fn(Params) -> Result>,
     calls: Vec<Params>
 }
 
-impl<Function, Params, Result> FunctionMock<Function, Params, Result>
+impl<Params, Result> FunctionMock<Params, Result>
 where
     Params: Clone + PartialEq + Debug,
-    Function: Fn(Params) -> Result,
 {
     pub fn new(function_name: &str) -> Self {
         Self {
@@ -25,11 +23,11 @@ where
 
     // --- Mocking ---
 
-    pub fn get_implementation(&self) -> &Option<Function> {
+    pub fn get_implementation(&self) -> &Option<fn(Params) -> Result> {
         &self.implementation
     }
 
-    pub fn mock_implementation(&mut self, new_f: Function) {
+    pub fn mock_implementation(&mut self, new_f: fn(Params) -> Result) {
         self.implementation = Some(new_f);
     }
 
@@ -56,15 +54,37 @@ where
                    self.name, self.calls.len(), expected_num_of_calls);
     }
 
-    pub fn assert_with(&self, params: &Params) {
+    pub fn assert_with(&self, params: Params) {
         let mut was_called_with = false;
 
         for called_params in self.calls.iter() {
-            if called_params == params {
+            if *called_params == params {
                 was_called_with = true;
             }
         }
 
         assert!(was_called_with, "Expected {} mock to be called with {:?}", self.name, params);
     }
+}
+
+// Macro to call mocks without wrapping parameters in tuples
+#[macro_export]
+macro_rules! call {
+    ($mock:expr) => {
+        $mock.call(())
+    };
+    ($mock:expr, $($param:expr),+) => {
+        $mock.call(($($param,)+))
+    };
+}
+
+// Macro to assert_with without wrapping parameters in tuples
+#[macro_export]
+macro_rules! assert_with {
+    ($mock:expr) => {
+        $mock.assert_with(())
+    };
+    ($mock:expr, $($param:expr),+) => {
+        $mock.assert_with(($($param,)+))
+    };
 }
