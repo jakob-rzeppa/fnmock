@@ -62,6 +62,9 @@ pub fn function_mock(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_output = input.sig.output.clone();
     let fn_block = input.block.clone();
 
+    // Generate mock function name
+    let mock_fn_name = syn::Ident::new(&format!("{}_mock", &fn_name), fn_name.span());
+
     let params_type = create_param_type(&fn_inputs);
     let params_to_tuple = create_tuple_from_param_names(&fn_inputs);
     
@@ -75,54 +78,50 @@ pub fn function_mock(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #fn_visibility fn #fn_name(#fn_inputs) #fn_output #fn_block
 
-        // #[cfg(test)]
-        pub(crate) mod mock {
+        pub(crate) fn #mock_fn_name(#fn_inputs) #fn_output {
+            #mock_fn_name::call(#params_to_tuple)
+        }
 
-            pub fn #fn_name(#fn_inputs) #fn_output {
-                #fn_name::call(#params_to_tuple)
+        pub(crate) mod #mock_fn_name {
+            type Params = #params_type;
+            type Return = #return_type;
+            const FUNCTION_NAME: &str = "#mock_fn_name";
+
+            thread_local! {
+                static MOCK: std::cell::RefCell<mock_lib::function_mock::FunctionMock<
+                    Params,
+                    Return,
+                >> = std::cell::RefCell::new(mock_lib::function_mock::FunctionMock::new(FUNCTION_NAME));
             }
 
-            pub(crate) mod #fn_name {
-                type Params = #params_type;
-                type Return = #return_type;
-                const FUNCTION_NAME: &str = "#fn_name";
+            pub(crate) fn call(params: Params) -> Return {
+                MOCK.with(|mock| {
+                    mock.borrow_mut().call(params)
+                })
+            }
 
-                thread_local! {
-                    pub(super) static MOCK: std::cell::RefCell<mock_lib::function_mock::FunctionMock<
-                        Params,
-                        Return,
-                    >> = std::cell::RefCell::new(mock_lib::function_mock::FunctionMock::new(FUNCTION_NAME));
-                }
+            pub(crate) fn mock_implementation(new_f: fn(Params) -> Return) {
+                MOCK.with(|mock| {
+                    mock.borrow_mut().mock_implementation(new_f)
+                })
+            }
 
-                pub(crate) fn call(params: Params) -> Return {
-                    MOCK.with(|mock| {
-                        mock.borrow_mut().call(params)
-                    })
-                }
+            pub(crate) fn clear_mock() {
+                MOCK.with(|mock|{
+                    mock.borrow_mut().clear_mock()
+                })
+            }
 
-                pub(crate) fn mock_implementation(new_f: fn(Params) -> Return) {
-                    MOCK.with(|mock| {
-                        mock.borrow_mut().mock_implementation(new_f)
-                    })
-                }
+            pub(crate) fn assert_times(expected_num_of_calls: u32) {
+                MOCK.with(|mock| {
+                    mock.borrow().assert_times(expected_num_of_calls)
+                })
+            }
 
-                pub(crate) fn clear_mock() {
-                    MOCK.with(|mock|{
-                        mock.borrow_mut().clear_mock()
-                    })
-                }
-
-                pub(crate) fn assert_times(expected_num_of_calls: u32) {
-                    MOCK.with(|mock| {
-                        mock.borrow().assert_times(expected_num_of_calls)
-                    })
-                }
-
-                pub(crate) fn assert_with(params: Params) {
-                    MOCK.with(|mock| {
-                        mock.borrow().assert_with(params)
-                    })
-                }
+            pub(crate) fn assert_with(params: Params) {
+                MOCK.with(|mock| {
+                    mock.borrow().assert_with(params)
+                })
             }
         }
     };
