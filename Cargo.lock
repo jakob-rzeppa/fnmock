@@ -5,6 +5,9 @@ version = 4
 [[package]]
 name = "mock-example-project"
 version = "0.1.0"
+dependencies = [
+ "mock-lib",
+]
 
 [[package]]
 name = "mock-lib"
