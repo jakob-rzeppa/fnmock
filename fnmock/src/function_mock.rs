@@ -2,9 +2,11 @@ use std::fmt::Debug;
 
 /// Struct containing the Data for mocking a Function
 ///
+/// The functions parameters can't contain non 'static variables.
+///
 /// # Generics
 ///
-/// - `Params: Clone + PartialEq + Debug` - the parameters of the mocked function as a tuple
+/// - `Params: Clone + PartialEq + Debug + 'static` - the parameters of the mocked function as a tuple
 /// - `Result` - the result of the function
 ///
 /// # Usage
@@ -69,7 +71,7 @@ use std::fmt::Debug;
 /// - `calls` - vector to hold all calls to the mock
 pub struct FunctionMock<Params, Result>
 where
-    Params: Clone + PartialEq + Debug
+    Params: Clone + PartialEq + Debug + 'static
 {
     name: String,
     implementation: Option<fn(Params) -> Result>,
@@ -78,7 +80,7 @@ where
 
 impl<Params, Result> FunctionMock<Params, Result>
 where
-    Params: Clone + PartialEq + Debug,
+    Params: Clone + PartialEq + Debug + 'static,
 {
     pub fn new(function_name: &str) -> Self {
         Self {

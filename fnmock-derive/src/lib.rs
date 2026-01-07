@@ -5,7 +5,7 @@ use syn::{parse_macro_input, FnArg, ItemFn, Type, ItemUse};
 mod param_utils;
 mod use_tree_processor;
 
-use param_utils::{create_param_type, create_tuple_from_param_names};
+use param_utils::{create_param_type, create_tuple_from_param_names, validate_static_params};
 use use_tree_processor::process_use_tree;
 
 /// Attribute macro that generates a mockable version of a function.
@@ -25,6 +25,7 @@ use use_tree_processor::process_use_tree;
 ///
 /// - Function must not have `self` parameters (standalone functions only)
 /// - Function parameters must implement `Clone`, `Debug`, and `PartialEq` (for assertions)
+/// - Function parameters must be `'static` (no references allowed - use owned types like `String` instead of `&str`)
 ///
 /// # Example
 ///
@@ -85,6 +86,11 @@ pub fn mock_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
         )
         .to_compile_error()
         .into();
+    }
+
+    // Validate that all parameters are 'static (no references)
+    if let Err(e) = validate_static_params(&input.sig.inputs) {
+        return e.to_compile_error().into();
     }
 
     // Extract function details

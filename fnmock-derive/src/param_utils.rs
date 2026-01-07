@@ -4,7 +4,7 @@
 //! types and expressions suitable for the mock infrastructure.
 
 use quote::quote;
-use syn::{FnArg, Type};
+use syn::{FnArg, Type, TypeReference};
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
 
@@ -88,4 +88,46 @@ pub(crate) fn create_tuple_from_param_names(fn_inputs: &Punctuated<FnArg, Comma>
     } else {
         quote! { (#(#param_names),*) }
     }
+}
+
+/// Checks if a type contains references (fails the 'static bound).
+///
+/// Returns true if the type is a reference or contains references that would
+/// prevent it from satisfying the 'static lifetime bound.
+fn contains_reference(ty: &Type) -> bool {
+    match ty {
+        Type::Reference(_) => true,
+        Type::Tuple(tuple) => tuple.elems.iter().any(|t| contains_reference(t)),
+        Type::Array(arr) => contains_reference(&arr.elem),
+        Type::Slice(slice) => contains_reference(&slice.elem),
+        Type::Paren(paren) => contains_reference(&paren.elem),
+        Type::Group(group) => contains_reference(&group.elem),
+        _ => false, // Other types are assumed to be 'static unless they contain references
+    }
+}
+
+/// Validates that all function parameters satisfy the 'static bound.
+///
+/// Returns an error if any parameter contains references, as the mock infrastructure
+/// requires all parameters to be 'static (no borrowed data).
+///
+/// # Returns
+///
+/// - `Ok(())` if all parameters are 'static
+/// - `Err(syn::Error)` if any parameter contains references
+pub(crate) fn validate_static_params(fn_inputs: &Punctuated<FnArg, Comma>) -> syn::Result<()> {
+    for arg in fn_inputs.iter() {
+        if let FnArg::Typed(pat_type) = arg {
+            if contains_reference(&pat_type.ty) {
+                return Err(syn::Error::new_spanned(
+                    &pat_type.ty,
+                    "mock_function requires all parameters to be 'static. \
+                     Parameters cannot contain references. \
+                     Consider using owned types like String instead of &str, \
+                     or Vec<T> instead of &[T]."
+                ));
+            }
+        }
+    }
+    Ok(())
 }
