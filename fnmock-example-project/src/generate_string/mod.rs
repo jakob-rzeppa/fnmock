@@ -1,6 +1,6 @@
 mod generate;
 
-use mock_lib::derive::use_function_mock;
+use fnmock::derive::use_function_mock;
 
 #[use_function_mock]
 use generate::generate_string_from_digit;

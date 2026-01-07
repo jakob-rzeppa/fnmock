@@ -1,5 +1,5 @@
 [workspace]
-members = ["mock-lib", "mock-lib-derive", "mock-example-project"]
+members = ["fnmock", "fnmock-derive", "fnmock-example-project"]
 resolver = "2"
 
 [workspace.package]

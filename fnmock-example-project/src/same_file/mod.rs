@@ -1,4 +1,4 @@
-use mock_lib::derive::{mock_function, use_inline_mock};
+use fnmock::derive::{mock_function, use_inline_mock};
 
 #[mock_function]
 fn sum(nums: Vec<f32>) -> f32 {

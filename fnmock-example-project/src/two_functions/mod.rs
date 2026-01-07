@@ -1,4 +1,4 @@
-use mock_lib::derive::use_function_mock;
+use fnmock::derive::use_function_mock;
 
 #[use_function_mock]
 use crate::two_functions::service::{fetch_user, send_email};

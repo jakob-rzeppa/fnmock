@@ -1,5 +1,5 @@
 [package]
-name = "mock-example-project"
+name = "fnmock"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -7,4 +7,4 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-"mock-lib" = { path = "../mock-lib" }
+fnmock-derive = { path = "../fnmock-derive" }

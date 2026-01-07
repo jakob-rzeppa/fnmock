@@ -29,7 +29,7 @@ use use_tree_processor::process_use_tree;
 /// # Example
 ///
 /// ```ignore
-/// use mock_lib::derive::mock_function;
+/// use fnmock::derive::mock_function;
 ///
 /// #[mock_function]
 /// pub(crate) fn fetch_user(id: u32) -> Result<String, String> {
@@ -112,10 +112,10 @@ pub fn mock_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
             const FUNCTION_NAME: &str = stringify!(#mock_fn_name);
 
             thread_local! {
-                static MOCK: std::cell::RefCell<mock_lib::function_mock::FunctionMock<
+                static MOCK: std::cell::RefCell<fnmock::function_mock::FunctionMock<
                     Params,
                     Return,
-                >> = std::cell::RefCell::new(mock_lib::function_mock::FunctionMock::new(FUNCTION_NAME));
+                >> = std::cell::RefCell::new(fnmock::function_mock::FunctionMock::new(FUNCTION_NAME));
             }
 
             pub(crate) fn call(params: Params) -> Return {

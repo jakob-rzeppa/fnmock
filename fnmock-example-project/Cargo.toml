@@ -1,15 +1,10 @@
 [package]
-name = "mock-lib-derive"
+name = "fnmock-example-project"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
-[lib]
-proc-macro = true
-
 [dependencies]
-syn = { version = "2.0", features = ["full"] }
-quote = "1.0"
-proc-macro2 = "1.0.105"
+"fnmock" = { path = "../fnmock" }

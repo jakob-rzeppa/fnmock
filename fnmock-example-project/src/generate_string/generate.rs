@@ -1,4 +1,4 @@
-use mock_lib::derive::mock_function;
+use fnmock::derive::mock_function;
 
 #[mock_function]
 pub fn generate_string_from_digit(digit: u8) -> Result<String, String> {

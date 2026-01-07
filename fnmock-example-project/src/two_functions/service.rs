@@ -1,4 +1,4 @@
-use mock_lib::derive::mock_function;
+use fnmock::derive::mock_function;
 
 // Fetches user data from a database
 #[mock_function]
