@@ -100,10 +100,12 @@ pub fn mock_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #fn_visibility fn #fn_name(#fn_inputs) #fn_output #fn_block
 
+        #[cfg(test)]
         pub(crate) fn #mock_fn_name(#fn_inputs) #fn_output {
             #mock_fn_name::call(#params_to_tuple)
         }
 
+        #[cfg(test)]
         pub(crate) mod #mock_fn_name {
             type Params = #params_type;
             type Return = #return_type;
