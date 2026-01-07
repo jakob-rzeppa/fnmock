@@ -77,6 +77,16 @@ use use_tree_processor::process_use_tree;
 pub fn mock_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
 
+    // Check if function is async and return an error if so
+    if input.sig.asyncness.is_some() {
+        return syn::Error::new_spanned(
+            &input.sig.asyncness,
+            "mock_function does not support async functions"
+        )
+        .to_compile_error()
+        .into();
+    }
+
     // Extract function details
     let fn_visibility = input.vis.clone();
     let fn_name = input.sig.ident.clone();
