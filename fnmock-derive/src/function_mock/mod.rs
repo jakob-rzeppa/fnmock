@@ -2,7 +2,7 @@ use quote::quote;
 use syn::__private::TokenStream2;
 use crate::function_mock::create_mock_implementation::{create_mock_function, create_mock_module};
 use crate::function_mock::validate_function::validate_function_mockable;
-use crate::param_utils::{create_param_type, create_tuple_from_param_names, validate_static_params};
+use crate::param_utils::{create_param_type, create_tuple_from_param_names};
 use crate::return_utils::extract_return_type;
 
 pub(crate) mod use_function_mock;

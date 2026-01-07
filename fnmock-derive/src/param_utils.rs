@@ -1,5 +1,5 @@
 use quote::quote;
-use syn::{FnArg, Type, TypeReference};
+use syn::{FnArg, Type};
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
 
@@ -44,6 +44,29 @@ pub(crate) fn create_param_type(fn_inputs: &Punctuated<FnArg, Comma>) -> Type {
     }
 }
 
+/// Gets parameter names from function inputs.
+///
+/// Extracts just the parameter patterns (names) without any type information.
+///
+/// # Returns
+///
+/// A vector of parameter patterns (names)
+///
+/// # Panics
+///
+/// Panics if the function has a `self` parameter, as methods cannot be mocked/faked.
+pub(crate) fn get_param_names(fn_inputs: &Punctuated<FnArg, Comma>) -> Vec<&syn::Pat> {
+    fn_inputs
+        .iter()
+        .filter_map(|arg| match arg {
+            syn::FnArg::Typed(pat_type) => Some(&*pat_type.pat),
+            syn::FnArg::Receiver(_) => panic!(
+                "mock_function/fake_function does not support methods with 'self' parameters"
+            ),
+        })
+        .collect()
+}
+
 /// Creates a tuple expression from function parameter names.
 ///
 /// Converts parameter patterns into a tuple that can be passed to the mock
@@ -65,15 +88,7 @@ pub(crate) fn create_param_type(fn_inputs: &Punctuated<FnArg, Comma>) -> Type {
 ///
 /// Panics if the function has a `self` parameter, as methods cannot be mocked.
 pub(crate) fn create_tuple_from_param_names(fn_inputs: &Punctuated<FnArg, Comma>) -> proc_macro2::TokenStream {
-    let param_names: Vec<_> = fn_inputs
-        .iter()
-        .filter_map(|arg| match arg {
-            syn::FnArg::Typed(pat_type) => Some(&pat_type.pat),
-            syn::FnArg::Receiver(_) => panic!(
-                "mock_function does not support methods with 'self' parameters"
-            ),
-        })
-        .collect();
+    let param_names = get_param_names(fn_inputs);
 
     if param_names.is_empty() {
         quote! { () }
