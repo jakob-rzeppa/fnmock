@@ -19,16 +19,29 @@ Both approaches support multiple usage patterns to fit your testing needs, from 
 -   ✅ **Function mocking** - mock and assert function integration in your code
 -   ✅ **Function faking** - fake functions for when mocks are unnecessary or can't be used
 -   ✅ **Procedural macros** - mock functions with little boilerplate
+-   ✅ **Zero runtime overhead** - the macros use `#[cfg(test)]` to only compile mocks in test mode
 -   ✅ **Thread-isolated** - each test gets its own mock state
 -   ⚠️ **Not thread-safe within a test**: If a single test spawns multiple threads that mock the same function, undefined behavior may occur
 -   ✅ **No trait requirements** - works with any standalone function
+
+## Installation
+
+Add fnmock to your `Cargo.toml` as a regular dependency:
+
+```toml
+[dependencies]
+fnmock = ".."
+```
+
+**Why not a dev-dependency?** The `#[mock_function]` and `#[fake_function]` macros need to be applied to your production code. However, the macros use conditional compilation (`cfg(test)`) to ensure **zero runtime overhead** in release builds - the mock infrastructure is only compiled in test mode.
+
 
 ### Basic Mock Example
 
 ```rust
 mod db {
     use fnmock::derive::mock_function;
-    
+
     #[mock_function]
     pub fn fetch_user(id: u32) -> Result<String, String> {
         // Real implementation
@@ -41,7 +54,7 @@ use db::fetch_user;
 
 fn handle_user(id: u32) {
     let user = fetch_user(id);
-    
+
     // Do something with the user
 }
 
@@ -63,7 +76,7 @@ mod tests {
         // Verify behavior
         fetch_user_mock::assert_times(1);
         fetch_user_mock::assert_with(42);
-        
+
         // No cleanup needed, since mocks are thread / test specific
     }
 }
@@ -71,7 +84,7 @@ mod tests {
 
 ### Basic Fake Example
 
-Fnmock mocks can't handle non-static parameters, since they can't always be stored safely. 
+Fnmock mocks can't handle non-static parameters, since they can't always be stored safely.
 That's where fakes come into play.
 
 ```rust
@@ -108,7 +121,7 @@ mod tests {
         });
 
         let err = handle_user(42).unwrap_err();
-        
+
         assert_eq!(err, "user not found");
 
         // No cleanup needed, since fakes are thread / test specific as well
@@ -187,13 +200,13 @@ This expands to use `sum` in production and `sum_mock` in tests at that specific
 
 ## Mocks vs Fakes
 
-| Feature              | Mocks                                 | Fakes              |
-|----------------------|---------------------------------------|--------------------|
-| Call tracking        | ✅ Yes                                 | ❌ No               |
-| Assertions           | ✅ Yes (`assert_times`, `assert_with`) | ❌ No               |
-| Reference parameters | ❌ No (must use owned types)           | ✅ Yes              |
-| Complexity           | Higher                                | Lower              |
-| Use case             | Verifying behavior                    | Simple replacement |
+| Feature              | Mocks                                  | Fakes              |
+| -------------------- | -------------------------------------- | ------------------ |
+| Call tracking        | ✅ Yes                                 | ❌ No              |
+| Assertions           | ✅ Yes (`assert_times`, `assert_with`) | ❌ No              |
+| Reference parameters | ❌ No (must use owned types)           | ✅ Yes             |
+| Complexity           | Higher                                 | Lower              |
+| Use case             | Verifying behavior                     | Simple replacement |
 
 ## Project Structure
 
