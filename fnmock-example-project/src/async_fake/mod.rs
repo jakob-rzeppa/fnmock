@@ -23,6 +23,8 @@ mod tests {
     use super::*;
     use super::db::fetch_user_fake;
 
+    // CAUTION: DO NOT USE MULTIPLE THREADS FOR TESTING (see README.md)
+    // #[tokio::test] is single threaded by default
     #[tokio::test]
     async fn test_with_mock() {
         // Set up mock behavior
