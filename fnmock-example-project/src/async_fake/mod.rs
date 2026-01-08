@@ -8,9 +8,9 @@ mod db {
     }
 }
 
-use fnmock::derive::use_function_fake;
+use fnmock::derive::use_fake;
 
-#[use_function_fake]
+#[use_fake]
 use db::fetch_user;
 
 async fn handle_user(id: u32) -> Result<String, String> {

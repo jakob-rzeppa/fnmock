@@ -50,7 +50,7 @@ mod db {
     }
 }
 
-#[use_function_mock]
+#[use_mock]
 use db::fetch_user;
 
 fn handle_user(id: u32) {
@@ -98,7 +98,7 @@ mod config {
     }
 }
 
-#[use_function_stub]
+#[use_stub]
 use config::get_config;
 
 fn process_config() -> String {
@@ -141,7 +141,7 @@ mod db {
     }
 }
 
-#[use_function_fake]
+#[use_fake]
 use db::fetch_user;
 
 fn handle_user(id: u32) -> Result<(), String> {
@@ -214,7 +214,7 @@ pub fn send_email(to: String, body: String) -> Result<(), String> {
     -   `clear()` - Reset to default
     -   `get_return_value()` - Returns the configured return value
 
-### 2. Use Statement Macros (`#[use_function_mock]` / `#[use_function_fake]` / `#[use_function_stub]`)
+### 2. Use Statement Macros (`#[use_mock]` / `#[use_fake]` / `#[use_stub]`)
 
 Automatically switch between real and mock/fake versions based on build mode:
 
@@ -226,7 +226,7 @@ pub fn fetch_data(id: u32) -> String {
 }
 
 // In module B
-#[use_function_mock]
+#[use_mock]
 use crate::module_a::fetch_data;
 
 pub fn process_data(id: u32) -> String {
@@ -237,7 +237,7 @@ pub fn process_data(id: u32) -> String {
 In production builds: imports `fetch_data`  
 In test builds: imports `fetch_data_mock as fetch_data`
 
-The same pattern applies to `#[use_function_fake]` and `#[use_function_stub]`.
+The same pattern applies to `#[use_fake]` and `#[use_stub]`.
 
 ### 3. Inline Macros (`use_mock_inline!()` / `use_fake_inline!()` / `use_stub_inline!()`)
 
@@ -264,7 +264,6 @@ The same pattern applies to `use_fake_inline!()` and `use_stub_inline!()`.
 | Complexity           | Higher                                 | Medium                     | Lower                 |
 | Use case             | Verifying behavior                     | Alternative implementation | Pre-configured values |
 
-
 ## Thread Safety
 
 Mocks, fakes, and stubs all use thread-local storage, which means:
@@ -288,7 +287,6 @@ fnmock supports async functions! You can apply `#[mock_function]`, `#[fake_funct
 1. **Sync implementations**: The underlying storage mechanism requires that the mock/fake function itself be synchronous, since handling async implementations is much more error-prone and not needed for the majority of use cases.
 
 2. **Single-threaded tests**: Because mocks/fakes/stubs use thread-local storage, spawning multiple threads within a single test that access the same mock will lead to undefined behavior. Single-threaded async executors avoid this issue.
-
 
 ## Project Structure
 

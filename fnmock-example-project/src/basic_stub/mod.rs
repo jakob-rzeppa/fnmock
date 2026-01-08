@@ -1,4 +1,4 @@
-use fnmock::derive::{use_function_stub, use_stub_inline};
+use fnmock::derive::{use_stub, use_stub_inline};
 
 mod config {
     use fnmock::derive::stub_function;
@@ -15,7 +15,7 @@ mod config {
     }
 }
 
-#[use_function_stub]
+#[use_stub]
 use config::get_config;
 
 fn process_config() -> String {
@@ -32,7 +32,7 @@ mod tests {
     use super::config::{get_config_stub, get_port_stub};
 
     #[test]
-    fn test_stub_with_use_function_stub() {
+    fn test_stub_with_use_stub() {
         // Set up stub
         get_config_stub::setup("test_config".to_string());
 

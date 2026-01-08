@@ -110,7 +110,7 @@ pub fn mock_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// ## Single function import:
 /// ```ignore
-/// #[use_function_mock]
+/// #[use_mock]
 /// use module::function;
 /// ```
 /// Expands to:
@@ -123,7 +123,7 @@ pub fn mock_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// ## Multiple function imports:
 /// ```ignore
-/// #[use_function_mock]
+/// #[use_mock]
 /// use crate::service::{fetch_user, send_email};
 /// ```
 /// Expands to:
@@ -134,7 +134,7 @@ pub fn mock_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
 /// use crate::service::{fetch_user_mock as fetch_user, send_email_mock as send_email};
 /// ```
 #[proc_macro_attribute]
-pub fn use_function_mock(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn use_mock(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as syn::ItemUse);
 
     match process_use_statement(input, "_mock") {
@@ -152,7 +152,7 @@ pub fn use_function_mock(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// # Use Cases
 ///
-/// In general, it is preferable to use the `#[use_function_mock]` attribute macro,
+/// In general, it is preferable to use the `#[use_mock]` attribute macro,
 /// since it doesn't need to be placed in the code itself and mocks
 /// all calls to the function in the module.
 ///
@@ -306,7 +306,7 @@ pub fn fake_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// ## Single function import:
 /// ```ignore
-/// #[use_function_fake]
+/// #[use_fake]
 /// use module::function;
 /// ```
 /// Expands to:
@@ -319,7 +319,7 @@ pub fn fake_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// ## Multiple function imports:
 /// ```ignore
-/// #[use_function_fake]
+/// #[use_fake]
 /// use crate::service::{fetch_user, send_email};
 /// ```
 /// Expands to:
@@ -330,7 +330,7 @@ pub fn fake_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
 /// use crate::service::{fetch_user_fake as fetch_user, send_email_fake as send_email};
 /// ```
 #[proc_macro_attribute]
-pub fn use_function_fake(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn use_fake(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as syn::ItemUse);
 
     match process_use_statement(input, "_fake") {
@@ -348,7 +348,7 @@ pub fn use_function_fake(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// # Use Cases
 ///
-/// In general, it is preferable to use the `#[use_function_fake]` attribute macro,
+/// In general, it is preferable to use the `#[use_fake]` attribute macro,
 /// since it doesn't need to be placed in the code itself and fakes
 /// all calls to the function in the module.
 ///
@@ -505,7 +505,7 @@ pub fn stub_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// ## Single function import:
 /// ```ignore
-/// #[use_function_stub]
+/// #[use_stub]
 /// use module::function;
 /// ```
 /// Expands to:
@@ -518,7 +518,7 @@ pub fn stub_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// ## Multiple function imports:
 /// ```ignore
-/// #[use_function_stub]
+/// #[use_stub]
 /// use crate::config::{get_config, get_secret};
 /// ```
 /// Expands to:
@@ -529,7 +529,7 @@ pub fn stub_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
 /// use crate::config::{get_config_stub as get_config, get_secret_stub as get_secret};
 /// ```
 #[proc_macro_attribute]
-pub fn use_function_stub(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn use_stub(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as syn::ItemUse);
 
     match process_use_statement(input, "_stub") {
@@ -547,7 +547,7 @@ pub fn use_function_stub(_attr: TokenStream, item: TokenStream) -> TokenStream {
 ///
 /// # Use Cases
 ///
-/// In general, it is preferable to use the `#[use_function_stub]` attribute macro,
+/// In general, it is preferable to use the `#[use_stub]` attribute macro,
 /// since it doesn't need to be placed in the code itself and stubs
 /// all calls to the function in the module.
 ///

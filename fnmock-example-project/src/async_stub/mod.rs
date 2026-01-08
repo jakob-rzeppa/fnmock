@@ -8,9 +8,9 @@ mod config {
     }
 }
 
-use fnmock::derive::use_function_stub;
+use fnmock::derive::use_stub;
 
-#[use_function_stub]
+#[use_stub]
 use config::get_config;
 
 async fn process_config() -> String {
@@ -25,7 +25,7 @@ mod tests {
     // CAUTION: DO NOT USE MULTIPLE THREADS FOR TESTING (see README.md)
     // #[tokio::test] is single threaded by default
     #[tokio::test]
-    async fn test_stub_with_use_function_stub() {
+    async fn test_stub_with_use_stub() {
         // Set up stub
         get_config_stub::setup("test_config".to_string());
 

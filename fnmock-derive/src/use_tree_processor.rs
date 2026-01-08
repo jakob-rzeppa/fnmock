@@ -67,7 +67,7 @@ pub(crate) fn process_use_tree(
         }
         // Glob imports and renamed imports are not supported
         _ => panic!(
-            "use_function_mock only supports simple path and grouped imports. \
+            "use_mock only supports simple path and grouped imports. \
              Glob imports (*) and renamed imports (as) are not supported."
         ),
     }

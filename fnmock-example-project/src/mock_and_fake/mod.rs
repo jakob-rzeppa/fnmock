@@ -13,9 +13,9 @@ mod db {
     }
 }
 
-use fnmock::derive::use_function_fake;
+use fnmock::derive::use_fake;
 
-#[use_function_fake]
+#[use_fake]
 use db::fetch_user;
 use crate::mock_and_fake::db::fetch_notes;
 

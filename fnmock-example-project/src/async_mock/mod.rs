@@ -8,9 +8,9 @@ mod db {
     }
 }
 
-use fnmock::derive::use_function_mock;
+use fnmock::derive::use_mock;
 
-#[use_function_mock]
+#[use_mock]
 use db::fetch_user;
 
 async fn handle_user(id: u32) {
