@@ -1,4 +1,5 @@
 use quote::quote;
+use syn::token::Async;
 use crate::param_utils::get_param_names;
 
 /// Generates a fake function that delegates to the fake module's get_implementation method.
@@ -13,13 +14,14 @@ use crate::param_utils::get_param_names;
 /// * `fn_output` - The return type
 pub(crate) fn create_fake_function(
     fake_fn_name: syn::Ident,
+    fn_asyncness: Option<Async>,
     fn_inputs: syn::punctuated::Punctuated<syn::FnArg, syn::token::Comma>,
     fn_output: syn::ReturnType,
 ) -> proc_macro2::TokenStream {
     let param_names = get_param_names(&fn_inputs);
     
     quote! {
-        pub(crate) fn #fake_fn_name(#fn_inputs) #fn_output {
+        pub(crate) #fn_asyncness fn #fake_fn_name(#fn_inputs) #fn_output {
             #fake_fn_name::get_implementation()(#(#param_names),*)
         }
     }
