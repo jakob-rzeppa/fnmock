@@ -1,20 +1,15 @@
-mod db {
-    use fnmock::derive::mock_function;
+use fnmock::derive::{mock_function, use_mock_inline};
 
-    #[mock_function]
-    pub fn fetch_user(id: u32) -> Result<String, String> {
-        // Real implementation
-        Ok(format!("user_{}", id))
-    }
+#[mock_function]
+pub fn fetch_user(id: u32) -> Result<String, String> {
+    // Real implementation
+    Ok(format!("user_{}", id))
 }
 
-use fnmock::derive::use_function_mock;
-
-#[use_function_mock]
-use db::fetch_user;
-
 fn handle_user(id: u32) {
-    let _user = fetch_user(id);
+    // Since fetch_user is in the same module as handle_user, we don't need to import it.
+    // That's why we can't use #[use_function_mock] and have to use the mock inline
+    let _user = use_mock_inline!(fetch_user)(id);
 
     // Do something with the user
 }
@@ -23,7 +18,6 @@ fn handle_user(id: u32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::db::fetch_user_mock;
 
     #[test]
     fn test_with_mock() {
