@@ -7,18 +7,20 @@ A Rust mocking framework for standalone functions.
 
 ## Overview
 
-fnmock makes testing Rust functions easier by providing two approaches:
+fnmock makes testing Rust functions easier by providing three approaches:
 
 -   **Mocks**: Track function calls and enable assertions about call counts and parameters
 -   **Fakes**: Provide alternative implementations without call tracking overhead
+-   **Stubs**: Return pre-configured values without implementing custom logic
 
-Both approaches support multiple usage patterns to fit your testing needs, from import-level switches to inline call-site mocking.
+All three approaches support multiple usage patterns to fit your testing needs, from import-level switches to inline call-site selection.
 
 ## Features
 
 -   ✅ **Function mocking** - mock and assert function integration in your code
 -   ✅ **Function faking** - fake functions for when mocks are unnecessary or can't be used
--   ✅ **Procedural macros** - mock functions with little boilerplate
+-   ✅ **Function stubbing** - stub functions with pre-configured return values
+-   ✅ **Procedural macros** - mock, fake, and stub functions with little boilerplate
 -   ✅ **Zero runtime overhead** - the macros use `#[cfg(test)]` to only compile mocks in test mode
 -   ✅ **Thread-isolated** - each test gets its own mock state
 -   ⚠️ **Not thread-safe within a test**: If a single test spawns multiple threads that mock the same function, undefined behavior may occur
@@ -34,7 +36,6 @@ fnmock = ".."
 ```
 
 **Why not a dev-dependency?** The `#[mock_function]` and `#[fake_function]` macros need to be applied to your production code. However, the macros use conditional compilation (`cfg(test)`) to ensure **zero runtime overhead** in release builds - the mock infrastructure is only compiled in test mode.
-
 
 ### Basic Mock Example
 
@@ -78,6 +79,48 @@ mod tests {
         fetch_user_mock::assert_with(42);
 
         // No cleanup needed, since mocks are thread / test specific
+    }
+}
+```
+
+### Basic Stub Example
+
+When you don't need custom logic and just want to return a pre-configured value:
+
+```rust
+mod config {
+    use fnmock::derive::stub_function;
+
+    #[stub_function]
+    pub fn get_config() -> String {
+        // Real implementation
+        "production_config".to_string()
+    }
+}
+
+#[use_function_stub]
+use config::get_config;
+
+fn process_config() -> String {
+    get_config()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::config::get_config_stub;
+
+    #[test]
+    fn test_with_stub() {
+        // Set up stub to return a specific value
+        get_config_stub::setup("test_config".to_string());
+
+        let result = process_config();
+
+        assert_eq!(result, "test_config");
+
+        // Clean up
+        get_config_stub::clear();
     }
 }
 ```
@@ -131,9 +174,9 @@ mod tests {
 
 ## Macros
 
-fnmock supplies three main macros:
+fnmock supplies three main macro families, one for each approach:
 
-### 1. Attribute Macros (`#[mock_function]` / `#[fake_function]`)
+### 1. Attribute Macros (`#[mock_function]` / `#[fake_function]` / `#[stub_function]`)
 
 The foundational approach that generates mock/fake functions:
 
@@ -161,9 +204,17 @@ pub fn send_email(to: String, body: String) -> Result<(), String> {
 -   `send_email_fake` module with control methods:
     -   `fake_implementation(fn)` - Set custom behavior
     -   `clear_fake()` - Reset to default
-    -   `get_implementation()` - Returns the function pointer of the mock implementation
+    -   `get_implementation()` - Returns the function pointer of the fake implementation
 
-### 2. Use Statement Macros (`#[use_function_mock]` / `#[use_function_fake]`)
+`#[stub_function]` generates:
+
+-   `send_email_stub()` function
+-   `send_email_stub` module with control methods:
+    -   `setup(value)` - Set the return value
+    -   `clear()` - Reset to default
+    -   `get_return_value()` - Returns the configured return value
+
+### 2. Use Statement Macros (`#[use_function_mock]` / `#[use_function_fake]` / `#[use_function_stub]`)
 
 Automatically switch between real and mock/fake versions based on build mode:
 
@@ -186,7 +237,9 @@ pub fn process_data(id: u32) -> String {
 In production builds: imports `fetch_data`  
 In test builds: imports `fetch_data_mock as fetch_data`
 
-### 3. Inline Macros (`use_mock_inline!()` / `use_fake_inline!()`)
+The same pattern applies to `#[use_function_fake]` and `#[use_function_stub]`.
+
+### 3. Inline Macros (`use_mock_inline!()` / `use_fake_inline!()` / `use_stub_inline!()`)
 
 Fine-grained control for same-module mocking or specific call sites:
 
@@ -198,21 +251,24 @@ pub fn calculate_average(data: Vec<f32>) -> f32 {
 
 This expands to use `sum` in production and `sum_mock` in tests at that specific call site.
 
-## Mocks vs Fakes
+The same pattern applies to `use_fake_inline!()` and `use_stub_inline!()`.
 
-| Feature              | Mocks                                  | Fakes              |
-| -------------------- | -------------------------------------- | ------------------ |
-| Call tracking        | ✅ Yes                                 | ❌ No              |
-| Assertions           | ✅ Yes (`assert_times`, `assert_with`) | ❌ No              |
-| Reference parameters | ❌ No (must use owned types)           | ✅ Yes             |
-| Complexity           | Higher                                 | Lower              |
-| Use case             | Verifying behavior                     | Simple replacement |
+## Mocks vs Fakes vs Stubs
+
+| Feature              | Mocks                                 | Fakes                      | Stubs                 |
+|----------------------|---------------------------------------|----------------------------|-----------------------|
+| Call tracking        | ✅ Yes                                 | ❌ No                       | ❌ No                  |
+| Assertions           | ✅ Yes (`assert_times`, `assert_with`) | ❌ No                       | ❌ No                  |
+| Custom logic         | ✅ Yes (full function)                 | ✅ Yes (full function)      | ❌ No (value only)     |
+| Reference parameters | ❌ No (must use owned types)           | ✅ Yes                      | ✅ Yes                 |
+| Complexity           | Higher                                | Medium                     | Lower                 |
+| Use case             | Verifying behavior                    | Alternative implementation | Pre-configured values |
 
 ## Project Structure
 
 ```
 fnmock/
-├── fnmock/                  # Core library with FunctionMock and FunctionFake
+├── fnmock/                  # Core library with FunctionMock, FunctionFake, and FunctionStub
 │   ├── src/
 │   └── Cargo.toml
 ├── fnmock-derive/           # Procedural macros
@@ -241,9 +297,15 @@ fnmock/
 -   Functions must be standalone (no `self` parameters)
 -   No trait requirements on parameters (**references allowed!**)
 
+### For Stubs
+
+-   Functions must be standalone (no `self` parameters)
+-   Return type must implement `Clone` (for storing and retrieving the configured value)
+-   No parameters required (stubs don't track or use parameters)
+
 ## Thread Safety
 
-Both mocks and fakes use thread-local storage, which means:
+Mocks, fakes, and stubs all use thread-local storage, which means:
 
 ✅ **Test isolation**: Each test thread gets its own mock/fake state  
 ✅ **Parallel tests**: Tests can run in parallel without interference  
