@@ -55,10 +55,10 @@ mod tests {
     fn test_with_mock() {
         // Set up mock behavior
         fetch_user_mock::mock_implementation(|_| {
-            Ok("mock user")
+            Ok("mock user".to_string())
         });
 
-        let result = handle_user(42);
+        handle_user(42);
 
         // Verify behavior
         fetch_user_mock::assert_times(1);
@@ -98,16 +98,16 @@ fn handle_user(id: u32) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::db::fetch_user_mock;
+    use super::db::fetch_user_fake;
 
     #[test]
     fn test_handle_invalid_user() {
         // Set up mock behavior
         fetch_user_fake::fake_implementation(|_| {
-            Err("user not found")
+            Err("user not found".to_string())
         });
 
-        let err = handle_user(42).unwrap_err;
+        let err = handle_user(42).unwrap_err();
         
         assert_eq!(err, "user not found");
 
