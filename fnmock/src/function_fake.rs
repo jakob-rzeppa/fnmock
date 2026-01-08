@@ -45,8 +45,8 @@
 ///
 ///     // Here we create proxy calls for the fake functions.
 ///     // This allows us to use `calculate_fake::` for all the important fake functionalities.
-///     pub(crate) fn fake_implementation(new_f: Function) {
-///         FAKE.with(|fake| { fake.borrow_mut().fake_implementation(new_f) })
+///     pub(crate) fn setup(new_f: Function) {
+///         FAKE.with(|fake| { fake.borrow_mut().setup(new_f) })
 ///     }
 ///     
 ///     pub(crate) fn get_implementation() -> Function {
@@ -83,11 +83,11 @@ where
 
     // --- Faking ---
 
-    pub fn fake_implementation(&mut self, new_f: Function) {
+    pub fn setup(&mut self, new_f: Function) {
         self.implementation = Some(new_f);
     }
 
-    pub fn clear_fake(&mut self) {
+    pub fn clear(&mut self) {
         self.implementation = None;
     }
 
@@ -128,14 +128,14 @@ mod tests {
     #[test]
     fn test_fake_implementation_sets_function() {
         let mut fake: FunctionFake<fn(i32, i32) -> i32> = FunctionFake::new("add");
-        fake.fake_implementation(add_fake_implementation);
+        fake.setup(add_fake_implementation);
         assert!(fake.implementation.is_some());
     }
 
     #[test]
     fn test_get_implementation_returns_function() {
         let mut fake: FunctionFake<fn(i32, i32) -> i32> = FunctionFake::new("add");
-        fake.fake_implementation(add_fake_implementation);
+        fake.setup(add_fake_implementation);
         
         let implementation = fake.get_implementation();
         let result = implementation(5, 3);
@@ -152,11 +152,11 @@ mod tests {
     #[test]
     fn test_clear_fake_resets_implementation() {
         let mut fake: FunctionFake<fn(i32, i32) -> i32> = FunctionFake::new("add");
-        fake.fake_implementation(add_fake_implementation);
+        fake.setup(add_fake_implementation);
         
         assert!(fake.implementation.is_some());
         
-        fake.clear_fake();
+        fake.clear();
         
         assert!(fake.implementation.is_none());
     }
@@ -164,13 +164,13 @@ mod tests {
     #[test]
     fn test_fake_can_be_replaced() {
         let mut fake: FunctionFake<fn(i32, i32) -> i32> = FunctionFake::new("math");
-        fake.fake_implementation(add_fake_implementation);
+        fake.setup(add_fake_implementation);
         
         let implementation1 = fake.get_implementation();
         let result1 = implementation1(5, 3);
         assert_eq!(result1, 8);
         
-        fake.fake_implementation(multiply_fake_implementation);
+        fake.setup(multiply_fake_implementation);
         let implementation2 = fake.get_implementation();
         let result2 = implementation2(5, 3);
         assert_eq!(result2, 15);
@@ -179,7 +179,7 @@ mod tests {
     #[test]
     fn test_with_string_parameters() {
         let mut fake: FunctionFake<fn(String, String) -> String> = FunctionFake::new("concat");
-        fake.fake_implementation(string_concat_fake_implementation);
+        fake.setup(string_concat_fake_implementation);
         
         let implementation = fake.get_implementation();
         let result = implementation("Hello".to_string(), "World".to_string());
@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn test_with_reference_parameter() {
         let mut fake: FunctionFake<fn(&[u32]) -> u32> = FunctionFake::new("sum");
-        fake.fake_implementation(sum_fake_implementation);
+        fake.setup(sum_fake_implementation);
 
         let vec = vec![1, 2, 3];
         
@@ -205,7 +205,7 @@ mod tests {
         }
         
         let mut fake: FunctionFake<fn(i32) -> ()> = FunctionFake::new("void_fn");
-        fake.fake_implementation(void_fake);
+        fake.setup(void_fake);
         
         let implementation = fake.get_implementation();
         implementation(42); // Should not panic
@@ -222,7 +222,7 @@ mod tests {
         }
         
         let mut fake: FunctionFake<fn(i32, i32) -> Result<i32, String>> = FunctionFake::new("divide");
-        fake.fake_implementation(divide_fake);
+        fake.setup(divide_fake);
         
         let implementation = fake.get_implementation();
         
@@ -244,7 +244,7 @@ mod tests {
         }
         
         let mut fake: FunctionFake<fn(i32, i32) -> Option<i32>> = FunctionFake::new("safe_divide");
-        fake.fake_implementation(safe_divide_fake);
+        fake.setup(safe_divide_fake);
         
         let implementation = fake.get_implementation();
         
@@ -258,7 +258,7 @@ mod tests {
     #[test]
     fn test_multiple_get_implementation_calls() {
         let mut fake: FunctionFake<fn(i32, i32) -> i32> = FunctionFake::new("add");
-        fake.fake_implementation(add_fake_implementation);
+        fake.setup(add_fake_implementation);
         
         let impl1 = fake.get_implementation();
         let impl2 = fake.get_implementation();

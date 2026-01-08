@@ -49,12 +49,12 @@ pub(crate) fn create_fake_module(fake_fn_name: syn::Ident, params_type: syn::Typ
                     std::cell::RefCell::new(FunctionFake::new(stringify!(#fake_fn_name)));
             }
 
-            pub(crate) fn fake_implementation(new_f: Function) {
-                FAKE.with(|fake| { fake.borrow_mut().fake_implementation(new_f) })
+            pub(crate) fn setup(new_f: Function) {
+                FAKE.with(|fake| { fake.borrow_mut().setup(new_f) })
             }
 
-            pub(crate) fn clear_fake() {
-                FAKE.with(|fake| { fake.borrow_mut().clear_fake() })
+            pub(crate) fn clear() {
+                FAKE.with(|fake| { fake.borrow_mut().clear() })
             }
 
             pub(crate) fn get_implementation() -> Function {

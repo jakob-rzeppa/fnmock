@@ -56,15 +56,15 @@ pub(crate) fn create_mock_module(mock_fn_name: syn::Ident, params_type: syn::Typ
                 })
             }
 
-            pub(crate) fn mock_implementation(new_f: fn(Params) -> Return) {
+            pub(crate) fn setup(new_f: fn(Params) -> Return) {
                 MOCK.with(|mock| {
-                    mock.borrow_mut().mock_implementation(new_f)
+                    mock.borrow_mut().setup(new_f)
                 })
             }
 
-            pub(crate) fn clear_mock() {
+            pub(crate) fn clear() {
                 MOCK.with(|mock|{
-                    mock.borrow_mut().clear_mock()
+                    mock.borrow_mut().clear()
                 })
             }
 

@@ -35,10 +35,10 @@ mod tests {
     #[test]
     fn test_handle_invalid_user() {
         // Set up mock behavior
-        fetch_user_fake::fake_implementation(|_| {
+        fetch_user_fake::setup(|_| {
             Err("user not found".to_string())
         });
-        fetch_notes_mock::mock_implementation(|_| {
+        fetch_notes_mock::setup(|_| {
             Err("not reached".to_string())
         });
 

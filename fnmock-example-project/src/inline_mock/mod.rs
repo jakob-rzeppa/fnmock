@@ -22,7 +22,7 @@ mod tests {
     #[test]
     fn test_with_mock() {
         // Set up mock behavior
-        fetch_user_mock::mock_implementation(|_| {
+        fetch_user_mock::setup(|_| {
             Ok("mock user".to_string())
         });
 
