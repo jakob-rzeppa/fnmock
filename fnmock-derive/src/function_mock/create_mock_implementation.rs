@@ -40,6 +40,8 @@ pub(crate) fn create_mock_function(
 pub(crate) fn create_mock_module(mock_fn_name: syn::Ident, params_type: syn::Type, return_type: syn::Type) -> proc_macro2::TokenStream {
     quote! {
         pub(crate) mod #mock_fn_name {
+            use super::*;
+
             type Params = #params_type;
             type Return = #return_type;
             const FUNCTION_NAME: &str = stringify!(#mock_fn_name);

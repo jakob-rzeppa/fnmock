@@ -42,6 +42,7 @@ pub(crate) fn create_fake_function(
 pub(crate) fn create_fake_module(fake_fn_name: syn::Ident, params_type: syn::Type, return_type: syn::Type) -> proc_macro2::TokenStream {
     quote! {
         pub(crate) mod #fake_fn_name {
+            use super::*;
             use fnmock::function_fake::FunctionFake;
 
             type Function = fn(#params_type) -> #return_type;

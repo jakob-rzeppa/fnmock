@@ -36,6 +36,7 @@ pub(crate) fn create_stub_function(
 pub(crate) fn create_stub_module(stub_fn_name: syn::Ident, return_type: syn::Type) -> proc_macro2::TokenStream {
     quote! {
         pub(crate) mod #stub_fn_name {
+            use super::*;
             use fnmock::function_stub::FunctionStub;
 
             thread_local! {
