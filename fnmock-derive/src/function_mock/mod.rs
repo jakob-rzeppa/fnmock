@@ -7,6 +7,7 @@ use crate::return_utils::extract_return_type;
 
 mod create_mock_implementation;
 mod validate_function;
+mod proxy_docs;
 pub(crate) mod mock_args;
 
 /// Processes a function and generates the complete mock infrastructure.
@@ -65,7 +66,10 @@ pub(crate) fn process_mock_function(mock_function: syn::ItemFn, ignore_params: V
     let mock_module = create_mock_module(
         mock_fn_name,
         params_type,
-        return_type
+        return_type,
+        &fn_inputs,
+        &ignore_indices,
+        fn_asyncness.clone()
     );
 
     // Generate the original function, mock function and the mock module

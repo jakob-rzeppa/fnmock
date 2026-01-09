@@ -1,6 +1,7 @@
 use quote::quote;
 use syn::token::Async;
 use crate::param_utils::get_param_names;
+use crate::function_fake::proxy_docs::FakeProxyDocs;
 
 /// Generates a fake function that delegates to the fake module's get_implementation method.
 ///
@@ -39,7 +40,20 @@ pub(crate) fn create_fake_function(
 /// * `fake_fn_name` - The name of the fake module (same as fake function name)
 /// * `params_type` - The type representing the function parameters (single type or tuple)
 /// * `return_type` - The return type of the function
-pub(crate) fn create_fake_module(fake_fn_name: syn::Ident, params_type: syn::Type, return_type: syn::Type) -> proc_macro2::TokenStream {
+/// * `fn_inputs` - The original function parameters (for documentation)
+pub(crate) fn create_fake_module(
+    fake_fn_name: syn::Ident,
+    params_type: syn::Type,
+    return_type: syn::Type,
+    fn_inputs: &syn::punctuated::Punctuated<syn::FnArg, syn::token::Comma>,
+    fn_asyncness: Option<syn::token::Async>,
+) -> proc_macro2::TokenStream {
+    // Generate documentation using the proxy_docs module
+    let docs = FakeProxyDocs::new(&fake_fn_name, fn_inputs, &return_type, fn_asyncness);
+    let setup_docs = docs.setup_docs();
+    let clear_docs = docs.clear_docs();
+    let get_implementation_docs = docs.get_implementation_docs();
+    
     quote! {
         pub(crate) mod #fake_fn_name {
             use super::*;
@@ -49,14 +63,17 @@ pub(crate) fn create_fake_module(fake_fn_name: syn::Ident, params_type: syn::Typ
                     std::cell::RefCell::new(fnmock::function_fake::FunctionFake::new(stringify!(#fake_fn_name)));
             }
 
+            #setup_docs
             pub(crate) fn setup(new_f: fn(#params_type) -> #return_type) {
                 FAKE.with(|fake| { fake.borrow_mut().setup(new_f) })
             }
 
+            #clear_docs
             pub(crate) fn clear() {
                 FAKE.with(|fake| { fake.borrow_mut().clear() })
             }
 
+            #get_implementation_docs
             pub(crate) fn get_implementation() -> fn(#params_type) -> #return_type {
                 FAKE.with(|fake| { fake.borrow().get_implementation() })
             }

@@ -5,6 +5,7 @@ use crate::param_utils::create_param_type;
 use crate::return_utils::extract_return_type;
 
 mod create_fake_implementation;
+mod proxy_docs;
 
 /// Processes a function and generates the complete fake infrastructure.
 ///
@@ -46,7 +47,9 @@ pub(crate) fn process_fake_function(fake_function: syn::ItemFn) -> syn::Result<T
     let fake_module = create_fake_module(
         fake_fn_name,
         params_type,
-        return_type
+        return_type,
+        &fn_inputs,
+        fn_asyncness.clone()
     );
 
     // Generate the original function, fake function and the fake module

@@ -4,6 +4,7 @@ use crate::function_stub::create_stub_implementation::{create_stub_function, cre
 use crate::return_utils::extract_return_type;
 
 mod create_stub_implementation;
+mod proxy_docs;
 
 /// Processes a function and generates the complete stub infrastructure.
 ///
