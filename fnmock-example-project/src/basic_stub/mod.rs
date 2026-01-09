@@ -1,6 +1,6 @@
 use fnmock::derive::{use_stub, use_stub_inline};
 
-mod config {
+pub mod config {
     use fnmock::derive::stub_function;
 
     #[stub_function]
@@ -18,11 +18,11 @@ mod config {
 #[use_stub]
 use config::get_config;
 
-fn process_config() -> String {
+pub fn process_config() -> String {
     get_config()
 }
 
-fn process_port() -> u16 {
+pub fn process_port() -> u16 {
     use_stub_inline!(config::get_port)()
 }
 

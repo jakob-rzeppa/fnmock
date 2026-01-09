@@ -1,8 +1,8 @@
-mod config {
+pub mod config {
     use fnmock::derive::stub_function;
 
     #[stub_function]
-    pub(crate) async fn get_config() -> String {
+    pub async fn get_config() -> String {
         // Real implementation
         "production_config".to_string()
     }
@@ -13,7 +13,7 @@ use fnmock::derive::use_stub;
 #[use_stub]
 use config::get_config;
 
-async fn process_config() -> String {
+pub async fn process_config() -> String {
     get_config().await
 }
 

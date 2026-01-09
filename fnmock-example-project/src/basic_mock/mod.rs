@@ -1,4 +1,4 @@
-mod db {
+pub mod db {
     use fnmock::derive::mock_function;
 
     #[mock_function]
@@ -13,7 +13,7 @@ use fnmock::derive::use_mock;
 #[use_mock]
 use db::fetch_user;
 
-fn handle_user(id: u32) {
+pub fn handle_user(id: u32) {
     let _user = fetch_user(id);
 
     // Do something with the user

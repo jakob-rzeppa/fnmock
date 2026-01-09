@@ -1,4 +1,4 @@
-mod db {
+pub mod db {
     use fnmock::derive::mock_function;
 
     // Mock with ignore parameter

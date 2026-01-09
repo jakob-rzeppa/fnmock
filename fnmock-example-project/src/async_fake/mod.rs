@@ -1,4 +1,4 @@
-mod db {
+pub mod db {
     use fnmock::derive::fake_function;
 
     #[fake_function]
@@ -13,7 +13,7 @@ use fnmock::derive::use_fake;
 #[use_fake]
 use db::fetch_user;
 
-async fn handle_user(id: u32) -> Result<String, String> {
+pub async fn handle_user(id: u32) -> Result<String, String> {
     fetch_user(id).await
 }
 

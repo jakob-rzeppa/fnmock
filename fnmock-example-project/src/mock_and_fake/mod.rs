@@ -1,4 +1,4 @@
-mod db {
+pub mod db {
     use fnmock::derive::{fake_function, mock_function};
 
     #[fake_function]
@@ -19,7 +19,7 @@ use fnmock::derive::use_fake;
 use db::fetch_user;
 use crate::mock_and_fake::db::fetch_notes;
 
-fn handle_user(id: u32) -> Result<(), String> {
+pub fn handle_user(id: u32) -> Result<(), String> {
     fetch_user(id)?;
 
     fetch_notes(id)?;
