@@ -6,32 +6,46 @@ use syn::token::Comma;
 /// Creates a type representation for function parameters.
 ///
 /// Converts a list of function parameters into a single type that can be used
-/// as a generic parameter for the mock infrastructure.
+/// as a generic parameter for the mock infrastructure. Parameters at ignore_indices
+/// are excluded from the type.
+///
+/// # Arguments
+///
+/// * `fn_inputs` - The function parameters
+/// * `ignore_indices` - Indices of parameters to exclude from the type
 ///
 /// # Returns
 ///
-/// - For 0 parameters: `()`
-/// - For 1 parameter: The parameter type itself
-/// - For 2+ parameters: A tuple of all parameter types
+/// - For 0 non-ignored parameters: `()`
+/// - For 1 non-ignored parameter: The parameter type itself
+/// - For 2+ non-ignored parameters: A tuple of all non-ignored parameter types
 ///
 /// # Examples
 ///
 /// - `fn foo()` → `()`
 /// - `fn foo(x: i32)` → `i32`
 /// - `fn foo(x: i32, y: String)` → `(i32, String)`
+/// - `fn foo(x: i32, y: String)` with `ignore_indices = [1]` → `i32`
+/// - `fn foo(x: i32, y: String, z: &str)` with `ignore_indices = [2]` → `(i32, String)`
 ///
 /// # Panics
 ///
 /// Panics if the function has a `self` parameter, as methods cannot be mocked.
-pub(crate) fn create_param_type(fn_inputs: &Punctuated<FnArg, Comma>) -> Type {
+pub(crate) fn create_param_type(fn_inputs: &Punctuated<FnArg, Comma>, ignore_indices: &[usize]) -> Type {
     let param_types: Vec<_> = fn_inputs
         .iter()
-        .filter_map(|arg| match arg {
-            syn::FnArg::Typed(pat_type) => Some(&pat_type.ty),
-            syn::FnArg::Receiver(_) => panic!(
-                "mock_function does not support methods with 'self' parameters. \
-                 Only standalone functions can be mocked."
-            ),
+        .enumerate()
+        .filter_map(|(idx, arg)| {
+            if ignore_indices.contains(&idx) {
+                return None;
+            }
+            match arg {
+                syn::FnArg::Typed(pat_type) => Some(&pat_type.ty),
+                syn::FnArg::Receiver(_) => panic!(
+                    "mock_function does not support methods with 'self' parameters. \
+                     Only standalone functions can be mocked."
+                ),
+            }
         })
         .collect();
 
@@ -70,25 +84,43 @@ pub(crate) fn get_param_names(fn_inputs: &Punctuated<FnArg, Comma>) -> Vec<&syn:
 /// Creates a tuple expression from function parameter names.
 ///
 /// Converts parameter patterns into a tuple that can be passed to the mock
-/// implementation for call tracking and verification.
+/// implementation for call tracking and verification. Parameters at ignore_indices
+/// are excluded from the tuple.
+///
+/// # Arguments
+///
+/// * `fn_inputs` - The function parameters
+/// * `ignore_indices` - Indices of parameters to exclude from the tuple
 ///
 /// # Returns
 ///
-/// - For 0 parameters: `()`
-/// - For 1 parameter: The parameter name itself (not wrapped in tuple)
-/// - For 2+ parameters: A tuple of all parameter names
+/// - For 0 non-ignored parameters: `()`
+/// - For 1 non-ignored parameter: The parameter name itself (not wrapped in tuple)
+/// - For 2+ non-ignored parameters: A tuple of all non-ignored parameter names
 ///
 /// # Examples
 ///
 /// - `fn foo()` → `()`
 /// - `fn foo(x: i32)` → `x`
 /// - `fn foo(x: i32, y: String)` → `(x, y)`
+/// - `fn foo(x: i32, y: String, z: &str)` with `ignore_indices = [2]` → `(x, y)`
+/// - `fn foo(x: i32, y: &str)` with `ignore_indices = [1]` → `x`
 ///
 /// # Panics
 ///
 /// Panics if the function has a `self` parameter, as methods cannot be mocked.
-pub(crate) fn create_tuple_from_param_names(fn_inputs: &Punctuated<FnArg, Comma>) -> proc_macro2::TokenStream {
-    let param_names = get_param_names(fn_inputs);
+pub(crate) fn create_tuple_from_param_names(fn_inputs: &Punctuated<FnArg, Comma>, ignore_indices: &[usize]) -> proc_macro2::TokenStream {
+    let param_names: Vec<_> = get_param_names(fn_inputs)
+        .into_iter()
+        .enumerate()
+        .filter_map(|(idx, name)| {
+            if ignore_indices.contains(&idx) {
+                None
+            } else {
+                Some(name)
+            }
+        })
+        .collect();
 
     if param_names.is_empty() {
         quote! { () }
@@ -116,25 +148,33 @@ fn contains_reference(ty: &Type) -> bool {
     }
 }
 
-/// Validates that all function parameters satisfy the 'static bound.
+/// Validates that all non-ignored function parameters satisfy the 'static bound.
 ///
-/// Returns an error if any parameter contains references, as the mock infrastructure
-/// requires all parameters to be 'static (no borrowed data).
+/// Returns an error if any non-ignored parameter contains references, as the mock infrastructure
+/// requires all parameters to be 'static (no borrowed data). Ignored parameters are skipped.
+///
+/// # Arguments
+///
+/// * `fn_inputs` - The function parameters
+/// * `ignore_indices` - Indices of parameters to skip validation for
 ///
 /// # Returns
 ///
-/// - `Ok(())` if all parameters are 'static
-/// - `Err(syn::Error)` if any parameter contains references
-pub(crate) fn validate_static_params(fn_inputs: &Punctuated<FnArg, Comma>) -> syn::Result<()> {
-    for arg in fn_inputs.iter() {
+/// - `Ok(())` if all non-ignored parameters are 'static
+/// - `Err(syn::Error)` if any non-ignored parameter contains references
+pub(crate) fn validate_static_params(fn_inputs: &Punctuated<FnArg, Comma>, ignore_indices: &[usize]) -> syn::Result<()> {
+    for (idx, arg) in fn_inputs.iter().enumerate() {
+        if ignore_indices.contains(&idx) {
+            continue;
+        }
         if let FnArg::Typed(pat_type) = arg {
             if contains_reference(&pat_type.ty) {
                 return Err(syn::Error::new_spanned(
                     &pat_type.ty,
-                    "mock_function requires all parameters to be 'static. \
+                    "mock_function requires all non-ignored parameters to be 'static. \
                      Parameters cannot contain references. \
                      Consider using owned types like String instead of &str, \
-                     or Vec<T> instead of &[T]."
+                     or Vec<T> instead of &[T], or mark the parameter with #[mock_function(ignore=[param])]."
                 ));
             }
         }

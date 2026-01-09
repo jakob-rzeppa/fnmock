@@ -34,7 +34,7 @@ pub(crate) fn process_fake_function(fake_function: syn::ItemFn) -> syn::Result<T
     // Generate fake function name
     let fake_fn_name = syn::Ident::new(&format!("{}_fake", &fn_name), fn_name.span());
 
-    let params_type = create_param_type(&fn_inputs);
+    let params_type = create_param_type(&fn_inputs, &[]);
     let return_type = extract_return_type(&fake_function.sig.output);
 
     let fake_function = create_fake_function(

@@ -12,6 +12,7 @@ mod return_utils;
 
 use crate::function_mock::{process_mock_function};
 use crate::function_fake::{process_fake_function};
+use crate::function_mock::mock_args::MockFunctionArgs;
 use crate::function_stub::{process_stub_function};
 use crate::inline_processor::process_inline;
 use crate::use_statement_processor::process_use_statement;
@@ -83,10 +84,15 @@ use crate::use_statement_processor::process_use_statement;
 /// The mock state is isolated between different test threads (good for test independence),
 /// but not protected within a single test that uses multiple threads.
 #[proc_macro_attribute]
-pub fn mock_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn mock_function(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as syn::ItemFn);
+    let args = if attr.is_empty() {
+        MockFunctionArgs { ignore: Vec::new() }
+    } else {
+        parse_macro_input!(attr as MockFunctionArgs)
+    };
 
-    match process_mock_function(input) {
+    match process_mock_function(input, args.ignore) {
         Ok(expanded) => TokenStream::from(expanded),
         Err(e) => e.to_compile_error().into(),
     }

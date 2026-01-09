@@ -2,11 +2,12 @@ use quote::quote;
 use syn::__private::TokenStream2;
 use crate::function_mock::create_mock_implementation::{create_mock_function, create_mock_module};
 use crate::function_mock::validate_function::validate_function_mockable;
-use crate::param_utils::{create_param_type, create_tuple_from_param_names};
+use crate::param_utils::{create_param_type, create_tuple_from_param_names, get_param_names};
 use crate::return_utils::extract_return_type;
 
 mod create_mock_implementation;
 mod validate_function;
+pub(crate) mod mock_args;
 
 /// Processes a function and generates the complete mock infrastructure.
 ///
@@ -30,10 +31,7 @@ mod validate_function;
 /// The function validates that:
 /// - All parameters are 'static (no references)
 /// - Parameters can be cloned, compared, and debugged
-pub(crate) fn process_mock_function(mock_function: syn::ItemFn) -> syn::Result<TokenStream2> {
-    // Validate function is suitable for mocking
-    validate_function_mockable(&mock_function)?;
-
+pub(crate) fn process_mock_function(mock_function: syn::ItemFn, ignore_params: Vec<String>) -> syn::Result<TokenStream2> {
     // Extract function details
     let fn_visibility = mock_function.vis.clone();
     let fn_asyncness = mock_function.sig.asyncness;
@@ -45,8 +43,16 @@ pub(crate) fn process_mock_function(mock_function: syn::ItemFn) -> syn::Result<T
     // Generate mock function name
     let mock_fn_name = syn::Ident::new(&format!("{}_mock", &fn_name), fn_name.span());
 
-    let params_type = create_param_type(&fn_inputs);
-    let params_to_tuple = create_tuple_from_param_names(&fn_inputs);
+    // Convert ignore param names to indices
+    let ignore_indices = get_ignore_indices(&fn_inputs, &ignore_params)?;
+
+    // Validate function is suitable for mocking (only non-ignored params)
+    validate_function_mockable(&mock_function, &ignore_indices)?;
+
+    // Only add the not ignored parameters to the param_types / params_to_tuple
+    let params_type = create_param_type(&fn_inputs, &ignore_indices);
+    let params_to_tuple = create_tuple_from_param_names(&fn_inputs, &ignore_indices);
+
     let return_type = extract_return_type(&mock_function.sig.output);
 
     let mock_function = create_mock_function(
@@ -72,4 +78,36 @@ pub(crate) fn process_mock_function(mock_function: syn::ItemFn) -> syn::Result<T
         #[cfg(test)]
         #mock_module
     })
+}
+
+/// Converts parameter names to their indices.
+///
+/// Maps each ignored parameter name to its position in the function signature.
+fn get_ignore_indices(
+    fn_inputs: &syn::punctuated::Punctuated<syn::FnArg, syn::token::Comma>,
+    ignore_params: &[String]
+) -> syn::Result<Vec<usize>> {
+    let param_names = get_param_names(fn_inputs);
+    let mut indices = Vec::new();
+
+    for ignore_name in ignore_params {
+        let mut found = false;
+        for (i, param) in param_names.iter().enumerate() {
+            if let syn::Pat::Ident(pat_ident) = param {
+                if pat_ident.ident == ignore_name {
+                    indices.push(i);
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if !found {
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                format!("Parameter '{}' not found in function signature", ignore_name)
+            ));
+        }
+    }
+
+    Ok(indices)
 }
