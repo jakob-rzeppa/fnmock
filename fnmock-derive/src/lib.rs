@@ -30,11 +30,24 @@ use crate::use_statement_processor::process_use_statement;
 /// - `assert_times(n)` - Verifies the function was called exactly n times
 /// - `assert_with(params)` - Verifies the function was called with specific parameters
 ///
+/// # Ignoring of parameters
+///
+/// If you don't want a parameter to be checked (for example if they have to be a reference or do not implement Clone / PartialEq),
+/// you can ignore the parameter with:
+///
+/// ```ignore
+/// #[mock_function(ignore = [db])]
+/// pub(crate) fn fetch_user(db: SqlitePool /* Doesn't implement PartialEq */, id: u32) -> Result<String, String> {
+///     // Real implementation
+///     Ok(format!("user_{}", id))
+/// }
+/// ```
+///
 /// # Requirements
 ///
 /// - Function must not have `self` parameters (standalone functions only)
-/// - Function parameters must implement `Clone`, `Debug`, and `PartialEq` (for assertions)
-/// - Function parameters must be `'static` (no references allowed - use owned types like `String` instead of `&str`)
+/// - Not ignored function parameters must implement `Clone`, `Debug`, and `PartialEq` (for assertions)
+/// - Not ignored function parameters must be `'static` (no references allowed - use owned types like `String` instead of `&str`)
 ///
 /// # Example
 ///
