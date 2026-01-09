@@ -31,8 +31,8 @@ fn main() {
         let _ = async_fake::db::fetch_user(1).await;
         let _ = async_fake::handle_user(1).await;
         
-        let _ = async_stub::config::get_config().await;
-        let _ = async_stub::process_config().await;
+        let _ = async_stub::config::get_config(1).await;
+        let _ = async_stub::process_config(1).await;
         
         let _ = async_mock::db::fetch_user(1).await;
         async_mock::handle_user(1).await;

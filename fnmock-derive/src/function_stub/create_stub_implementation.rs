@@ -18,6 +18,7 @@ pub(crate) fn create_stub_function(
     fn_output: syn::ReturnType,
 ) -> proc_macro2::TokenStream {
     quote! {
+        #[allow(unused_variables)]
         pub(crate) #fn_asyncness fn #stub_fn_name(#fn_inputs) #fn_output {
             #stub_fn_name::get_return_value()
         }

@@ -2,9 +2,9 @@ pub mod config {
     use fnmock::derive::stub_function;
 
     #[stub_function]
-    pub async fn get_config() -> String {
+    pub async fn get_config(id: u32) -> String {
         // Real implementation
-        "production_config".to_string()
+        format!("production_config: {}", id)
     }
 }
 
@@ -13,8 +13,8 @@ use fnmock::derive::use_stub;
 #[use_stub]
 use config::get_config;
 
-pub async fn process_config() -> String {
-    get_config().await
+pub async fn process_config(id: u32) -> String {
+    get_config(id).await
 }
 
 #[cfg(test)]
@@ -30,8 +30,8 @@ mod tests {
         get_config_stub::setup("test_config".to_string());
 
         // Call the function that uses the stub
-        for _ in 0..100 {
-            let result = process_config().await;
+        for i in 0..100 {
+            let result = process_config(i).await;
 
             // Verify result
             assert_eq!(result, "test_config");

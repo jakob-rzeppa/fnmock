@@ -21,6 +21,7 @@ pub(crate) fn create_mock_function(
     params_to_tuple: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     quote! {
+        #[allow(unused_variables)]
         pub(crate) #fn_asyncness fn #mock_fn_name(#fn_inputs) #fn_output {
             #mock_fn_name::call(#params_to_tuple)
         }
