@@ -239,14 +239,16 @@ pub fn use_mock_inline(item: TokenStream) -> TokenStream {
 
 /// Attribute macro that generates a fakeable version of a function.
 ///
-/// This macro preserves the original function and generates:
-/// 1. A `<function_name>_fake` function that can be called in tests
+/// This macro modifies the original function to check (in test mode) if a fake implementation
+/// has been configured and generates:
+/// 1. The original function with injected fake checking logic (calls fake if set, otherwise executes normally)
 /// 2. A `<function_name>_fake` module containing fake control methods
 ///
 /// # Generated Fake Module Methods
 ///
-/// - `fake_implementation(fn)` - Sets a custom implementation for the fake
-/// - `clear_fake()` - Resets the fake to its default panic behavior
+/// - `setup(fn)` - Sets a custom implementation for the fake
+/// - `clear()` - Resets the fake to its uninitialized state
+/// - `is_set()` - Checks if the fake has been configured
 /// - `get_implementation()` - Gets the current fake implementation
 ///
 /// # Difference from Mocks
@@ -278,23 +280,22 @@ pub fn use_mock_inline(item: TokenStream) -> TokenStream {
 ///     #[test]
 ///     fn test_with_fake() {
 ///         // Set up fake behavior
-///         add_two_fake::fake_implementation(|x| x + 10);
+///         add_two_fake::setup(|x| x + 10);
 ///
-///         // Call the fake
-///         let result = add_two_fake(5);
+///         // Call the original function (which will use the fake in tests)
+///         let result = add_two(5);
 ///
 ///         // Verify behavior
 ///         assert_eq!(result, 15);
 ///
-///         // Clean up
-///         add_two_fake::clear_fake();
+///         // Clean up (not necessary since fakes are thread-local and reset between tests)
+///         add_two_fake::clear();
 ///     }
 /// }
 /// ```
-///
 /// # Note
 ///
-/// The fake function and module use thread-local storage, so fakes are isolated
+/// The fake module uses thread-local storage, so fakes are isolated
 /// between tests but **not thread-safe** if the same function is faked in parallel
 /// test threads.
 #[proc_macro_attribute]

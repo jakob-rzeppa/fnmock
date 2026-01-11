@@ -156,6 +156,20 @@ impl FakeProxyDocs {
         }
     }
 
+    /// Generates documentation attributes for the `is_set` function.
+    pub(crate) fn is_set_docs(&self) -> proc_macro2::TokenStream {
+        quote! {
+            #[doc = "Checks if the fake has been configured."]
+            #[doc = ""]
+            #[doc = "Returns `true` if `setup()` has been called and the fake is ready to use,"]
+            #[doc = "or `false` if the fake has not been set up or has been cleared."]
+            #[doc = ""]
+            #[doc = "# Returns"]
+            #[doc = ""]
+            #[doc = "`bool` - `true` if configured, `false` otherwise"]
+        }
+    }
+
     /// Generates documentation attributes for the `get_implementation` function.
     pub(crate) fn get_implementation_docs(&self) -> proc_macro2::TokenStream {
         quote! {

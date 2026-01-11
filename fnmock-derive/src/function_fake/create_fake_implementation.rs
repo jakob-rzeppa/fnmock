@@ -3,27 +3,46 @@ use syn::token::Async;
 use crate::param_utils::get_param_names;
 use crate::function_fake::proxy_docs::FakeProxyDocs;
 
-/// Generates a fake function that delegates to the fake module's get_implementation method.
+/// Generates the original function with fake checking logic injected.
 ///
-/// Creates a function with the same signature as the original function,
-/// but with `_fake` suffix, that calls the fake implementation.
+/// Creates a function that first checks (in test mode) if a fake implementation has been
+/// configured via the fake module. If a fake is set, it calls the fake implementation.
+/// Otherwise, it executes the original function body.
 ///
 /// # Arguments
 ///
-/// * `fake_fn_name` - The name of the fake function (original name with `_fake` suffix)
+/// * `fn_name` - The name of the original function
+/// * `fn_visibility` - The visibility modifier of the function (pub, pub(crate), etc.)
+/// * `fn_asyncness` - Optional async keyword if the function is async
 /// * `fn_inputs` - The function parameters
 /// * `fn_output` - The return type
+/// * `fn_block` - The original function body to execute when fake is not set
+/// * `fake_mod_name` - The name of the fake module containing the fake infrastructure
+///
+/// # Returns
+///
+/// Generated token stream for the function with injected fake checking logic
 pub(crate) fn create_fake_function(
-    fake_fn_name: syn::Ident,
+    fn_name: syn::Ident,
+    fn_visibility: syn::Visibility,
     fn_asyncness: Option<Async>,
     fn_inputs: syn::punctuated::Punctuated<syn::FnArg, syn::token::Comma>,
     fn_output: syn::ReturnType,
+    fn_block: Box<syn::Block>,
+    fake_mod_name: syn::Ident,
 ) -> proc_macro2::TokenStream {
     let param_names = get_param_names(&fn_inputs);
+    let original_fn_stmts = &fn_block.stmts;
     
     quote! {
-        pub(crate) #fn_asyncness fn #fake_fn_name(#fn_inputs) #fn_output {
-            #fake_fn_name::get_implementation()(#(#param_names),*)
+        #fn_visibility #fn_asyncness fn #fn_name(#fn_inputs) #fn_output {
+            // Call the fake implementation if set (only in test mode)
+            #[cfg(test)]
+            if #fake_mod_name::is_set() {
+                return #fake_mod_name::get_implementation()(#(#param_names),*);
+            }
+
+            #(#original_fn_stmts)*
         }
     }
 }
@@ -52,6 +71,7 @@ pub(crate) fn create_fake_module(
     let docs = FakeProxyDocs::new(&fake_fn_name, fn_inputs, &return_type, fn_asyncness);
     let setup_docs = docs.setup_docs();
     let clear_docs = docs.clear_docs();
+    let is_set_docs = docs.is_set_docs();
     let get_implementation_docs = docs.get_implementation_docs();
     
     quote! {
@@ -71,6 +91,11 @@ pub(crate) fn create_fake_module(
             #clear_docs
             pub(crate) fn clear() {
                 FAKE.with(|fake| { fake.borrow_mut().clear() })
+            }
+
+            #is_set_docs
+            pub(crate) fn is_set() -> bool {
+                FAKE.with(|fake| { fake.borrow().is_set() })
             }
 
             #get_implementation_docs
