@@ -215,6 +215,20 @@ impl MockProxyDocs {
         }
     }
 
+    /// Generates documentation attributes for the `is_set` function.
+    pub(crate) fn is_set_docs(&self) -> proc_macro2::TokenStream {
+        quote! {
+            #[doc = "Checks if the mock has been configured."]
+            #[doc = ""]
+            #[doc = "Returns `true` if `setup()` has been called and the mock is ready to use,"]
+            #[doc = "or `false` if the mock has not been set up or has been cleared."]
+            #[doc = ""]
+            #[doc = "# Returns"]
+            #[doc = ""]
+            #[doc = "`bool` - `true` if configured, `false` otherwise"]
+        }
+    }
+
     /// Generates documentation attributes for the `assert_times` function.
     pub(crate) fn assert_times_docs(&self) -> proc_macro2::TokenStream {
         quote! {

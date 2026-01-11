@@ -14,9 +14,10 @@ pub(crate) mod mock_args;
 ///
 /// This is the main entry point for the mock_function attribute macro. It takes a function
 /// definition and generates:
-/// 1. The original function unchanged
-/// 2. A mock function with `_mock` suffix (test-only)
-/// 3. A mock module with control and assertion methods (test-only)
+/// 1. The original function with mock checking logic injected (in test mode, checks if a mock
+///    is configured and calls it; otherwise executes the original implementation)
+/// 2. A mock module with control and assertion methods (test-only) containing `setup()`, `clear()`,
+///    `is_set()`, `assert_times()`, `assert_with()`, and `call()` functions
 ///
 /// # Arguments
 ///
@@ -41,8 +42,8 @@ pub(crate) fn process_mock_function(mock_function: syn::ItemFn, ignore_params: V
     let fn_output = mock_function.sig.output.clone();
     let fn_block = mock_function.block.clone();
 
-    // Generate mock function name
-    let mock_fn_name = syn::Ident::new(&format!("{}_mock", &fn_name), fn_name.span());
+    // Generate mock module name
+    let mock_mod_name = syn::Ident::new(&format!("{}_mock", &fn_name), fn_name.span());
 
     // Convert ignore param names to indices
     let ignore_indices = get_ignore_indices(&fn_inputs, &ignore_params)?;
@@ -59,28 +60,29 @@ pub(crate) fn process_mock_function(mock_function: syn::ItemFn, ignore_params: V
     let filtered_fn_inputs = crate::param_utils::filter_params(&fn_inputs, &ignore_indices);
 
     let mock_function = create_mock_function(
-        mock_fn_name.clone(),
-        fn_asyncness.clone(),
+        fn_name,
+        fn_visibility,
+        fn_asyncness,
         fn_inputs.clone(),
-        fn_output.clone(),
+        fn_output,
+        fn_block,
+        mock_mod_name.clone(),
         params_to_tuple.clone()
     );
+
     let mock_module = create_mock_module(
-        mock_fn_name,
+        mock_mod_name,
         params_type,
         return_type,
         &fn_inputs,
         &ignore_indices,
-        fn_asyncness.clone(),
+        fn_asyncness,
         params_to_tuple,
         filtered_fn_inputs
     );
 
-    // Generate the original function, mock function and the mock module
+    // Generate the original function and the mock module
     Ok(quote! {
-        #fn_visibility #fn_asyncness fn #fn_name(#fn_inputs) #fn_output #fn_block
-
-        #[cfg(test)]
         #mock_function
 
         #[cfg(test)]

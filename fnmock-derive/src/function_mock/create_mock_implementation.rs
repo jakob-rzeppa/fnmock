@@ -1,29 +1,48 @@
 use quote::quote;
 use crate::function_mock::proxy_docs::MockProxyDocs;
 
-/// Generates a mock function that delegates to the mock module's call method.
+/// Generates the original function with mock checking logic injected.
 ///
-/// Creates a function with the same signature as the original function,
-/// but with `_mock` suffix, that calls the mock implementation.
+/// Creates a function that first checks (in test mode) if a mock implementation has been
+/// configured via the mock module. If a mock is set, it calls the mock implementation.
+/// Otherwise, it executes the original function body.
 ///
 /// # Arguments
 ///
-/// * `mock_fn_name` - The name of the mock function (original name with `_mock` suffix)
-/// * `fn_asyncness` - Whether the function is async
+/// * `fn_name` - The name of the original function
+/// * `fn_visibility` - The visibility modifier of the function (pub, pub(crate), etc.)
+/// * `fn_asyncness` - Optional async keyword if the function is async
 /// * `fn_inputs` - The function parameters
 /// * `fn_output` - The return type
+/// * `fn_block` - The original function body to execute when mock is not set
+/// * `mock_mod_name` - The name of the mock module containing the mock infrastructure
 /// * `params_to_tuple` - Token stream that converts parameters into a tuple for the mock
+///
+/// # Returns
+///
+/// Generated token stream for the function with injected mock checking logic
 pub(crate) fn create_mock_function(
-    mock_fn_name: syn::Ident,
+    fn_name: syn::Ident,
+    fn_visibility: syn::Visibility,
     fn_asyncness: Option<syn::token::Async>,
     fn_inputs: syn::punctuated::Punctuated<syn::FnArg, syn::token::Comma>,
     fn_output: syn::ReturnType,
+    fn_block: Box<syn::Block>,
+    mock_mod_name: syn::Ident,
     params_to_tuple: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
+    let original_fn_stmts = &fn_block.stmts;
+    
     quote! {
         #[allow(unused_variables)]
-        pub(crate) #fn_asyncness fn #mock_fn_name(#fn_inputs) #fn_output {
-            #mock_fn_name::call(#params_to_tuple)
+        #fn_visibility #fn_asyncness fn #fn_name(#fn_inputs) #fn_output {
+            // Call the mock implementation if set (only in test mode)
+            #[cfg(test)]
+            if #mock_mod_name::is_set() {
+                return #mock_mod_name::call(#params_to_tuple);
+            }
+
+            #(#original_fn_stmts)*
         }
     }
 }
@@ -59,6 +78,7 @@ pub(crate) fn create_mock_module(
     let call_docs = docs.call_docs();
     let setup_docs = docs.setup_docs();
     let clear_docs = docs.clear_docs();
+    let is_set_docs = docs.is_set_docs();
     let assert_times_docs = docs.assert_times_docs();
     let assert_with_docs = docs.assert_with_docs();
 
@@ -91,6 +111,13 @@ pub(crate) fn create_mock_module(
             pub(crate) fn clear() {
                 MOCK.with(|mock|{
                     mock.borrow_mut().clear()
+                })
+            }
+
+            #is_set_docs
+            pub(crate) fn is_set() -> bool {
+                MOCK.with(|mock| {
+                    mock.borrow().is_set()
                 })
             }
 

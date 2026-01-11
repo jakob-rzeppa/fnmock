@@ -19,14 +19,16 @@ use crate::use_statement_processor::process_use_statement;
 
 /// Attribute macro that generates a mockable version of a function.
 ///
-/// This macro preserves the original function and generates:
-/// 1. A `<function_name>_mock` function that can be called in tests
+/// This macro modifies the original function to check (in test mode) if a mock implementation
+/// has been configured and generates:
+/// 1. The original function with injected mock checking logic (calls mock if set, otherwise executes normally)
 /// 2. A `<function_name>_mock` module containing mock control methods
 ///
 /// # Generated Mock Module Methods
 ///
-/// - `mock_implementation(fn)` - Sets a custom implementation for the mock
-/// - `clear_mock()` - Resets the mock to its default panic behavior
+/// - `setup(fn)` - Sets a custom implementation for the mock
+/// - `clear()` - Resets the mock to its uninitialized state
+/// - `is_set()` - Checks if the mock has been configured
 /// - `assert_times(n)` - Verifies the function was called exactly n times
 /// - `assert_with(params)` - Verifies the function was called with specific parameters
 ///
@@ -67,27 +69,26 @@ use crate::use_statement_processor::process_use_statement;
 ///     #[test]
 ///     fn test_with_mock() {
 ///         // Set up mock behavior
-///         fetch_user_mock::mock_implementation(|id| {
+///         fetch_user_mock::setup(|id| {
 ///             Ok(format!("mock_user_{}", id))
 ///         });
 ///
-///         // Call the mock
-///         let result = fetch_user_mock(42);
+///         // Call the original function (which will use the mock in tests)
+///         let result = fetch_user(42);
 ///
 ///         // Verify behavior
 ///         assert_eq!(result, Ok("mock_user_42".to_string()));
 ///         fetch_user_mock::assert_times(1);
 ///         fetch_user_mock::assert_with(42);
 ///
-///         // Clean up
-///         fetch_user_mock::clear_mock();
+///         // Clean up (not necessary since mocks are thread-local and reset between tests)
+///         fetch_user_mock::clear();
 ///     }
 /// }
 /// ```
-///
 /// # Note
 ///
-/// The mock function and module use thread-local storage, so mocks are isolated
+/// The mock module uses thread-local storage, so mocks are isolated
 /// between tests but **not thread-safe** if the same function is mocked in parallel
 /// test threads.
 ///
