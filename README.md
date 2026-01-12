@@ -3,7 +3,7 @@
 A Rust mocking framework for standalone functions.
 
 [![Crates.io](https://img.shields.io/crates/v/fnmock.svg)](https://crates.io/crates/fnmock)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## Overview
 
@@ -12,8 +12,6 @@ fnmock makes testing Rust functions easier by providing three approaches:
 -   **Mocks**: Track function calls and enable assertions about call counts and parameters
 -   **Fakes**: Provide alternative implementations without call tracking overhead
 -   **Stubs**: Return pre-configured values without implementing custom logic
-
-All three approaches support multiple usage patterns to fit your testing needs, from import-level switches to inline call-site selection.
 
 ## Features
 
@@ -32,7 +30,7 @@ Add fnmock to your `Cargo.toml` as a regular dependency:
 
 ```toml
 [dependencies]
-fnmock = ".."
+fnmock = "0.1.0"
 ```
 
 **Why not a dev-dependency?** The `#[mock_function]` and `#[fake_function]` macros need to be applied to your production code. However, the macros use conditional compilation (`cfg(test)`) to ensure **zero runtime overhead** in release builds - the mock infrastructure is only compiled in test mode.
@@ -50,7 +48,6 @@ mod db {
     }
 }
 
-#[use_mock]
 use db::fetch_user;
 
 fn handle_user(id: u32) {
@@ -78,7 +75,7 @@ mod tests {
         fetch_user_mock::assert_times(1);
         fetch_user_mock::assert_with(42);
 
-        // No cleanup needed, since mocks are thread / test specific
+        // No cleanup needed - mocks are thread/test specific
     }
 }
 ```
@@ -98,7 +95,6 @@ mod config {
     }
 }
 
-#[use_stub]
 use config::get_config;
 
 fn process_config() -> String {
@@ -141,13 +137,13 @@ mod db {
     }
 }
 
-#[use_fake]
 use db::fetch_user;
 
 fn handle_user(id: u32) -> Result<(), String> {
     let user = fetch_user(id)?;
 
     // Do something with the user
+    Ok(())
 }
 
 
@@ -174,11 +170,11 @@ mod tests {
 
 ## Macros
 
-fnmock supplies three main macro families, one for each approach:
+fnmock provides three attribute macros, one for each approach:
 
-### 1. Attribute Macros (`#[mock_function]` / `#[fake_function]` / `#[stub_function]`)
+### Attribute Macros (`#[mock_function]` / `#[fake_function]` / `#[stub_function]`)
 
-The foundational approach that generates mock/fake functions:
+These macros generate mock/fake/stub versions of your functions:
 
 ```rust
 #[mock_function]
@@ -192,12 +188,11 @@ pub fn send_email(to: String, body: String) -> Result<(), String> {
 
 -   `send_email_mock()` function
 -   `send_email_mock` module with control methods:
-    -   `mock_implementation(fn)` - Set custom behavior
-    -   `clear_mock()` - Reset to default
-    -   `call(params)` - Calls the mock implementation (params must be supplied as a tuple)
+    -   `setup(fn)` - Set custom behavior
+    -   `clear()` - Reset to default
+    -   `is_set()` - Check if mock is configured
     -   `assert_times(n)` - Verify call count
-    -   `assert_with(params)` - Verify parameters
-    -   `assert_with_ignore(params)` - Verify parameters, ignoring specified ones (only available if `ignore` is specified)
+    -   `assert_with(params...)` - Verify parameters (pass as individual arguments, not tuple)
 
 #### Ignoring Parameters
 
@@ -219,11 +214,11 @@ mod tests {
         save_user_mock::setup(|_| Ok(()));
 
         // Call with different timestamps
-        save_user_mock(1, "Alice".to_string(), 1000);
-        save_user_mock(1, "Alice".to_string(), 2000);
+        save_user(1, "Alice".to_string(), 1000);
+        save_user(1, "Alice".to_string(), 2000);
 
-        // Verify id and name match, but ignore timestamp
-        save_user_mock::assert_with_ignore((1, "Alice".to_string(), 0));
+        // Verify id and name match - timestamp is automatically ignored
+        save_user_mock::assert_with(1, "Alice".to_string());
     }
 }
 ```
@@ -242,8 +237,9 @@ You can ignore multiple parameters: `ignore = [param1, param2, param3]`
 
 -   `send_email_fake()` function
 -   `send_email_fake` module with control methods:
-    -   `fake_implementation(fn)` - Set custom behavior
-    -   `clear_fake()` - Reset to default
+    -   `setup(fn)` - Set custom behavior
+    -   `clear()` - Reset to default
+    -   `is_set()` - Check if fake is configured
     -   `get_implementation()` - Returns the function pointer of the fake implementation
 
 ---
@@ -254,57 +250,19 @@ You can ignore multiple parameters: `ignore = [param1, param2, param3]`
 -   `send_email_stub` module with control methods:
     -   `setup(value)` - Set the return value
     -   `clear()` - Reset to default
+    -   `is_set()` - Check if stub is configured
     -   `get_return_value()` - Returns the configured return value
-
-### 2. Use Statement Macros (`#[use_mock]` / `#[use_fake]` / `#[use_stub]`)
-
-Automatically switch between real and mock/fake versions based on build mode:
-
-```rust
-// In module A
-#[mock_function]
-pub fn fetch_data(id: u32) -> String {
-    format!("data_{}", id)
-}
-
-// In module B
-#[use_mock]
-use crate::module_a::fetch_data;
-
-pub fn process_data(id: u32) -> String {
-    fetch_data(id).to_uppercase() // Uses real in production, mock in tests
-}
-```
-
-In production builds: imports `fetch_data`  
-In test builds: imports `fetch_data_mock as fetch_data`
-
-The same pattern applies to `#[use_fake]` and `#[use_stub]`.
-
-### 3. Inline Macros (`use_mock_inline!()` / `use_fake_inline!()` / `use_stub_inline!()`)
-
-Fine-grained control for same-module mocking or specific call sites:
-
-```rust
-pub fn calculate_average(data: Vec<f32>) -> f32 {
-    use_mock_inline!(sum)(data.clone()) / data.len() as f32
-}
-```
-
-This expands to use `sum` in production and `sum_mock` in tests at that specific call site.
-
-The same pattern applies to `use_fake_inline!()` and `use_stub_inline!()`.
 
 ## Mocks vs Fakes vs Stubs
 
-| Feature              | Mocks                                  | Fakes                      | Stubs                 |
-| -------------------- | -------------------------------------- | -------------------------- | --------------------- |
-| Call tracking        | ✅ Yes                                 | ❌ No                      | ❌ No                 |
-| Assertions           | ✅ Yes (`assert_times`, `assert_with`) | ❌ No                      | ❌ No                 |
-| Custom logic         | ✅ Yes (full function)                 | ✅ Yes (full function)     | ❌ No (value only)    |
-| Reference parameters | ❌ No (must use owned types)           | ✅ Yes                     | ✅ Yes                |
-| Complexity           | Higher                                 | Medium                     | Lower                 |
-| Use case             | Verifying behavior                     | Alternative implementation | Pre-configured values |
+| Feature              | Mocks                                 | Fakes                      | Stubs                 |
+|----------------------|---------------------------------------|----------------------------|-----------------------|
+| Call tracking        | ✅ Yes                                 | ❌ No                       | ❌ No                  |
+| Assertions           | ✅ Yes (`assert_times`, `assert_with`) | ❌ No                       | ❌ No                  |
+| Custom logic         | ✅ Yes (full function)                 | ✅ Yes (full function)      | ❌ No (value only)     |
+| Reference parameters | ❌ No (must use owned types)           | ✅ Yes                      | ✅ Yes                 |
+| Complexity           | Higher                                | Medium                     | Lower                 |
+| Use case             | Verifying behavior                    | Alternative implementation | Pre-configured values |
 
 ## Thread Safety
 
@@ -351,7 +309,7 @@ fnmock/
 
 ### For Mocks
 
--   Function parameters must implement:
+-   Not ignored function parameters must implement:
     -   `Clone` - for storing call history
     -   `Debug` - for assertion error messages
     -   `PartialEq` - for parameter assertions
@@ -375,7 +333,7 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Author
 
@@ -383,4 +341,4 @@ Jakob Rzeppa - rzeppa.jakob@gmail.com
 
 ## Repository
 
-https://github.com/jakob-rzeppa/rust-helpers-macros
+https://github.com/jakob-rzeppa/fnmock
