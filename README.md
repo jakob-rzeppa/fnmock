@@ -180,19 +180,81 @@ These macros generate mock/fake/stub versions of your functions:
 #[mock_function]
 pub fn send_email(to: String, body: String) -> Result<(), String> {
     // Real implementation
-    Ok(())
 }
 ```
 
-`#[mock_function]` generates:
+The Macro generates a module containing the thread local mock/fake/stub implementation (private) and proxy functions:
 
--   `send_email_mock()` function
--   `send_email_mock` module with control methods:
-    -   `setup(fn)` - Set custom behavior
-    -   `clear()` - Reset to default
-    -   `is_set()` - Check if mock is configured
-    -   `assert_times(n)` - Verify call count
-    -   `assert_with(params...)` - Verify parameters (pass as individual arguments, not tuple)
+```rust
+#[cfg(test)]
+pub(crate) mod send_email_mock {
+    thread_local! {
+        static MOCK: RefCell<FunctionMock<
+            (to: String, body: String),
+            Result<(), String>,
+        >> = RefCell::new(FunctionMock::new("send_email"));
+    }
+
+    pub(crate) fn call(params: (String, String)) -> Result<(), String> {
+        MOCK.with(|mock| {
+            mock.borrow_mut().call(params)
+        })
+    }
+
+    pub(crate) fn setup(new_f: fn((String, String)) -> Result<(), String>) {
+        MOCK.with(|mock| {
+            mock.borrow_mut().setup(new_f)
+        })
+    }
+
+    pub(crate) fn assert_with(to: String, body: String) {
+        MOCK.with(|mock| {
+            mock.borrow().assert_with((to, body))
+        })
+    }
+    
+    // ..
+}
+```
+
+#### Why use proxy functions and not call the Mock directly?
+
+Proxy functions enable macro created function parameters. These can take the same inputs as the original function (see `assert_with`). Being able to see the parameter names makes developing much easier. There is also mock specific rustdoc documentation generated for the proxy functions.
+
+---
+
+The macro also adds a simple check to the top of the original function whether the mock/fake/stub is implemented and if so calls the mock/fake/stub instead of executing the original function body.
+
+```rust
+#[mock_function]
+pub fn send_email(to: String, body: String) -> Result<(), String> {
+    #[cfg(test)]
+    if send_email_mock::is_set() {
+        return send_email_mock::call((to, body));
+    }
+    
+    // Original implementation
+}
+```
+
+## Mocks vs Fakes vs Stubs
+
+| Feature              | Mocks                                                 | Fakes                      | Stubs                 |
+|----------------------|-------------------------------------------------------|----------------------------|-----------------------|
+| Call tracking        | ✅ Yes                                                 | ❌ No                       | ❌ No                  |
+| Assertions           | ✅ Yes (`assert_times`, `assert_with`)                 | ❌ No                       | ❌ No                  |
+| Custom logic         | ✅ Yes (full function)                                 | ✅ Yes (full function)      | ❌ No (value only)     |
+| Reference parameters | ❌ No (must use owned types / ignore reference params) | ✅ Yes                      | ✅ Yes                 |
+| Complexity           | Higher                                                | Medium                     | Lower                 |
+| Use case             | Verifying behavior                                    | Alternative implementation | Pre-configured values |
+
+### Mock proxy functions
+
+-   `setup(fn)` - Set custom behavior
+-   `clear()` - Reset
+-   `is_set()` - Check if mock is configured
+-   `assert_times(n)` - Verify call count
+-   `assert_with(params...)` - Verify parameters (pass as individual arguments, not tuple)
 
 #### Ignoring Parameters
 
@@ -231,38 +293,19 @@ The `ignore` feature is useful for:
 
 You can ignore multiple parameters: `ignore = [param1, param2, param3]`
 
----
+### Fake proxy functions
 
-`#[fake_function]` generates:
+-   `setup(fn)` - Set custom behavior
+-   `clear()` - Reset to default
+-   `is_set()` - Check if fake is configured
+-   `get_implementation()` - Returns the function pointer of the fake implementation
 
--   `send_email_fake()` function
--   `send_email_fake` module with control methods:
-    -   `setup(fn)` - Set custom behavior
-    -   `clear()` - Reset to default
-    -   `is_set()` - Check if fake is configured
-    -   `get_implementation()` - Returns the function pointer of the fake implementation
+### Stub proxy functions
 
----
-
-`#[stub_function]` generates:
-
--   `send_email_stub()` function
--   `send_email_stub` module with control methods:
-    -   `setup(value)` - Set the return value
-    -   `clear()` - Reset to default
-    -   `is_set()` - Check if stub is configured
-    -   `get_return_value()` - Returns the configured return value
-
-## Mocks vs Fakes vs Stubs
-
-| Feature              | Mocks                                 | Fakes                      | Stubs                 |
-|----------------------|---------------------------------------|----------------------------|-----------------------|
-| Call tracking        | ✅ Yes                                 | ❌ No                       | ❌ No                  |
-| Assertions           | ✅ Yes (`assert_times`, `assert_with`) | ❌ No                       | ❌ No                  |
-| Custom logic         | ✅ Yes (full function)                 | ✅ Yes (full function)      | ❌ No (value only)     |
-| Reference parameters | ❌ No (must use owned types)           | ✅ Yes                      | ✅ Yes                 |
-| Complexity           | Higher                                | Medium                     | Lower                 |
-| Use case             | Verifying behavior                    | Alternative implementation | Pre-configured values |
+-   `setup(value)` - Set the return value
+-   `clear()` - Reset to default
+-   `is_set()` - Check if stub is configured
+-   `get_return_value()` - Returns the configured return value
 
 ## Thread Safety
 
