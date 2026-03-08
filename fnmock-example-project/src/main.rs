@@ -6,6 +6,7 @@ mod async_fake;
 mod async_stub;
 mod async_mock;
 mod ignore_mock;
+mod no_macros;
 
 fn main() {
     println!("=== fnmock Example Project ===");
@@ -39,4 +40,6 @@ fn main() {
     let _ = ignore_mock::db::save_user(1, "test".to_string(), 0);
     let _ = ignore_mock::db::update_record(1, "test".to_string(), &[1, 2], 0);
     let _ = ignore_mock::db::delete_user(1);
+
+    let _ = no_macros::basic_mock::db::fetch_user(1);
 }
