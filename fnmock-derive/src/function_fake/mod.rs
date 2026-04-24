@@ -1,8 +1,8 @@
+use crate::function_fake::create_fake_implementation::{create_fake_function, create_fake_module};
+use crate::param_utils::create_param_type;
+use crate::return_utils::extract_return_type;
 use quote::quote;
 use syn::__private::TokenStream2;
-use crate::function_fake::create_fake_implementation::{create_fake_function, create_fake_module};
-use crate::param_utils::{create_param_type, get_param_names};
-use crate::return_utils::extract_return_type;
 
 mod create_fake_implementation;
 mod proxy_docs;
@@ -54,7 +54,7 @@ pub(crate) fn process_fake_function(fake_function: syn::ItemFn) -> syn::Result<T
         params_type,
         return_type,
         &fn_inputs,
-        fn_asyncness
+        fn_asyncness,
     );
 
     Ok(quote! {

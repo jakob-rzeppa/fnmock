@@ -1,21 +1,16 @@
 use proc_macro::TokenStream;
-use syn::{parse_macro_input};
+use syn::parse_macro_input;
 
-mod param_utils;
-mod use_tree_processor;
-mod use_statement_processor;
-mod inline_processor;
-mod function_mock;
 mod function_fake;
+mod function_mock;
 mod function_stub;
+mod param_utils;
 mod return_utils;
 
-use crate::function_mock::{process_mock_function};
-use crate::function_fake::{process_fake_function};
+use crate::function_fake::process_fake_function;
 use crate::function_mock::mock_args::MockFunctionArgs;
-use crate::function_stub::{process_stub_function};
-use crate::inline_processor::process_inline;
-use crate::use_statement_processor::process_use_statement;
+use crate::function_mock::process_mock_function;
+use crate::function_stub::process_stub_function;
 
 /// Attribute macro that generates a mockable version of a function.
 ///
