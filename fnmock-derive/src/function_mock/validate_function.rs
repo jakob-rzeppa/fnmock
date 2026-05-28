@@ -14,7 +14,10 @@ use crate::param_utils::validate_static_params;
 ///
 /// - `Ok(())` if the function is valid for mocking
 /// - `Err(syn::Error)` with a descriptive error message if validation fails
-pub(crate) fn validate_function_mockable(input: &syn::ItemFn, ignore_indices: &[usize]) -> syn::Result<()> {
+pub(crate) fn validate_function_mockable(
+    input: &syn::ItemFn,
+    ignore_indices: &[usize]
+) -> syn::Result<()> {
     // Validate that all non-ignored parameters are 'static (no references)
     validate_static_params(&input.sig.inputs, ignore_indices)?;
 

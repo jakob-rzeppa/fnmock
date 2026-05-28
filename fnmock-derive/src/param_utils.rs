@@ -1,5 +1,5 @@
 use quote::quote;
-use syn::{FnArg, Type};
+use syn::{ FnArg, Type };
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
 
@@ -31,7 +31,10 @@ use syn::token::Comma;
 /// # Panics
 ///
 /// Panics if the function has a `self` parameter, as methods cannot be mocked.
-pub(crate) fn create_param_type(fn_inputs: &Punctuated<FnArg, Comma>, ignore_indices: &[usize]) -> Type {
+pub(crate) fn create_param_type(
+    fn_inputs: &Punctuated<FnArg, Comma>,
+    ignore_indices: &[usize]
+) -> Type {
     let param_types: Vec<_> = fn_inputs
         .iter()
         .enumerate()
@@ -41,10 +44,11 @@ pub(crate) fn create_param_type(fn_inputs: &Punctuated<FnArg, Comma>, ignore_ind
             }
             match arg {
                 syn::FnArg::Typed(pat_type) => Some(&pat_type.ty),
-                syn::FnArg::Receiver(_) => panic!(
-                    "mock_function does not support methods with 'self' parameters. \
+                syn::FnArg::Receiver(_) =>
+                    panic!(
+                        "mock_function does not support methods with 'self' parameters. \
                      Only standalone functions can be mocked."
-                ),
+                    ),
             }
         })
         .collect();
@@ -72,11 +76,14 @@ pub(crate) fn create_param_type(fn_inputs: &Punctuated<FnArg, Comma>, ignore_ind
 pub(crate) fn get_param_names(fn_inputs: &Punctuated<FnArg, Comma>) -> Vec<&syn::Pat> {
     fn_inputs
         .iter()
-        .filter_map(|arg| match arg {
-            syn::FnArg::Typed(pat_type) => Some(&*pat_type.pat),
-            syn::FnArg::Receiver(_) => panic!(
-                "mock_function/fake_function does not support methods with 'self' parameters"
-            ),
+        .filter_map(|arg| {
+            match arg {
+                syn::FnArg::Typed(pat_type) => Some(&*pat_type.pat),
+                syn::FnArg::Receiver(_) =>
+                    panic!(
+                        "mock_function/fake_function does not support methods with 'self' parameters"
+                    ),
+            }
         })
         .collect()
 }
@@ -93,16 +100,15 @@ pub(crate) fn get_param_names(fn_inputs: &Punctuated<FnArg, Comma>) -> Vec<&syn:
 /// # Returns
 ///
 /// A new Punctuated list with only non-ignored parameters.
-pub(crate) fn filter_params(fn_inputs: &Punctuated<FnArg, Comma>, ignore_indices: &[usize]) -> Punctuated<FnArg, Comma> {
+pub(crate) fn filter_params(
+    fn_inputs: &Punctuated<FnArg, Comma>,
+    ignore_indices: &[usize]
+) -> Punctuated<FnArg, Comma> {
     fn_inputs
         .iter()
         .enumerate()
         .filter_map(|(idx, arg)| {
-            if ignore_indices.contains(&idx) {
-                None
-            } else {
-                Some(arg.clone())
-            }
+            if ignore_indices.contains(&idx) { None } else { Some(arg.clone()) }
         })
         .collect()
 }
@@ -135,16 +141,15 @@ pub(crate) fn filter_params(fn_inputs: &Punctuated<FnArg, Comma>, ignore_indices
 /// # Panics
 ///
 /// Panics if the function has a `self` parameter, as methods cannot be mocked.
-pub(crate) fn create_tuple_from_param_names(fn_inputs: &Punctuated<FnArg, Comma>, ignore_indices: &[usize]) -> proc_macro2::TokenStream {
+pub(crate) fn create_tuple_from_param_names(
+    fn_inputs: &Punctuated<FnArg, Comma>,
+    ignore_indices: &[usize]
+) -> proc_macro2::TokenStream {
     let param_names: Vec<_> = get_param_names(fn_inputs)
         .into_iter()
         .enumerate()
         .filter_map(|(idx, name)| {
-            if ignore_indices.contains(&idx) {
-                None
-            } else {
-                Some(name)
-            }
+            if ignore_indices.contains(&idx) { None } else { Some(name) }
         })
         .collect();
 
@@ -160,7 +165,7 @@ pub(crate) fn create_tuple_from_param_names(fn_inputs: &Punctuated<FnArg, Comma>
 
 /// Checks if a type contains references (fails the 'static bound).
 ///
-/// Returns true if the type is a reference or contains references that would
+/// Returns true if the type is a reference or contains references/non-'static lifetimes that would
 /// prevent it from satisfying the 'static lifetime bound.
 fn contains_reference(ty: &Type) -> bool {
     match ty {
@@ -170,7 +175,31 @@ fn contains_reference(ty: &Type) -> bool {
         Type::Slice(slice) => contains_reference(&slice.elem),
         Type::Paren(paren) => contains_reference(&paren.elem),
         Type::Group(group) => contains_reference(&group.elem),
-        _ => false, // Other types are assumed to be 'static unless they contain references
+        Type::Path(type_path) => {
+            // Check generic arguments for references and non-'static lifetimes
+            for segment in &type_path.path.segments {
+                if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
+                    for arg in &args.args {
+                        match arg {
+                            syn::GenericArgument::Type(t) => {
+                                if contains_reference(t) {
+                                    return true;
+                                }
+                            }
+                            syn::GenericArgument::Lifetime(lt) => {
+                                // Check if lifetime is not 'static
+                                if lt.ident != "static" {
+                                    return true;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+            false
+        }
+        _ => false, // Other types are assumed to be 'static
     }
 }
 
@@ -188,20 +217,25 @@ fn contains_reference(ty: &Type) -> bool {
 ///
 /// - `Ok(())` if all non-ignored parameters are 'static
 /// - `Err(syn::Error)` if any non-ignored parameter contains references
-pub(crate) fn validate_static_params(fn_inputs: &Punctuated<FnArg, Comma>, ignore_indices: &[usize]) -> syn::Result<()> {
+pub(crate) fn validate_static_params(
+    fn_inputs: &Punctuated<FnArg, Comma>,
+    ignore_indices: &[usize]
+) -> syn::Result<()> {
     for (idx, arg) in fn_inputs.iter().enumerate() {
         if ignore_indices.contains(&idx) {
             continue;
         }
         if let FnArg::Typed(pat_type) = arg {
             if contains_reference(&pat_type.ty) {
-                return Err(syn::Error::new_spanned(
-                    &pat_type.ty,
-                    "mock_function requires all non-ignored parameters to be 'static. \
+                return Err(
+                    syn::Error::new_spanned(
+                        &pat_type.ty,
+                        "mock_function requires all non-ignored parameters to be 'static. \
                      Parameters cannot contain references. \
                      Consider using owned types like String instead of &str, \
                      or Vec<T> instead of &[T], or mark the parameter with #[mock_function(ignore=[param])]."
-                ));
+                    )
+                );
             }
         }
     }
