@@ -6,6 +6,8 @@ mod async_stub;
 mod async_mock;
 mod ignore_mock;
 mod no_macros;
+#[allow(dead_code)]
+mod function;
 
 fn main() {
     println!("=== fnmock Example Project ===");
