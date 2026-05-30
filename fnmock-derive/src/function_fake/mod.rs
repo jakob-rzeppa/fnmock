@@ -1,4 +1,4 @@
-use crate::function_fake::create_fake_implementation::{create_fake_function, create_fake_module};
+use crate::function_fake::create_fake_implementation::{ create_fake_function, create_fake_module };
 use crate::param_utils::create_param_type;
 use crate::return_utils::extract_return_type;
 use quote::quote;
@@ -46,7 +46,7 @@ pub(crate) fn process_fake_function(fake_function: syn::ItemFn) -> syn::Result<T
         fn_inputs.clone(),
         fn_output,
         fn_block,
-        fake_mod_name.clone(),
+        fake_mod_name.clone()
     );
 
     let fake_module = create_fake_module(
@@ -54,7 +54,7 @@ pub(crate) fn process_fake_function(fake_function: syn::ItemFn) -> syn::Result<T
         params_type,
         return_type,
         &fn_inputs,
-        fn_asyncness,
+        fn_asyncness
     );
 
     Ok(quote! {
