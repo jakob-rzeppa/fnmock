@@ -1,6 +1,3 @@
-use fnmock::derive::fake_function;
-
-#[fake_function]
 fn get_user(id: i32) -> String {
     format!("User {}", id)
 }
@@ -23,8 +20,6 @@ mod tests {
 
     #[test]
     fn test_handle_user_with_fake() {
-        get_user_fake::setup(|id| format!("Fake User {}", id));
-
         let result = handle_user(1);
 
         assert_eq!(result, "Fake User 1");
