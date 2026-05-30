@@ -17,7 +17,7 @@ pub struct GenericFakeStore<const GENERIC_COUNT: usize> {
     /// A name for the fake store, used in error messages to make it clear which function's fake store is being referred to.
     name: &'static str,
     /// Keyed by generic type ids; value is erased to `dyn Any` and downcast when retrieved.
-    /// We use Rc to allow cloning the function pointer for multiple calls, since Fn traits are not Copy.
+    /// We use Rc to allow cloning the function pointer for multiple calls.
     impls: RefCell<HashMap<[TypeId; GENERIC_COUNT], Rc<dyn Any>>>,
 }
 
