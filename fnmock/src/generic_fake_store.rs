@@ -18,12 +18,12 @@ pub struct GenericFakeStore<const GENERIC_COUNT: usize> {
     name: &'static str,
     /// Keyed by generic type ids; value is erased to `dyn Any` and downcast when retrieved.
     /// We use Rc to allow cloning the function pointer for multiple calls.
-    impls: RefCell<HashMap<[TypeId; GENERIC_COUNT], Rc<dyn Any>>>,
+    impls: HashMap<[TypeId; GENERIC_COUNT], Rc<dyn Any>>,
 }
 
 impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     pub fn new(name: &'static str) -> Self {
-        Self { name, impls: RefCell::new(HashMap::new()) }
+        Self { name, impls: HashMap::new() }
     }
 
     /// Set a fake implementation for a specific combination of generic types.
@@ -37,26 +37,26 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     /// For example, for a function `fn foo<T, U>(x: T, y: U) -> String`, if setting a fake implementation for `T = i32` and `U = String`,
     /// the `generic_types` parameter should be `[TypeId::of::<i32>(), TypeId::of::<String>()]`.
     pub fn setup_for<Function: Any + 'static>(
-        &self,
+        &mut self,
         generic_types: [TypeId; GENERIC_COUNT],
         f: Function
     ) {
-        self.impls.borrow_mut().insert(generic_types, Rc::new(f));
+        self.impls.insert(generic_types, Rc::new(f));
     }
 
     /// Clear all fake implementations.
-    pub fn clear(&self) {
-        self.impls.borrow_mut().clear();
+    pub fn clear(&mut self) {
+        self.impls.clear();
     }
 
     /// Clear the fake implementation for a specific combination of generic types.
-    pub fn clear_for(&self, generic_types: [TypeId; GENERIC_COUNT]) {
-        self.impls.borrow_mut().remove(&generic_types);
+    pub fn clear_for(&mut self, generic_types: [TypeId; GENERIC_COUNT]) {
+        self.impls.remove(&generic_types);
     }
 
     /// Check if a fake implementation is set for a specific combination of generic types.
     pub fn is_set_for(&self, generic_types: [TypeId; GENERIC_COUNT]) -> bool {
-        self.impls.borrow().contains_key(&generic_types)
+        self.impls.contains_key(&generic_types)
     }
 
     /// Get the fake implementation for a specific combination of generic types.
@@ -71,7 +71,6 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
         generic_types: [TypeId; GENERIC_COUNT]
     ) -> Rc<Function> {
         self.impls
-            .borrow()
             .get(&generic_types)
             .cloned()
             .unwrap_or_else(|| {
@@ -100,18 +99,18 @@ mod tests {
 
     #[test]
     fn test_generic_fake_store() {
-        let store = GenericFakeStore::<2>::new("test_fn");
+        let mut store = GenericFakeStore::<2>::new("test_fn");
 
         assert!(!store.is_set_for([TypeId::of::<i32>(), TypeId::of::<String>()]));
         assert!(!store.is_set_for([TypeId::of::<u32>(), TypeId::of::<String>()]));
 
         store.setup_for::<fn(i32, String) -> String>(
             [TypeId::of::<i32>(), TypeId::of::<String>()],
-            |a: i32, b: String| "Fake for i32, String".into()
+            |a: i32, b: String| format!("Fake for i32, String: {} {}", a, b)
         );
         store.setup_for::<fn(u32, String) -> String>(
             [TypeId::of::<u32>(), TypeId::of::<String>()],
-            |a: u32, b: String| "Fake for u32, String".into()
+            |a: u32, b: String| format!("Fake for u32, String: {} {}", a, b)
         );
 
         assert!(store.is_set_for([TypeId::of::<i32>(), TypeId::of::<String>()]));
