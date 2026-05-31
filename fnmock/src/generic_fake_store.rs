@@ -1,8 +1,7 @@
-use std::{ any::{ Any, TypeId }, cell::RefCell, collections::HashMap, rc::Rc };
+use std::{ any::{ Any, TypeId }, collections::HashMap, rc::Rc };
 
 /// A store for fake implementations of generic functions, keyed by the TypeIds of their generic parameters.
 /// This allows faking generic functions with different type parameters without needing a separate static variable for each combination of types.
-///
 ///
 /// # Do not use this struct directly!
 ///
