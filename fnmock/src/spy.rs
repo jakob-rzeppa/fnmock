@@ -1,12 +1,12 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct IgnoredParam;
 
-pub struct Spy<Args: Clone + PartialEq + 'static> {
+pub struct Spy<Args: Clone + PartialEq> {
     name: &'static str,
     calls: Vec<Args>,
 }
 
-impl<Args: Clone + PartialEq + 'static> Spy<Args> {
+impl<Args: Clone + PartialEq> Spy<Args> {
     pub fn new(name: &'static str) -> Self {
         Self {
             name,
