@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 
-use crate::fakable::function::{
+use crate::fakeable::function::{
     generic::{ create_generic_fake_module, insert_generic_fake_call_into_fn_block },
     regular::{ create_regular_fake_module, insert_regular_fake_call_into_fn_block },
 };

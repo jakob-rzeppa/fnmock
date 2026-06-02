@@ -1,8 +1,8 @@
 use proc_macro::TokenStream;
 
-use crate::fakable::{ function::fakable_function, impl_block::fakable_impl_block };
+use crate::fakeable::{ function::fakable_function, impl_block::fakable_impl_block };
 
-mod fakable;
+mod fakeable;
 
 #[proc_macro_attribute]
 pub fn fakeable(_attr: TokenStream, item: TokenStream) -> TokenStream {
