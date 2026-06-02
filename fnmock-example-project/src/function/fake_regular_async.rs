@@ -1,42 +1,6 @@
+#[fnmock::fakeable]
 async fn get_user(id: i32) -> String {
-    if get_user_fake::is_set() {
-        let impl_fn = get_user_fake::get();
-        return impl_fn(id);
-    }
-
     format!("User {}", id)
-}
-
-pub(crate) mod get_user_fake {
-    use std::rc::Rc;
-
-    use fnmock::{ fake_store::FakeStore };
-
-    thread_local! {
-        static FAKE: std::cell::RefCell<FakeStore<fn(i32) -> String>> = std::cell::RefCell::new(
-            FakeStore::new("get_user")
-        );
-    }
-
-    pub(crate) fn setup(function: fn(i32) -> String) {
-        FAKE.with_borrow_mut(|fake| {
-            fake.setup(function);
-        });
-    }
-
-    pub(crate) fn clear() {
-        FAKE.with_borrow_mut(|fake| {
-            fake.clear();
-        })
-    }
-
-    pub(crate) fn is_set() -> bool {
-        FAKE.with_borrow(|fake| { fake.is_set() })
-    }
-
-    pub(crate) fn get() -> Rc<fn(i32) -> String> {
-        FAKE.with_borrow(|fake| { fake.get() })
-    }
 }
 
 async fn handle_user(id: i32) -> String {
