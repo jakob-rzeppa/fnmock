@@ -1,55 +1,9 @@
 pub struct UserRepository;
 
+#[fnmock::fakeable]
 impl UserRepository {
     pub fn get_user(&self, user_id: u32) -> Option<String> {
-        #[cfg(test)]
-        if UserRepositoryFake::get_user_fake::is_set() {
-            let impl_fn = UserRepositoryFake::get_user_fake::get();
-            return impl_fn(self, user_id);
-        }
-
         Some(format!("User{}", user_id))
-    }
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub(crate) mod UserRepositoryFake {
-    use std::rc::Rc;
-
-    use fnmock::{ fake_store::FakeStore };
-
-    use crate::impl_block::fake_regular_regular::UserRepository;
-
-    thread_local! {
-        static GET_USER_FAKE: std::cell::RefCell<
-            FakeStore<fn(&UserRepository, u32) -> Option<String>>
-        > = std::cell::RefCell::new(FakeStore::new("get_user"));
-    }
-
-    #[allow(non_camel_case_types)]
-    pub(crate) struct get_user_fake;
-
-    impl get_user_fake {
-        pub(crate) fn setup(function: fn(&UserRepository, u32) -> Option<String>) {
-            GET_USER_FAKE.with_borrow_mut(|fake| {
-                fake.setup(function);
-            });
-        }
-
-        pub(crate) fn clear() {
-            GET_USER_FAKE.with_borrow_mut(|fake| {
-                fake.clear();
-            })
-        }
-
-        pub(crate) fn is_set() -> bool {
-            GET_USER_FAKE.with_borrow(|fake| { fake.is_set() })
-        }
-
-        pub(crate) fn get() -> Rc<fn(&UserRepository, u32) -> Option<String>> {
-            GET_USER_FAKE.with_borrow(|fake| { fake.get() })
-        }
     }
 }
 
