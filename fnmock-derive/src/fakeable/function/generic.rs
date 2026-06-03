@@ -1,106 +1,110 @@
 use quote::quote;
 
-pub fn insert_generic_fake_call_into_fn_block(
+use crate::fakeable::{
+    function::generic,
+    generic_helpers::{ build_type_id_array, extract_generic_idents, extract_generic_params },
+};
+
+/// Handle a generic function annotated with #[fakeable].
+///
+/// This function generates the necessary fake module and modifies the original function block to include a call to the fake implementation if it is set up.
+///
+/// # Params
+///
+/// - `fn_name`: The identifier of the original function being faked (e.g. `get_user`).
+/// - `fn_fake_name`: The identifier for the fake struct that will hold the fake implementation (e.g. `get_user_fake`).
+/// - `input_idents`: The identifiers of the function's input parameters (e.g. `id`, `name`).
+/// - `fn_ptr_type`: The function pointer type of the original function (e.g. `fn(T, i32) -> String`).
+/// - `fn_block`: The original function block to modify.
+/// - `fn_generics`: The generic parameters of the original function (e.g. `<T, U: Display>`).
+///
+/// # Returns
+///
+/// A tuple containing the modified function block and the generated fake module.
+pub fn generic_fakeable_function(
+    fn_name: &syn::Ident,
+    fn_fake_name: &syn::Ident,
+    input_idents: &[syn::Ident],
+    fn_ptr_type: proc_macro2::TokenStream,
+    fn_block: &syn::Block,
+    fn_generics: &syn::Generics
+) -> syn::Result<(syn::Block, syn::ItemMod)> {
+    let generic_params = extract_generic_params(fn_generics);
+    let generic_idents = extract_generic_idents(&generic_params);
+    let generic_type_id_array = build_type_id_array(&generic_idents);
+
+    let fake_module = generic::create_generic_fake_module(
+        fn_name,
+        fn_fake_name,
+        fn_ptr_type,
+        &generic_params,
+        &generic_type_id_array
+    )?;
+
+    let new_fn_block = generic::insert_generic_fake_call_into_fn_block(
+        fn_block,
+        fn_fake_name,
+        input_idents,
+        &generic_idents
+    );
+
+    Ok((new_fn_block, fake_module))
+}
+
+/// Insert a fake call into the function block for a generic function.
+///
+/// # Params
+///
+/// - `fn_block`: The original function block to modify.
+/// - `fn_fake_name`: The identifier for the fake struct that holds the fake implementation.
+/// - `input_idents`: The identifiers of the function's input parameters (e.g. `id`, `name`).
+/// - `generic_idents`: The identifiers of the function's generic type parameters (e.g. `T`, `U`).
+fn insert_generic_fake_call_into_fn_block(
     fn_block: &syn::Block,
     fn_fake_name: &syn::Ident,
-    fn_inputs: &syn::punctuated::Punctuated<syn::FnArg, syn::token::Comma>,
-    fn_generics: &syn::Generics
+    input_idents: &[syn::Ident],
+    generic_idents: &[syn::Ident]
 ) -> syn::Block {
-    let input_idents: Vec<syn::Ident> = fn_inputs
-        .iter()
-        .filter_map(|arg| {
-            if let syn::FnArg::Typed(pat_type) = arg {
-                if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
-                    return Some(pat_ident.ident.clone());
-                }
-            }
-            None
-        })
-        .collect();
-
-    // Extract generic type parameters
-    let generic_idents: Vec<_> = fn_generics.params
-        .iter()
-        .filter_map(|param| {
-            if let syn::GenericParam::Type(type_param) = param {
-                Some(&type_param.ident)
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    let fake_call = if generic_idents.is_empty() {
-        quote! {
-            #[cfg(test)]
-            if #fn_fake_name::is_set() {
-                let impl_fn = #fn_fake_name::get();
-                return impl_fn(#(#input_idents),*);
-            }
-        }
-    } else {
+    let fake_call =
         quote! {
             #[cfg(test)]
             if #fn_fake_name::is_set_for::<#(#generic_idents),*>() {
-                let impl_fn = #fn_fake_name::get_for::<#(#generic_idents),*>();
-                return impl_fn(#(#input_idents),*);
+                let fake_implementation = #fn_fake_name::get_for::<#(#generic_idents),*>();
+                return fake_implementation(#(#input_idents),*);
             }
-        }
-    };
+        };
 
-    let fake_call_stmt: syn::Stmt = syn::parse(fake_call.into()).unwrap();
+    let fake_call_stmt: syn::Stmt = syn
+        ::parse(fake_call.into())
+        .expect("Failed to parse generated fake call");
 
     let mut new_block = fn_block.clone();
     new_block.stmts.insert(0, fake_call_stmt);
     new_block
 }
 
-pub fn create_generic_fake_module(
+/// Create a fake module for a generic function.
+///
+/// # Params
+///
+/// - `fn_name`: The name of the original function being faked (used for naming the fake module).
+/// - `fn_fake_name`: The identifier for the fake struct that will hold the fake implementation (e.g. `get_user_fake`).
+/// - `fn_ptr_type`: The function pointer type of the original function (e.g. `fn(T, i32) -> String`).
+/// - `generic_params`: The generic parameters of the original function (e.g. `<T, U: Display>`).
+/// - `generic_type_id_array`: An array of `TypeId` expressions corresponding to the generic parameters (e.g. `[TypeId::of::<T>(), TypeId::of::<U>()]`).
+fn create_generic_fake_module(
     fn_name: &syn::Ident,
     fn_fake_name: &syn::Ident,
-    fn_generics: &syn::Generics
-) -> syn::ItemMod {
-    // Extract generic type parameters with their bounds
-    let generic_params: Vec<_> = fn_generics.params
-        .iter()
-        .filter_map(|param| {
-            if let syn::GenericParam::Type(type_param) = param { Some(type_param) } else { None }
-        })
-        .collect();
-
+    fn_ptr_type: proc_macro2::TokenStream,
+    generic_params: &[syn::TypeParam],
+    generic_type_id_array: &[proc_macro2::TokenStream]
+) -> syn::Result<syn::ItemMod> {
     let generic_count = generic_params.len();
-
-    // Extract just the type names for building TypeId array and function signatures
-    let generic_idents: Vec<_> = generic_params
-        .iter()
-        .map(|param| &param.ident)
-        .collect();
-
-    // Build the generics with 'static bound added to all
-    let generics_with_static: Vec<_> = generic_params
-        .iter()
-        .map(|param| {
-            let ident = &param.ident;
-            let bounds = &param.bounds;
-            quote! { #ident: #bounds + 'static }
-        })
-        .collect();
-
-    // Build TypeId array: [TypeId::of::<T>(), TypeId::of::<U>(), ...]
-    let type_id_array: Vec<_> = generic_idents
-        .iter()
-        .map(|ident| {
-            quote! { TypeId::of::<#ident>() }
-        })
-        .collect();
 
     let fake_module =
         quote! {
         #[cfg(test)]
         pub(crate) mod #fn_fake_name {
-            use std::rc::Rc;
-            use std::any::TypeId;
-
             use fnmock::generic_fake_store::GenericFakeStore;
 
             use super::*;
@@ -111,11 +115,9 @@ pub fn create_generic_fake_module(
                 );
             }
 
-            pub(crate) fn setup<#(#generics_with_static),*>(function: fn(#(#generic_idents),*) -> String) {
-                let generic_types = [#(#type_id_array),*];
-
+            pub(crate) fn setup<#(#generic_params),*>(function: #fn_ptr_type) {
                 FAKE.with_borrow_mut(|fake| {
-                    fake.setup_for(generic_types, function);
+                    fake.setup_for([#(#generic_type_id_array),*], function);
                 });
             }
 
@@ -125,27 +127,21 @@ pub fn create_generic_fake_module(
                 })
             }
 
-            pub(crate) fn clear_for<#(#generics_with_static),*>() {
-                let generic_types = [#(#type_id_array),*];
-
+            pub(crate) fn clear_for<#(#generic_params),*>() {
                 FAKE.with_borrow_mut(|fake| {
-                    fake.clear_for(generic_types);
+                    fake.clear_for([#(#generic_type_id_array),*]);
                 })
             }
 
-            pub(crate) fn is_set_for<#(#generics_with_static),*>() -> bool {
-                let generic_types = [#(#type_id_array),*];
-
-                FAKE.with_borrow(|fake| { fake.is_set_for(generic_types) })
+            pub(crate) fn is_set_for<#(#generic_params),*>() -> bool {
+                FAKE.with_borrow(|fake| { fake.is_set_for([#(#generic_type_id_array),*]) })
             }
 
-            pub(crate) fn get_for<#(#generics_with_static),*>() -> Rc<fn(#(#generic_idents),*) -> String> {
-                let generic_types = [#(#type_id_array),*];
-
-                FAKE.with_borrow(|fake| { fake.get_for::<fn(#(#generic_idents),*) -> String>(generic_types) })
+            pub(crate) fn get_for<#(#generic_params),*>() -> std::rc::Rc<#fn_ptr_type> {
+                FAKE.with_borrow(|fake| { fake.get_for::<#fn_ptr_type>([#(#generic_type_id_array),*]) })
             }
         }
     };
 
-    syn::parse(fake_module.into()).unwrap()
+    Ok(syn::parse(fake_module.into()).expect("Failed to parse generated fake module"))
 }

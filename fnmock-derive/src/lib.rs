@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 
-use crate::fakeable::{ function::fakable_function, impl_block::fakable_impl_block };
+use crate::fakeable::{ function::fakeable_function, impl_block::fakeable_impl_block };
 
 mod fakeable;
 
@@ -10,11 +10,11 @@ pub fn fakeable(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let res = match syn::parse::<syn::Item>(item.clone()) {
         Ok(syn::Item::Fn(item_fn)) => {
             // If it's a function, process it
-            fakable_function(item_fn)
+            fakeable_function(item_fn)
         }
         Ok(syn::Item::Impl(item_impl)) => {
             // If it's an impl block, process it
-            fakable_impl_block(item_impl)
+            fakeable_impl_block(item_impl)
         }
         Ok(item) =>
             Err(

@@ -1,4 +1,3 @@
-use proc_macro::TokenStream;
 use quote::quote;
 
 use crate::fakeable::impl_block::regular::{
@@ -9,7 +8,7 @@ use crate::fakeable::impl_block::regular::{
 mod regular;
 mod generic;
 
-pub fn fakable_impl_block(mut item_impl: syn::ItemImpl) -> syn::Result<TokenStream> {
+pub fn fakeable_impl_block(mut item_impl: syn::ItemImpl) -> syn::Result<proc_macro2::TokenStream> {
     // Get the struct name being implemented
     let struct_name = match &*item_impl.self_ty {
         syn::Type::Path(path) =>
@@ -82,7 +81,7 @@ pub fn fakable_impl_block(mut item_impl: syn::ItemImpl) -> syn::Result<TokenStre
         #fake_module
     };
 
-    Ok(TokenStream::from(expanded))
+    Ok(proc_macro2::TokenStream::from(expanded))
 }
 
 pub fn wrap_impl_function_fakes_with_module(

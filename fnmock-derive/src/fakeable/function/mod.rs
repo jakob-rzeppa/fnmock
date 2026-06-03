@@ -1,67 +1,52 @@
-use proc_macro::TokenStream;
 use quote::quote;
 
-use crate::fakeable::function::{
-    generic::{ create_generic_fake_module, insert_generic_fake_call_into_fn_block },
-    regular::{ create_regular_fake_module, insert_regular_fake_call_into_fn_block },
+use crate::fakeable::{
+    function::{ generic::generic_fakeable_function, regular::regular_fakeable_function },
+    helpers::{ extract_param_idents, extract_param_types },
 };
 
 mod regular;
 mod generic;
 
-pub fn fakable_function(item_fn: syn::ItemFn) -> syn::Result<TokenStream> {
+pub fn fakeable_function(item_fn: syn::ItemFn) -> syn::Result<proc_macro2::TokenStream> {
+    // --- Names ---
     let fn_name = &item_fn.sig.ident;
-    let fn_generics = &item_fn.sig.generics;
-    let fn_inputs = &item_fn.sig.inputs;
-    let fn_output = &item_fn.sig.output;
-    let fn_block = &item_fn.block;
-
     let fn_fake_name = syn::Ident::new(&format!("{}_fake", fn_name), fn_name.span());
 
-    // Extract the input types to construct the function pointer type
-    let mut input_types = Vec::new();
-    for arg in fn_inputs.iter() {
-        match arg {
-            syn::FnArg::Typed(pat_type) => {
-                input_types.push(&pat_type.ty);
-            }
-            syn::FnArg::Receiver(_) => {
-                return Err(
-                    syn::Error::new_spanned(
-                        arg,
-                        "self parameters are not supported in a #[fakeable] function, use #[fakeable] on an impl block instead."
-                    )
-                );
-            }
-        }
-    }
+    // --- Params ---
+    let fn_inputs = &item_fn.sig.inputs.iter().cloned().collect::<Vec<_>>();
+    let param_idents = extract_param_idents(fn_inputs);
+    let param_types = extract_param_types(fn_inputs);
 
+    // --- Build function pointer type ---
+    let fn_output = &item_fn.sig.output;
     let fn_ptr_type = quote! {
-        fn(#(#input_types),*) #fn_output
+        fn(#(#param_types),*) #fn_output
     };
 
+    // --- Function block ---
+    let fn_block = &item_fn.block;
+
+    // --- Handle the function based on whether it has generics ---
+    let fn_generics = &item_fn.sig.generics;
     let (new_fn_block, fake_module) = if fn_generics.params.is_empty() {
-        let new_fn_block = insert_regular_fake_call_into_fn_block(
-            fn_block,
-            &fn_fake_name,
-            fn_inputs
-        );
-        let fake_module = create_regular_fake_module(fn_name, &fn_fake_name, fn_ptr_type);
-        (new_fn_block, fake_module)
+        regular_fakeable_function(fn_name, &fn_fake_name, &param_idents, fn_ptr_type, fn_block)?
     } else {
-        let new_fn_block = insert_generic_fake_call_into_fn_block(
-            fn_block,
+        generic_fakeable_function(
+            fn_name,
             &fn_fake_name,
-            fn_inputs,
+            &param_idents,
+            fn_ptr_type,
+            fn_block,
             fn_generics
-        );
-        let fake_module = create_generic_fake_module(fn_name, &fn_fake_name, fn_generics);
-        (new_fn_block, fake_module)
+        )?
     };
 
+    // --- Build the function with the new block ---
     let mut new_item_fn = item_fn.clone();
     new_item_fn.block = Box::new(new_fn_block);
 
+    // --- Combine the function and the fake module ---
     let expanded = quote! {
         #new_item_fn
 
