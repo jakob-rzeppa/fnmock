@@ -79,23 +79,3 @@ pub fn create_regular_regular_impl_function_fake(
         }
     }
 }
-
-pub fn wrap_regular_impl_function_fakes_with_module(
-    struct_fake_name: &syn::Ident,
-    function_fake_blocks: Vec<proc_macro2::TokenStream>
-) -> syn::ItemMod {
-    let fake_module =
-        quote! {
-        #[cfg(test)]
-        #[allow(non_snake_case)]
-        pub(crate) mod #struct_fake_name {
-            use std::rc::Rc;
-
-            use super::*;
-
-            #(#function_fake_blocks)*
-        }
-    };
-
-    syn::parse(fake_module.into()).unwrap()
-}

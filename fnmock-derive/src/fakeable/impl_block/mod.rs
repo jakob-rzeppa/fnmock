@@ -4,7 +4,6 @@ use quote::quote;
 use crate::fakeable::impl_block::regular::{
     create_regular_regular_impl_function_fake,
     insert_regular_regular_function_fake_call_into_fn_block,
-    wrap_regular_impl_function_fakes_with_module,
 };
 
 mod regular;
@@ -74,7 +73,7 @@ pub fn fakable_impl_block(mut item_impl: syn::ItemImpl) -> syn::Result<TokenStre
     }
 
     // Wrap all fakes with the module
-    let fake_module = wrap_regular_impl_function_fakes_with_module(&struct_fake_name, fakes);
+    let fake_module = wrap_impl_function_fakes_with_module(&struct_fake_name, fakes);
 
     // Generate the expanded output with the updated impl block and fake module
     let expanded = quote! {
@@ -84,4 +83,24 @@ pub fn fakable_impl_block(mut item_impl: syn::ItemImpl) -> syn::Result<TokenStre
     };
 
     Ok(TokenStream::from(expanded))
+}
+
+pub fn wrap_impl_function_fakes_with_module(
+    struct_fake_name: &syn::Ident,
+    function_fake_blocks: Vec<proc_macro2::TokenStream>
+) -> syn::ItemMod {
+    let fake_module =
+        quote! {
+        #[cfg(test)]
+        #[allow(non_snake_case)]
+        pub(crate) mod #struct_fake_name {
+            use std::rc::Rc;
+
+            use super::*;
+
+            #(#function_fake_blocks)*
+        }
+    };
+
+    syn::parse(fake_module.into()).unwrap()
 }
