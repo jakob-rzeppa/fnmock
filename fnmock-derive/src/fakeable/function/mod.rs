@@ -2,6 +2,7 @@ use quote::quote;
 
 use crate::fakeable::{
     function::{ generic::generic_fakeable_function, regular::regular_fakeable_function },
+    generic_helpers::{ build_function_ptr_type, generate_function_fake_name },
     helpers::{ extract_param_idents, extract_param_types },
 };
 
@@ -11,7 +12,7 @@ mod generic;
 pub fn fakeable_function(item_fn: syn::ItemFn) -> syn::Result<proc_macro2::TokenStream> {
     // --- Names ---
     let fn_name = &item_fn.sig.ident;
-    let fn_fake_name = syn::Ident::new(&format!("{}_fake", fn_name), fn_name.span());
+    let fn_fake_name = generate_function_fake_name(fn_name);
 
     // --- Params ---
     let fn_inputs = &item_fn.sig.inputs.iter().cloned().collect::<Vec<_>>();
@@ -20,9 +21,7 @@ pub fn fakeable_function(item_fn: syn::ItemFn) -> syn::Result<proc_macro2::Token
 
     // --- Build function pointer type ---
     let fn_output = &item_fn.sig.output;
-    let fn_ptr_type = quote! {
-        fn(#(#param_types),*) #fn_output
-    };
+    let fn_ptr_type = build_function_ptr_type(&param_types, fn_output);
 
     // --- Function block ---
     let fn_block = &item_fn.block;

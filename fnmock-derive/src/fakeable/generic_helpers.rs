@@ -1,5 +1,18 @@
 use quote::quote;
 
+pub fn generate_function_fake_name(func_name: &syn::Ident) -> syn::Ident {
+    syn::Ident::new(&format!("{}_fake", func_name), func_name.span())
+}
+
+pub fn build_function_ptr_type(
+    param_types: &[syn::Type],
+    output: &syn::ReturnType
+) -> proc_macro2::TokenStream {
+    quote! {
+        fn(#(#param_types),*) #output
+    }
+}
+
 pub fn extract_generic_params(generics: &syn::Generics) -> Vec<syn::TypeParam> {
     generics.params
         .iter()
