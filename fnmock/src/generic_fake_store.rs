@@ -44,7 +44,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     }
 
     /// Clear all fake implementations.
-    pub fn clear(&mut self) {
+    pub fn clear_all(&mut self) {
         self.impls.clear();
     }
 
@@ -129,7 +129,7 @@ mod tests {
         println!("Calling f2:");
         println!("{}", f2(42, "Bob".into()));
 
-        store.clear();
+        store.clear_all();
 
         assert!(!store.is_set_for([TypeId::of::<i32>(), TypeId::of::<String>()]));
         assert!(!store.is_set_for([TypeId::of::<u32>(), TypeId::of::<String>()]));

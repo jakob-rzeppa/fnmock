@@ -27,8 +27,8 @@ mod tests {
 
     #[test]
     fn test_handle_user_with_fake_repo() {
-        UserRepositoryFake::get_user_fake::setup(|_, user_id| {
-            if user_id == 1 { Some("FakeUser1".to_string()) } else { None }
+        UserRepository::get_user_fake().setup(|_, i| {
+            if i == 1 { Some(format!("FakeUser{}", i)) } else { None }
         });
 
         let result = handle_user(1);

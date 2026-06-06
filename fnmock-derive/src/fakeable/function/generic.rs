@@ -121,9 +121,9 @@ fn create_generic_fake_module(
                 });
             }
 
-            pub(crate) fn clear() {
+            pub(crate) fn clear_all() {
                 FAKE.with_borrow_mut(|fake| {
-                    fake.clear();
+                    fake.clear_all();
                 })
             }
 

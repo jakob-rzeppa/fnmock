@@ -4,6 +4,10 @@ pub fn generate_function_fake_name(func_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(&format!("{}_fake", func_name), func_name.span())
 }
 
+pub fn generate_fake_store_name(func_name: &syn::Ident) -> syn::Ident {
+    syn::Ident::new(&format!("{}_FAKE", func_name.to_string().to_uppercase()), func_name.span())
+}
+
 pub fn build_function_ptr_type(
     param_types: &[syn::Type],
     output: &syn::ReturnType
