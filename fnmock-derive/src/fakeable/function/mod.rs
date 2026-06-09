@@ -1,7 +1,5 @@
 use quote::quote;
 
-mod regular;
-mod generic;
 mod info;
 mod extraction;
 mod access_fn;
