@@ -24,7 +24,7 @@ pub struct FakeableFnGenericInfo {
     pub fn_generic_idents: Vec<syn::Ident>,
 
     /// The generic parameters on the method, including their bounds (e.g. `T: Display + 'static` and `I: 'static`).
-    pub fn_generic_params: Vec<syn::GenericParam>,
+    pub fn_generic_params: Vec<syn::TypeParam>,
 
     /// The `TypeId` expressions for the generic parameters on the method, in the order they appear in the code (e.g. `[std::any::TypeId::of::<T>(), std::any::TypeId::of::<I>()]`).
     pub fn_generic_type_ids: Vec<proc_macro2::TokenStream>,

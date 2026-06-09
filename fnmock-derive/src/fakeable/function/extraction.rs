@@ -2,7 +2,11 @@ use quote::quote;
 
 use crate::fakeable::{
     function::info::{ FakeableFnGenericInfo, FakeableFnInfo },
-    generic_helpers::build_type_id_array,
+    generic_helpers::{
+        build_type_id_array,
+        extract_generic_idents_from_params,
+        extract_generic_type_params,
+    },
     helpers::snake_to_pascal_case,
 };
 
@@ -99,17 +103,8 @@ fn extract_generic_info(item_fn: &syn::ItemFn) -> Option<FakeableFnGenericInfo> 
         return None;
     }
 
-    let fn_generic_params = item_fn.sig.generics.params.iter().cloned().collect::<Vec<_>>();
-    let fn_generic_idents = fn_generic_params
-        .iter()
-        .filter_map(|param| {
-            if let syn::GenericParam::Type(type_param) = param {
-                Some(type_param.ident.clone())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
+    let fn_generic_params = extract_generic_type_params(&item_fn.sig.generics);
+    let fn_generic_idents = extract_generic_idents_from_params(fn_generic_params.as_slice());
 
     let fn_generic_type_ids = build_type_id_array(&fn_generic_idents);
 

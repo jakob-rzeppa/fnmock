@@ -2,9 +2,8 @@ use quote::quote;
 use crate::fakeable::{
     generic_helpers::{
         build_type_id_array,
-        extract_generic_idents,
-        extract_generic_params,
-        generate_fake_store_name,
+        extract_generic_idents_from_params,
+        extract_generic_type_params,
     },
     helpers::snake_to_pascal_case,
     impl_block::info::{ FakeableImplFnGenericInfo, FakeableImplFnInfo },
@@ -87,8 +86,14 @@ fn extract_fn_names(fn_ident: &syn::Ident) -> FnNames {
     FnNames {
         name: fn_ident.clone(),
         fake_name: syn::Ident::new(&combined_fake_name, fn_ident.span()),
-        fake_api_name: syn::Ident::new(&format!("{}Fake", pascal_fn_name), fn_ident.span()),
-        store_name: generate_fake_store_name(fn_ident),
+        fake_api_name: syn::Ident::new(
+            &format!("{}FakeInterface", pascal_fn_name),
+            fn_ident.span()
+        ),
+        store_name: syn::Ident::new(
+            &format!("{}_FAKE_STORE", fn_ident.to_string().to_uppercase()),
+            fn_ident.span()
+        ),
     }
 }
 
@@ -97,7 +102,7 @@ fn extract_fn_names(fn_ident: &syn::Ident) -> FnNames {
 struct StructInfo {
     fake_module: syn::Ident,
     generics_idents: Vec<syn::Ident>,
-    generics_params: Vec<syn::GenericParam>,
+    generics_params: Vec<syn::TypeParam>,
     type_ids: Vec<proc_macro2::TokenStream>,
 }
 
@@ -125,22 +130,19 @@ fn extract_struct_info_from_impl(impl_item: &syn::ItemImpl) -> syn::Result<Struc
     };
 
     // Extract generics from struct
-    let struct_generics_params = extract_generic_params(&impl_item.generics);
-    let struct_generics_idents = extract_generic_idents(&struct_generics_params);
+    let struct_generics_params = extract_generic_type_params(&impl_item.generics);
+    let struct_generics_idents = extract_generic_idents_from_params(&struct_generics_params);
     let struct_type_ids = build_type_id_array(&struct_generics_idents);
 
     let fake_module = syn::Ident::new(
-        &format!("{}_fake", struct_name.to_string().to_lowercase()),
+        &format!("{}_fake_internal", struct_name.to_string().to_lowercase()),
         struct_name.span()
     );
 
     Ok(StructInfo {
         fake_module,
         generics_idents: struct_generics_idents,
-        generics_params: struct_generics_params
-            .into_iter()
-            .map(|tp| syn::GenericParam::Type(tp))
-            .collect(),
+        generics_params: struct_generics_params,
         type_ids: struct_type_ids,
     })
 }
@@ -148,22 +150,19 @@ fn extract_struct_info_from_impl(impl_item: &syn::ItemImpl) -> syn::Result<Struc
 /// Helper struct for function generic information
 struct FnGenericInfo {
     generic_idents: Vec<syn::Ident>,
-    generic_params: Vec<syn::GenericParam>,
+    generic_params: Vec<syn::TypeParam>,
     type_ids: Vec<proc_macro2::TokenStream>,
 }
 
 /// Extract generic parameters from function signature
 fn extract_fn_generic_info(sig: &syn::Signature) -> FnGenericInfo {
-    let fn_generics_params = extract_generic_params(&sig.generics);
-    let fn_generics_idents = extract_generic_idents(&fn_generics_params);
+    let fn_generics_params = extract_generic_type_params(&sig.generics);
+    let fn_generics_idents = extract_generic_idents_from_params(&fn_generics_params);
     let fn_type_ids = build_type_id_array(&fn_generics_idents);
 
     FnGenericInfo {
         generic_idents: fn_generics_idents,
-        generic_params: fn_generics_params
-            .into_iter()
-            .map(|tp| syn::GenericParam::Type(tp))
-            .collect(),
+        generic_params: fn_generics_params,
         type_ids: fn_type_ids,
     }
 }

@@ -9,12 +9,6 @@ impl<T: 'static> UserRepository<T> {
     }
 
     pub fn get_user(&self, user_id: u32) -> Option<String> {
-        #[cfg(test)]
-        if self::userrepository_fake::GetUserFake::<T>::new().is_set() {
-            let impl_fn = self::userrepository_fake::GetUserFake::<T>::new().get();
-            return impl_fn(self, user_id);
-        }
-
         Some(format!("User{}", user_id))
     }
 }

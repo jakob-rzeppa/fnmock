@@ -1,10 +1,9 @@
 use quote::quote;
 
-pub fn generate_fake_store_name(func_name: &syn::Ident) -> syn::Ident {
-    syn::Ident::new(&format!("{}_FAKE", func_name.to_string().to_uppercase()), func_name.span())
-}
-
-pub fn extract_generic_params(generics: &syn::Generics) -> Vec<syn::TypeParam> {
+/// Extract the generic type parameters (e.g. `T: Display + 'static`, `U: 'static`) from a `Generics` object
+///
+/// Returns a vector of `TypeParam` objects representing the generic type parameters
+pub fn extract_generic_type_params(generics: &syn::Generics) -> Vec<syn::TypeParam> {
     generics.params
         .iter()
         .filter_map(|param| {
@@ -17,7 +16,8 @@ pub fn extract_generic_params(generics: &syn::Generics) -> Vec<syn::TypeParam> {
         .collect()
 }
 
-pub fn extract_generic_idents(generic_params: &[syn::TypeParam]) -> Vec<syn::Ident> {
+/// Extract the generic idents (e.g. `T`, `U`) from a list of generic parameters (e.g. `T: Display + 'static`, `U: 'static`)
+pub fn extract_generic_idents_from_params(generic_params: &[syn::TypeParam]) -> Vec<syn::Ident> {
     generic_params
         .iter()
         .map(|param| param.ident.clone())
