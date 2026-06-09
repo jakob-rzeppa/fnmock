@@ -2,7 +2,7 @@ use quote::quote;
 
 use crate::fakeable::impl_block::{
     call::insert_call_into_fn_body,
-    extraction::extract_generic_fakeable_impl_fn_info,
+    extraction::extract_fakeable_impl_block_info,
     fake_module::build_fake_module,
 };
 
@@ -13,7 +13,7 @@ mod extraction;
 mod access_fn;
 
 pub fn fakeable_impl_block(mut item_impl: syn::ItemImpl) -> syn::Result<proc_macro2::TokenStream> {
-    let fakeable_info = extract_generic_fakeable_impl_fn_info(&item_impl)?;
+    let fakeable_info = extract_fakeable_impl_block_info(&item_impl)?;
 
     let fake_module = build_fake_module(&fakeable_info)?;
 

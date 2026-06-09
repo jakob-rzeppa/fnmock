@@ -8,7 +8,7 @@ pub fn build_fake_module(info: &[FakeableImplFnInfo]) -> syn::Result<syn::ItemMo
         );
     }
 
-    let fake_module = &info[0].fake_module;
+    let fake_module = &info[0].fake_module_name;
 
     // Generate fake implementations for each function
     let mut function_fakes = Vec::new();
@@ -35,7 +35,7 @@ pub fn build_fake_module(info: &[FakeableImplFnInfo]) -> syn::Result<syn::ItemMo
 
 fn generate_function_fake(info: &FakeableImplFnInfo) -> syn::Result<proc_macro2::TokenStream> {
     let fake_store_name = &info.fake_store_name;
-    let fake_api_name = &info.fake_api_name;
+    let fake_api_name = &info.fake_api_struct_name;
     let fn_name = &info.fn_name;
     let fn_ptr_type = &info.fn_ptr_type;
     let fn_param_idents = &info.fn_param_idents;

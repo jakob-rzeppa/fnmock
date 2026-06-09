@@ -21,7 +21,7 @@ mod tests {
 
     #[test]
     fn test_handle_user_with_fake() {
-        get_user_fake::setup(|id| format!("Fake User {}", id));
+        get_user_fake().setup(|id| format!("Fake User {}", id));
 
         let result = handle_user(1);
 

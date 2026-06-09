@@ -22,7 +22,7 @@ mod tests {
     #[tokio::test]
     async fn test_handle_user_with_fake() {
         // The closure must be not async. The result will be wrapped in a future by the `get_user` function.
-        get_user_fake::setup(|id| format!("Fake User {}", id));
+        get_user_fake().setup(|id| format!("Fake User {}", id));
 
         let result = handle_user(1).await;
 

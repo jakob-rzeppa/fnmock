@@ -4,8 +4,8 @@ use crate::fakeable::impl_block::{ info::FakeableImplFnInfo };
 
 pub fn build_access_fn(fn_info: &FakeableImplFnInfo) -> syn::ImplItemFn {
     let fake_access_fn_name = &fn_info.fake_access_fn_name;
-    let fake_module = &fn_info.fake_module;
-    let fake_api_name = &fn_info.fake_api_name;
+    let fake_module = &fn_info.fake_module_name;
+    let fake_api_name = &fn_info.fake_api_struct_name;
 
     let (fn_generic_params, fn_generic_idents, struct_generic_idents) = fn_info.generic_info
         .as_ref()

@@ -1,25 +1,12 @@
-pub fn extract_param_idents(inputs: &[syn::FnArg]) -> Vec<syn::Ident> {
-    inputs
-        .iter()
-        .filter_map(|arg| {
-            if let syn::FnArg::Typed(pat_type) = arg {
-                if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
-                    return Some(pat_ident.ident.clone());
-                }
+/// Convert snake_case to PascalCase
+pub fn snake_to_pascal_case(s: &str) -> String {
+    s.split('_')
+        .map(|part| {
+            let mut chars = part.chars();
+            match chars.next() {
+                None => String::new(),
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
             }
-            None
-        })
-        .collect()
-}
-
-pub fn extract_param_types(inputs: &[syn::FnArg]) -> Vec<syn::Type> {
-    inputs
-        .iter()
-        .filter_map(|arg| {
-            if let syn::FnArg::Typed(pat_type) = arg {
-                return Some((*pat_type.ty).clone());
-            }
-            None
         })
         .collect()
 }

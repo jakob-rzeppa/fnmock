@@ -1,15 +1,16 @@
 use quote::quote;
 use crate::fakeable::{
     generic_helpers::{
-        generate_fake_store_name,
-        extract_generic_params,
-        extract_generic_idents,
         build_type_id_array,
+        extract_generic_idents,
+        extract_generic_params,
+        generate_fake_store_name,
     },
-    impl_block::info::{ GenericFakeableImplFnInfo, FakeableImplFnInfo },
+    helpers::snake_to_pascal_case,
+    impl_block::info::{ FakeableImplFnGenericInfo, FakeableImplFnInfo },
 };
 
-pub fn extract_generic_fakeable_impl_fn_info(
+pub fn extract_fakeable_impl_block_info(
     impl_item: &syn::ItemImpl
 ) -> syn::Result<Vec<FakeableImplFnInfo>> {
     let struct_info = extract_struct_info_from_impl(impl_item)?;
@@ -46,7 +47,7 @@ fn extract_info_for_single_method(
         !struct_info.generics_idents.is_empty() ||
         !fn_info.generic_idents.is_empty()
     {
-        Some(GenericFakeableImplFnInfo {
+        Some(FakeableImplFnGenericInfo {
             struct_generic_idents: struct_info.generics_idents.clone(),
             fn_generic_idents: fn_info.generic_idents.clone(),
             struct_generic_params: struct_info.generics_params.clone(),
@@ -62,8 +63,8 @@ fn extract_info_for_single_method(
         fn_name: fn_names.name,
         fake_access_fn_name: fn_names.fake_name,
         fake_store_name: fn_names.store_name,
-        fake_api_name: fn_names.fake_api_name,
-        fake_module: struct_info.fake_module.clone(),
+        fake_api_struct_name: fn_names.fake_api_name,
+        fake_module_name: struct_info.fake_module.clone(),
         fn_param_idents,
         fn_ptr_type,
         generic_info,
@@ -81,7 +82,7 @@ struct FnNames {
 /// Extract the function name, fake function name, and fake store name
 fn extract_fn_names(fn_ident: &syn::Ident) -> FnNames {
     let combined_fake_name = format!("{}_fake", fn_ident.to_string());
-    let pascal_fn_name = format_pascal_case(&fn_ident.to_string());
+    let pascal_fn_name = snake_to_pascal_case(&fn_ident.to_string());
 
     FnNames {
         name: fn_ident.clone(),
@@ -89,19 +90,6 @@ fn extract_fn_names(fn_ident: &syn::Ident) -> FnNames {
         fake_api_name: syn::Ident::new(&format!("{}Fake", pascal_fn_name), fn_ident.span()),
         store_name: generate_fake_store_name(fn_ident),
     }
-}
-
-/// Convert snake_case to PascalCase
-fn format_pascal_case(s: &str) -> String {
-    s.split('_')
-        .map(|part| {
-            let mut chars = part.chars();
-            match chars.next() {
-                None => String::new(),
-                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-            }
-        })
-        .collect()
 }
 
 /// Helper struct for struct info extracted from impl
