@@ -44,7 +44,14 @@ pub(crate) mod get_user_spy {
     }
 
     pub(crate) fn assert_called_times(times: usize) {
-        GET_USER_SPY.with_borrow(|spy| { assert!(spy.called_times(times)) })
+        GET_USER_SPY.with_borrow(|spy| {
+            assert!(
+                spy.called_times(times),
+                "Expected {} calls, but got {}",
+                times,
+                spy.called_times(times)
+            )
+        })
     }
 
     pub(crate) fn any_call_matches(args: fn(i32) -> bool) -> bool {
@@ -52,7 +59,9 @@ pub(crate) mod get_user_spy {
     }
 
     pub(crate) fn assert_any_call_matches(args: fn(i32) -> bool) {
-        GET_USER_SPY.with_borrow(|spy| { assert!(spy.any_call_matches(args)) })
+        GET_USER_SPY.with_borrow(|spy| {
+            assert!(spy.any_call_matches(args), "Expected call matching predicate, but none found.")
+        })
     }
 
     pub(crate) fn any_call_equals(args: i32) -> bool {
@@ -60,7 +69,13 @@ pub(crate) mod get_user_spy {
     }
 
     pub(crate) fn assert_any_call_equals(args: i32) {
-        GET_USER_SPY.with_borrow(|spy| { assert!(spy.any_call_equals(args)) })
+        GET_USER_SPY.with_borrow(|spy| {
+            assert!(
+                spy.any_call_equals(args),
+                "Expected call with arguments ({}), but none found.",
+                args
+            )
+        })
     }
 
     pub(crate) fn nth_call_matches(n: usize, args: fn(i32) -> bool) -> bool {
@@ -68,7 +83,9 @@ pub(crate) mod get_user_spy {
     }
 
     pub(crate) fn assert_nth_call_matches(n: usize, args: fn(i32) -> bool) {
-        GET_USER_SPY.with_borrow(|spy| { assert!(spy.nth_call_matches(n, args)) })
+        GET_USER_SPY.with_borrow(|spy| {
+            assert!(spy.nth_call_matches(n, args), "Expected call {} matching predicate.", n)
+        })
     }
 
     pub(crate) fn nth_call_equals(n: usize, args: i32) -> bool {
@@ -76,7 +93,9 @@ pub(crate) mod get_user_spy {
     }
 
     pub(crate) fn assert_nth_call_equals(n: usize, args: i32) {
-        GET_USER_SPY.with_borrow(|spy| { assert!(spy.nth_call_equals(n, args)) })
+        GET_USER_SPY.with_borrow(|spy| {
+            assert!(spy.nth_call_equals(n, args), "Expected call {} with arguments ({}).", n, args)
+        })
     }
 }
 
