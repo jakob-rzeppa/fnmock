@@ -1,7 +1,7 @@
 use quote::quote;
 
-use crate::fakeable::{
-    extract::info::{ FakeableGenericInfo, FakeableInfo },
+use crate::{
+    fakeable::extract::info::{ FakeableGenericInfo, FakeableInfo },
     generic_helpers::{
         build_type_id_array,
         extract_generic_idents_from_params,
@@ -37,7 +37,7 @@ fn build_names(fn_name: &syn::Ident) -> (syn::Ident, syn::Ident, String, syn::Id
     );
     let display_name = format!("{} fake", fn_name);
     let interface_struct_name = syn::Ident::new(
-        &format!("{}Fake", snake_to_pascal_case(&fn_name.to_string())),
+        &format!("{}FakeInterface", snake_to_pascal_case(&fn_name.to_string())),
         fn_name.span()
     );
 

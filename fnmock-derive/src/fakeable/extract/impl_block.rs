@@ -1,7 +1,7 @@
 use quote::{ ToTokens, quote };
 
-use crate::fakeable::{
-    extract::info::{ FakeableGenericInfo, FakeableInfo },
+use crate::{
+    fakeable::extract::info::{ FakeableGenericInfo, FakeableInfo },
     generic_helpers::{
         build_type_id_array,
         extract_generic_idents_from_params,
@@ -77,7 +77,7 @@ fn build_names(
     let display_name = format!("{} {} fake", struct_name, method_name);
     let interface_struct_name = syn::Ident::new(
         &format!(
-            "{}{}Fake",
+            "{}{}FakeInterface",
             struct_name.to_string(),
             snake_to_pascal_case(&method_name.to_string())
         ),

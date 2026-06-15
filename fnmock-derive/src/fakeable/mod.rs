@@ -3,8 +3,6 @@ use quote::quote;
 use crate::fakeable::{ inline_call::insert_inline_call_into_fn_block };
 
 mod extract;
-mod generic_helpers;
-mod helpers;
 mod fake_module;
 mod inline_call;
 

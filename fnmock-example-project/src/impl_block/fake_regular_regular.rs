@@ -17,6 +17,8 @@ fn handle_user(user_id: u32) -> String {
 
 #[cfg(test)]
 mod tests {
+    use fnmock::fake;
+
     use super::*;
 
     #[test]
@@ -27,7 +29,7 @@ mod tests {
 
     #[test]
     fn test_handle_user_with_fake_repo() {
-        user_repository_get_user_fake::UserRepositoryGetUserFake::new().setup(|_, i| {
+        fake!(UserRepository, get_user).setup(|_, i| {
             if i == 1 { Some(format!("FakeUser{}", i)) } else { None }
         });
 
