@@ -1,5 +1,5 @@
 [package]
-name = "fnmock-example-project"
+name = "fnmock-tests"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

@@ -1,5 +1,5 @@
 [workspace]
-members = ["fnmock", "fnmock-derive", "fnmock-example-project"]
+members = ["fnmock", "fnmock-derive", "fnmock-tests"]
 resolver = "2"
 
 [workspace.package]
