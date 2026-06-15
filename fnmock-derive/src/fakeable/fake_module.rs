@@ -34,16 +34,18 @@ fn generate_regular_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
                     Self
                 }
 
-                pub(crate) fn setup(&self, function: #fn_ptr_type) {
+                pub(crate) fn setup(self, function: #fn_ptr_type) -> Self {
                     #store_name.with(|store| {
                         store.borrow_mut().setup(function);
                     });
+                    self
                 }
 
-                pub(crate) fn clear(&self) {
+                pub(crate) fn clear(self) -> Self {
                     #store_name.with(|store| {
                         store.borrow_mut().clear();
                     });
+                    self
                 }
 
                 pub(crate) fn is_set(&self) -> bool {
@@ -105,16 +107,18 @@ fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
                 }
             }
 
-            pub(crate) fn setup(&self, function: #fn_ptr_type) {
+            pub(crate) fn setup(self, function: #fn_ptr_type) -> Self {
                 #store_name.with_borrow_mut(|fake| {
                     fake.setup_for([#(#generic_type_ids),*], function);
                 });
+                self
             }
 
-            pub(crate) fn clear(&self) {
+            pub(crate) fn clear(self) -> Self {
                 #store_name.with_borrow_mut(|fake| {
                     fake.clear_for([#(#generic_type_ids),*]);
                 });
+                self
             }
 
             pub(crate) fn is_set(&self) -> bool {
