@@ -29,7 +29,7 @@ mod tests {
 
     #[test]
     fn test_handle_user_with_fake_repo() {
-        UserRepository::get_user_fake::<u32>().setup(|_, i| {
+        user_repository_get_user_fake::UserRepositoryGetUserFake::<u32>::new().setup(|_, i| {
             if i == 1 { Some(format!("FakeUser{}", i)) } else { None }
         });
 

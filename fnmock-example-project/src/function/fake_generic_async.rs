@@ -23,7 +23,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_user_with_fake() {
-        get_user_fake::<i32, String>().setup(|id, name| format!("Fake User {} ({})", id, name));
+        get_user_fake::GetUserFake::<i32, String>
+            ::new()
+            .setup(|id, name| format!("Fake User {} ({})", id, name));
 
         let result = handle_user(1, "Alice".into()).await;
 

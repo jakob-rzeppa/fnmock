@@ -10,3 +10,19 @@ pub fn snake_to_pascal_case(s: &str) -> String {
         })
         .collect()
 }
+
+/// Convert PascalCase to snake_case
+pub fn pascal_to_snake_case(s: &str) -> String {
+    let mut snake = String::new();
+    for (i, c) in s.chars().enumerate() {
+        if c.is_uppercase() {
+            if i != 0 {
+                snake.push('_');
+            }
+            snake.push(c.to_ascii_lowercase());
+        } else {
+            snake.push(c);
+        }
+    }
+    snake
+}

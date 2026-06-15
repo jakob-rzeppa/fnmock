@@ -33,8 +33,12 @@ mod tests {
 
     #[test]
     fn test_handle_user_with_fake_repo() {
-        UserRepository::<String>::get_user_fake().setup(|_, i| Some(format!("FakeUser{}", i)));
+        user_repository_get_user_fake::UserRepositoryGetUserFake::<String>
+            ::new()
+            .setup(|_, i| Some(format!("FakeUser{}", i)));
+
         let result = handle_user(1);
+
         assert_eq!(result, "Found: FakeUser1");
     }
 }
