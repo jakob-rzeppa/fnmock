@@ -6,3 +6,6 @@ mod fake_regular_regular_async;
 mod fake_generic_regular_async;
 mod fake_regular_generic_async;
 mod fake_generic_generic_async;
+mod fake_consuming_self;
+mod fake_mut_self;
+mod fake_associated_function;
