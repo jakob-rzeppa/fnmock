@@ -12,8 +12,8 @@ impl User {
 
 #[fnmock::fakeable]
 impl User {
-    pub fn set_name(&mut self, name: &str) {
-        self.name = name.to_string();
+    pub fn write_name(&self, name: &str, buf: &mut String) {
+        *buf = name.to_string();
     }
 }
 
@@ -24,19 +24,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_set_name_with_real_user() {
-        let mut user = User::new("Alice");
-        user.set_name("Bob");
-        assert_eq!(user.name, "Bob");
+    fn test_write_name_with_real_user() {
+        let user = User::new("Alice");
+        let mut buf = String::new();
+        user.write_name("Bob", &mut buf);
+        assert_eq!(buf, "Bob");
     }
 
     #[test]
-    fn test_set_name_with_fake_user() {
-        fake!(User, set_name).setup(|user, name| {
-            user.name = name.to_string();
+    fn test_write_name_with_fake_user() {
+        fake!(User, write_name).setup(|_, name, buf| {
+            *buf = name.to_string();
         });
         let mut user = User::new("Alice");
-        user.set_name("Bob");
-        assert_eq!(user.name, "Bob");
+        let mut buf = String::new();
+        user.write_name("Bob", &mut buf);
+        assert_eq!(buf, "Bob");
     }
 }
