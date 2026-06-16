@@ -115,11 +115,19 @@ fn extract_generic_info(
 }
 
 fn extract_and_build_fn_ptr_type(impl_item: &syn::ItemImpl, fn_sig: &syn::Signature) -> syn::Type {
+    let mut self_replacer = ReplaceSelf {
+        self_ty: impl_item.self_ty.as_ref(),
+    };
+
     let fn_param_types: Vec<syn::Type> = fn_sig.inputs
         .iter()
         .filter_map(|input| {
             match input {
-                syn::FnArg::Typed(pat_type) => Some((*pat_type.ty).clone()),
+                syn::FnArg::Typed(pat_type) => {
+                    let mut ty = pat_type.ty.as_ref().clone();
+                    self_replacer.visit_type_mut(&mut ty);
+                    Some(ty)
+                }
                 syn::FnArg::Receiver(receiver) => {
                     let self_ty = &impl_item.self_ty;
                     if receiver.reference.is_some() {
@@ -142,9 +150,7 @@ fn extract_and_build_fn_ptr_type(impl_item: &syn::ItemImpl, fn_sig: &syn::Signat
         syn::ReturnType::Default => { syn::ReturnType::Default }
         syn::ReturnType::Type(arrow, ty) => {
             let mut ty = ty.clone();
-            (ReplaceSelf {
-                self_ty: impl_item.self_ty.as_ref(),
-            }).visit_type_mut(ty.as_mut());
+            self_replacer.visit_type_mut(ty.as_mut());
             syn::ReturnType::Type(*arrow, ty)
         }
     };

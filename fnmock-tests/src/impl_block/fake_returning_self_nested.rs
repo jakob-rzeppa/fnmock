@@ -1,4 +1,4 @@
-use std::{ collections::HashMap, sync::{ Arc, Mutex } };
+use std::{ collections::HashMap };
 
 #[derive(Debug, PartialEq)]
 struct User {

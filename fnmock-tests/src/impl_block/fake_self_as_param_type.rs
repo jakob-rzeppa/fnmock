@@ -1,0 +1,40 @@
+struct User {
+    name: String,
+}
+
+impl User {
+    pub fn new(name: &str) -> Self {
+        User {
+            name: name.to_string(),
+        }
+    }
+}
+
+#[fnmock::fakeable]
+impl User {
+    pub fn format_user(user: Self) -> String {
+        format!("Formatted user: {}", user.name)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use fnmock::fake;
+
+    use super::*;
+
+    #[test]
+    fn test_format_user_with_real_user() {
+        let user = User::new("Alice");
+        let result = User::format_user(user);
+        assert_eq!(result, "Formatted user: Alice");
+    }
+
+    #[test]
+    fn test_format_user_with_fake_user() {
+        fake!(User, format_user).setup(|user| format!("Fake formatted user: {}", user.name));
+        let user = User::new("Bob");
+        let result = User::format_user(user);
+        assert_eq!(result, "Fake formatted user: Bob");
+    }
+}
