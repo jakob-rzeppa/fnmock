@@ -13,3 +13,4 @@ mod fake_returning_nothing;
 mod fake_returning_self;
 mod fake_returning_self_nested;
 mod fake_self_as_param_type;
+mod fake_returning_self_generic;
