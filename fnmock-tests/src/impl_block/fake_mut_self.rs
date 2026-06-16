@@ -36,7 +36,7 @@ mod tests {
         fake!(User, write_name).setup(|_, name, buf| {
             *buf = name.to_string();
         });
-        let mut user = User::new("Alice");
+        let user = User::new("Alice");
         let mut buf = String::new();
         user.write_name("Bob", &mut buf);
         assert_eq!(buf, "Bob");
