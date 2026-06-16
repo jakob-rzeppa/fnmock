@@ -1,7 +1,7 @@
 use quote::quote;
 
 use crate::{
-    fakeable::extract::info::{ FakeableGenericInfo, FakeableInfo },
+    fakeable::extract::{ info::{ FakeableGenericInfo, FakeableInfo } },
     generic_helpers::{
         build_type_id_array,
         extract_generic_idents_from_params,
@@ -15,7 +15,7 @@ pub fn extract_fakeable_info_from_fn(item_fn: &syn::ItemFn) -> syn::Result<Fakea
         &item_fn.sig.ident
     );
 
-    let fn_ptr_type = extract_and_build_fn_ptr_type(&item_fn.sig)?;
+    let fn_ptr_type = extract_and_build_fn_ptr_type(&item_fn.sig);
 
     let generic_info = extract_generic_info(&item_fn.sig);
 
@@ -44,7 +44,7 @@ fn build_names(fn_name: &syn::Ident) -> (syn::Ident, syn::Ident, String, syn::Id
     (module_name, store_name, display_name, interface_struct_name)
 }
 
-fn extract_and_build_fn_ptr_type(fn_sig: &syn::Signature) -> syn::Result<syn::Type> {
+fn extract_and_build_fn_ptr_type(fn_sig: &syn::Signature) -> syn::Type {
     let fn_param_types: Vec<syn::Type> = fn_sig.inputs
         .iter()
         .filter_map(|input| {
@@ -58,10 +58,7 @@ fn extract_and_build_fn_ptr_type(fn_sig: &syn::Signature) -> syn::Result<syn::Ty
     let fn_output = &fn_sig.output;
 
     let fn_ptr_tokens = quote! { fn(#(#fn_param_types),*) #fn_output };
-
-    syn::parse2(fn_ptr_tokens).map_err(|_| {
-        syn::Error::new(proc_macro2::Span::call_site(), "Failed to build function pointer type")
-    })
+    syn::parse(fn_ptr_tokens.into()).expect("Failed to parse function pointer type")
 }
 
 fn extract_generic_info(fn_sig: &syn::Signature) -> Option<FakeableGenericInfo> {

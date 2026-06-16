@@ -4,12 +4,14 @@ pub struct UserRepository<T> {
     users: Vec<T>,
 }
 
-#[fnmock::fakeable]
 impl<T: Display + 'static> UserRepository<T> {
     pub fn new() -> Self {
         UserRepository { users: Vec::new() }
     }
+}
 
+#[fnmock::fakeable]
+impl<T: Display + 'static> UserRepository<T> {
     pub async fn get_user<I: Display + 'static>(&self, user_id: I) -> Option<String> {
         Some(format!("User{}", user_id))
     }

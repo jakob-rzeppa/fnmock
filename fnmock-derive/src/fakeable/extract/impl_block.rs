@@ -1,7 +1,8 @@
 use quote::{ ToTokens, quote };
+use syn::visit_mut::VisitMut;
 
 use crate::{
-    fakeable::extract::info::{ FakeableGenericInfo, FakeableInfo },
+    fakeable::extract::{ info::{ FakeableGenericInfo, FakeableInfo } },
     generic_helpers::{
         build_type_id_array,
         extract_generic_idents_from_params,
@@ -35,7 +36,7 @@ fn extract_fakeable_info_from_single_impl_method(
         &item_impl.self_ty, // Convert the self type to a string and remove spaces
         &impl_fn.sig.ident
     );
-    let fn_ptr_type = extract_and_build_fn_ptr_type(item_impl, &impl_fn.sig)?;
+    let fn_ptr_type = extract_and_build_fn_ptr_type(item_impl, &impl_fn.sig);
 
     let generic_info = extract_generic_info(item_impl, &impl_fn.sig);
 
@@ -87,78 +88,6 @@ fn build_names(
     (module_name, store_name, display_name, interface_struct_name)
 }
 
-fn extract_and_build_fn_ptr_type(
-    impl_item: &syn::ItemImpl,
-    fn_sig: &syn::Signature
-) -> syn::Result<syn::Type> {
-    // Use the self_ty directly - it already has generics if needed
-    let self_ty = &impl_item.self_ty;
-
-    // Extract receiver type (handles &self, &mut self, self, etc.)
-    let receiver_type = if let Some(syn::FnArg::Receiver(receiver)) = fn_sig.inputs.first() {
-        if receiver.reference.is_some() {
-            if receiver.mutability.is_some() {
-                Some(quote! { &mut #self_ty })
-            } else {
-                Some(quote! { &#self_ty })
-            }
-        } else {
-            Some(quote! { #self_ty })
-        }
-    } else {
-        None
-    };
-
-    // Get remaining arguments (skip receiver)
-    let param_types: Vec<_> = fn_sig.inputs
-        .iter()
-        .skip(1) // Skip receiver
-        .collect();
-
-    let output = match &fn_sig.output {
-        syn::ReturnType::Default => quote! { () },
-        syn::ReturnType::Type(_, ty) => {
-            // Replace Self type with the actual self_ty
-            let ty_replaced = replace_self_type(ty, self_ty);
-            quote! { -> #ty_replaced }
-        }
-    };
-
-    // Build the full function pointer type - only include receiver if present
-    let fn_ptr_tokens = if let Some(receiver) = receiver_type {
-        quote! { fn(#receiver, #(#param_types),*) #output }
-    } else {
-        quote! { fn(#(#param_types),*) #output }
-    };
-
-    // Parse the token stream into a Type
-    syn::parse(fn_ptr_tokens.into()).map_err(|err|
-        syn::Error::new_spanned(
-            fn_sig,
-            "Failed to parse function pointer type: ".to_string() + &err.to_string()
-        )
-    )
-}
-
-/// Replace Self type with the actual self_ty
-fn replace_self_type(ty: &syn::Type, self_ty: &syn::Type) -> syn::Type {
-    match ty {
-        syn::Type::Path(type_path) => {
-            // Check if this is the Self type
-            if type_path.path.segments.len() == 1 && type_path.path.segments[0].ident == "Self" {
-                self_ty.clone()
-            } else {
-                // Recursively replace Self in nested types
-                syn::Type::Path(syn::TypePath {
-                    qself: type_path.qself.clone(),
-                    path: type_path.path.clone(),
-                })
-            }
-        }
-        _ => ty.clone(),
-    }
-}
-
 fn extract_generic_info(
     item_impl: &syn::ItemImpl,
     fn_sig: &syn::Signature
@@ -183,4 +112,60 @@ fn extract_generic_info(
         generic_idents,
         generic_type_ids,
     })
+}
+
+fn extract_and_build_fn_ptr_type(impl_item: &syn::ItemImpl, fn_sig: &syn::Signature) -> syn::Type {
+    let fn_param_types: Vec<syn::Type> = fn_sig.inputs
+        .iter()
+        .filter_map(|input| {
+            match input {
+                syn::FnArg::Typed(pat_type) => Some((*pat_type.ty).clone()),
+                syn::FnArg::Receiver(receiver) => {
+                    let self_ty = &impl_item.self_ty;
+                    if receiver.reference.is_some() {
+                        if receiver.mutability.is_some() {
+                            Some(syn::parse_quote! { &mut #self_ty })
+                        } else {
+                            Some(syn::parse_quote! { &#self_ty })
+                        }
+                    } else {
+                        Some(syn::parse_quote! { #self_ty })
+                    }
+                }
+            }
+        })
+        .collect();
+
+    let fn_output = &fn_sig.output;
+
+    let replaced_self_fn_output = match fn_output {
+        syn::ReturnType::Default => { syn::ReturnType::Default }
+        syn::ReturnType::Type(arrow, ty) => {
+            let mut ty = ty.clone();
+            (ReplaceSelf {
+                self_ty: impl_item.self_ty.as_ref(),
+            }).visit_type_mut(ty.as_mut());
+            syn::ReturnType::Type(*arrow, ty)
+        }
+    };
+
+    let fn_ptr_tokens = quote! { fn(#(#fn_param_types),*) #replaced_self_fn_output };
+    syn::parse(fn_ptr_tokens.into()).expect("Failed to parse function pointer type")
+}
+
+struct ReplaceSelf<'a> {
+    self_ty: &'a syn::Type,
+}
+
+impl syn::visit_mut::VisitMut for ReplaceSelf<'_> {
+    fn visit_type_mut(&mut self, ty: &mut syn::Type) {
+        if let syn::Type::Path(syn::TypePath { qself: None, path }) = ty {
+            if path.is_ident("Self") {
+                *ty = self.self_ty.clone();
+                return;
+            }
+        }
+
+        syn::visit_mut::visit_type_mut(self, ty);
+    }
 }

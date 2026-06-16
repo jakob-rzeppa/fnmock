@@ -9,4 +9,6 @@ mod fake_generic_generic_async;
 mod fake_consuming_self;
 mod fake_mut_self;
 mod fake_associated_function;
-mod fake_no_return_value;
+mod fake_returning_nothing;
+mod fake_returning_self;
+mod fake_returning_self_nested;
