@@ -1,5 +1,3 @@
-use std::ops::Bound;
-
 use crate::spy::range::CallRange;
 
 pub struct TimesExpectation {
@@ -34,9 +32,7 @@ mod tests {
 
     #[test]
     fn test_successful_expectation() {
-        let mut expectation = TimesExpectation::new(
-            CallRange::new(Bound::Included(2), Bound::Included(4))
-        );
+        let mut expectation = TimesExpectation::new(CallRange::from_range(2..=4));
         expectation.increment_times_called();
         expectation.increment_times_called();
         expectation.increment_times_called();
@@ -45,9 +41,7 @@ mod tests {
 
     #[test]
     fn test_failed_expectation() {
-        let mut expectation = TimesExpectation::new(
-            CallRange::new(Bound::Included(2), Bound::Included(4))
-        );
+        let mut expectation = TimesExpectation::new(CallRange::from_range(2..=4));
         expectation.increment_times_called();
         let result = expectation.is_met();
         assert!(result.is_err());

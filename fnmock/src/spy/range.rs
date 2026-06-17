@@ -6,10 +6,6 @@ pub struct CallRange {
 }
 
 impl CallRange {
-    pub fn new(start: Bound<usize>, end: Bound<usize>) -> Self {
-        CallRange { start, end }
-    }
-
     pub fn from_range<R: RangeBounds<usize>>(range: R) -> Self {
         let start = match range.start_bound() {
             std::ops::Bound::Included(&n) => Bound::Included(n),
@@ -82,7 +78,7 @@ mod tests {
 
     #[test]
     fn test_is_within_included_included() {
-        let range = CallRange::new(Bound::Included(2), Bound::Included(4));
+        let range = CallRange { start: Bound::Included(2), end: Bound::Included(4) };
         assert!(!range.is_within(1));
         assert!(range.is_within(2));
         assert!(range.is_within(3));
@@ -93,7 +89,7 @@ mod tests {
 
     #[test]
     fn test_is_within_excluded_included() {
-        let range = CallRange::new(Bound::Excluded(2), Bound::Included(4));
+        let range = CallRange { start: Bound::Excluded(2), end: Bound::Included(4) };
         assert!(!range.is_within(1));
         assert!(!range.is_within(2));
         assert!(range.is_within(3));
@@ -103,7 +99,7 @@ mod tests {
 
     #[test]
     fn test_is_within_included_excluded() {
-        let range = CallRange::new(Bound::Included(2), Bound::Excluded(4));
+        let range = CallRange { start: Bound::Included(2), end: Bound::Excluded(4) };
         assert!(!range.is_within(1));
         assert!(range.is_within(2));
         assert!(range.is_within(3));
@@ -113,7 +109,7 @@ mod tests {
 
     #[test]
     fn test_is_within_excluded_excluded() {
-        let range = CallRange::new(Bound::Excluded(2), Bound::Excluded(4));
+        let range = CallRange { start: Bound::Excluded(2), end: Bound::Excluded(4) };
         assert!(!range.is_within(1));
         assert!(!range.is_within(2));
         assert!(range.is_within(3));
@@ -123,14 +119,14 @@ mod tests {
 
     #[test]
     fn test_is_within_unbounded() {
-        let range = CallRange::new(Bound::Unbounded, Bound::Unbounded);
+        let range = CallRange { start: Bound::Unbounded, end: Bound::Unbounded };
         assert!(range.is_within(0));
         assert!(range.is_within(100));
     }
 
     #[test]
     fn test_is_within_upper_unbounded() {
-        let range = CallRange::new(Bound::Included(2), Bound::Unbounded);
+        let range = CallRange { start: Bound::Included(2), end: Bound::Unbounded };
         assert!(!range.is_within(1));
         assert!(range.is_within(2));
         assert!(range.is_within(3));
@@ -139,7 +135,7 @@ mod tests {
 
     #[test]
     fn test_is_within_lower_unbounded() {
-        let range = CallRange::new(Bound::Unbounded, Bound::Included(4));
+        let range = CallRange { start: Bound::Unbounded, end: Bound::Included(4) };
         assert!(range.is_within(0));
         assert!(range.is_within(2));
         assert!(range.is_within(4));
@@ -148,17 +144,17 @@ mod tests {
 
     #[test]
     fn test_is_at_max() {
-        let range = CallRange::new(Bound::Included(2), Bound::Included(4));
+        let range = CallRange { start: Bound::Included(2), end: Bound::Included(4) };
         assert!(!range.is_at_max(3));
         assert!(range.is_at_max(4));
         assert!(!range.is_at_max(5));
 
-        let range = CallRange::new(Bound::Included(2), Bound::Excluded(4));
+        let range = CallRange { start: Bound::Included(2), end: Bound::Excluded(4) };
         assert!(!range.is_at_max(2));
         assert!(range.is_at_max(3));
         assert!(!range.is_at_max(4));
 
-        let range = CallRange::new(Bound::Included(2), Bound::Unbounded);
+        let range = CallRange { start: Bound::Included(2), end: Bound::Unbounded };
         assert!(!range.is_at_max(3));
         assert!(!range.is_at_max(100));
     }

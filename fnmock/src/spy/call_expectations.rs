@@ -1,4 +1,4 @@
-use std::{ collections::VecDeque, fmt::Debug, ops::Bound };
+use std::{ collections::VecDeque, fmt::Debug };
 
 use crate::spy::range::CallRange;
 
@@ -163,16 +163,8 @@ mod tests {
     #[test]
     fn test_not_in_sequence_success() {
         let mut expectations = CallExpectations::new();
-        expectations.add_expectation(
-            |&x| x == 1,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 1"
-        );
-        expectations.add_expectation(
-            |&x| x == 2,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 2"
-        );
+        expectations.add_expectation(|&x| x == 1, CallRange::from_range(1..=2), "x == 1");
+        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
 
         expectations.record_call(&1).unwrap();
         expectations.record_call(&2).unwrap();
@@ -188,16 +180,8 @@ mod tests {
     #[test]
     fn test_not_in_sequence_failure() {
         let mut expectations = CallExpectations::new();
-        expectations.add_expectation(
-            |&x| x == 1,
-            CallRange::new(Bound::Included(3), Bound::Included(3)),
-            "x == 1"
-        );
-        expectations.add_expectation(
-            |&x| x == 2,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 2"
-        );
+        expectations.add_expectation(|&x| x == 1, CallRange::from_range(3..=3), "x == 1");
+        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
 
         expectations.record_call(&1).unwrap();
         expectations.record_call(&2).unwrap();
@@ -219,16 +203,8 @@ mod tests {
     #[test]
     fn test_not_in_sequence_multiple_failures() {
         let mut expectations = CallExpectations::new();
-        expectations.add_expectation(
-            |&x| x == 1,
-            CallRange::new(Bound::Included(3), Bound::Included(3)),
-            "x == 1"
-        );
-        expectations.add_expectation(
-            |&x| x == 2,
-            CallRange::new(Bound::Included(3), Bound::Included(3)),
-            "x == 2"
-        );
+        expectations.add_expectation(|&x| x == 1, CallRange::from_range(3..=3), "x == 1");
+        expectations.add_expectation(|&x| x == 2, CallRange::from_range(3..=3), "x == 2");
 
         expectations.record_call(&1).unwrap();
         expectations.record_call(&2).unwrap();
@@ -251,16 +227,8 @@ mod tests {
     fn test_in_sequence_success() {
         let mut expectations = CallExpectations::new();
         expectations.in_sequence = true;
-        expectations.add_expectation(
-            |&x| x == 1,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 1"
-        );
-        expectations.add_expectation(
-            |&x| x == 2,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 2"
-        );
+        expectations.add_expectation(|&x| x == 1, CallRange::from_range(1..=2), "x == 1");
+        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
 
         expectations.record_call(&1).unwrap();
         expectations.record_call(&1).unwrap();
@@ -276,21 +244,9 @@ mod tests {
     fn test_in_sequence_failure_wrong_order() {
         let mut expectations = CallExpectations::new();
         expectations.in_sequence = true;
-        expectations.add_expectation(
-            |&x| x == 1,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 1"
-        );
-        expectations.add_expectation(
-            |&x| x == 2,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 2"
-        );
-        expectations.add_expectation(
-            |&x| x == 3,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 3"
-        );
+        expectations.add_expectation(|&x| x == 1, CallRange::from_range(1..=2), "x == 1");
+        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
+        expectations.add_expectation(|&x| x == 3, CallRange::from_range(1..=2), "x == 3");
 
         expectations.record_call(&1).unwrap();
         expectations.record_call(&2).unwrap();
@@ -305,16 +261,8 @@ mod tests {
     fn test_in_sequence_failure_wrong_first_call() {
         let mut expectations = CallExpectations::new();
         expectations.set_in_sequence();
-        expectations.add_expectation(
-            |&x| x == 1,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 1"
-        );
-        expectations.add_expectation(
-            |&x| x == 2,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 2"
-        );
+        expectations.add_expectation(|&x| x == 1, CallRange::from_range(1..=2), "x == 1");
+        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
 
         let result = expectations.record_call(&2); // This call is out of sequence, since the first expectation expects a call with argument 1
         assert!(result.is_err());
@@ -326,16 +274,8 @@ mod tests {
     fn test_in_sequence_failure_not_enough_calls() {
         let mut expectations = CallExpectations::new();
         expectations.set_in_sequence();
-        expectations.add_expectation(
-            |&x| x == 1,
-            CallRange::new(Bound::Included(2), Bound::Included(2)),
-            "x == 1"
-        );
-        expectations.add_expectation(
-            |&x| x == 2,
-            CallRange::new(Bound::Included(1), Bound::Included(2)),
-            "x == 2"
-        );
+        expectations.add_expectation(|&x| x == 1, CallRange::from_range(2..=2), "x == 1");
+        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
 
         expectations.record_call(&1).unwrap(); // Only one call with argument 1, but the expectation requires exactly 2
 
