@@ -1,8 +1,8 @@
-fn get_user(id: i32) -> String {
+fn get_user(id: i32, id2: String) -> String {
     #[cfg(test)]
-    get_user_spy::save(id);
+    let (id, id2) = get_user_spy::GetUserSpyInterface::new().record((id, id2));
 
-    format!("User {}", id)
+    format!("User {} {}", id, id2)
 }
 
 #[cfg(test)]
@@ -10,97 +10,114 @@ pub(crate) mod get_user_spy {
     use fnmock::spy::Spy;
 
     thread_local! {
-        static GET_USER_SPY: std::cell::RefCell<Spy<i32>> = std::cell::RefCell::new(
+        static GET_USER_SPY: std::cell::RefCell<Spy<(i32, String)>> = std::cell::RefCell::new(
             Spy::new("get_user")
         );
     }
 
-    pub(crate) fn setup() {
-        GET_USER_SPY.with_borrow_mut(|spy| {
-            spy.setup();
-        });
-    }
+    pub(crate) struct GetUserSpyInterface;
 
-    pub(crate) fn teardown() {
-        GET_USER_SPY.with_borrow_mut(|spy| {
-            spy.teardown();
-        });
-    }
+    impl GetUserSpyInterface {
+        pub(crate) fn new() -> Self {
+            Self
+        }
 
-    pub(crate) fn save(args: i32) {
-        GET_USER_SPY.with_borrow_mut(|spy| {
-            spy.save(args);
-        });
-    }
+        pub(crate) fn setup(self) -> Self {
+            GET_USER_SPY.with_borrow_mut(|spy| {
+                spy.setup();
+            });
+            self
+        }
 
-    pub(crate) fn clear() {
-        GET_USER_SPY.with_borrow_mut(|spy| {
-            spy.clear();
-        })
-    }
+        pub(crate) fn record(&self, args: (i32, String)) -> (i32, String) {
+            GET_USER_SPY.with_borrow_mut(|spy| { spy.record(args) })
+        }
 
-    pub(crate) fn called_times(times: usize) -> bool {
-        GET_USER_SPY.with_borrow(|spy| { spy.called_times(times) })
-    }
+        pub(crate) fn verify(self) -> Self {
+            GET_USER_SPY.with_borrow_mut(|spy| {
+                spy.verify();
+            });
+            self
+        }
 
-    pub(crate) fn assert_called_times(times: usize) {
-        GET_USER_SPY.with_borrow(|spy| {
-            assert!(
-                spy.called_times(times),
-                "Expected {} calls, but got {}",
-                times,
-                spy.called_times(times)
-            )
-        })
-    }
+        pub(crate) fn expect_call(
+            self,
+            expectation: fn(&(i32, String)) -> bool,
+            expectation_display: &'static str
+        ) -> Self {
+            GET_USER_SPY.with_borrow_mut(|spy| {
+                spy.expect_call(expectation, expectation_display);
+            });
+            self
+        }
 
-    pub(crate) fn any_call_matches(args: fn(i32) -> bool) -> bool {
-        GET_USER_SPY.with_borrow(|spy| { spy.any_call_matches(args) })
-    }
+        pub(crate) fn expect_call_times(
+            self,
+            times: usize,
+            expectation: fn(&(i32, String)) -> bool,
+            expectation_display: &'static str
+        ) -> Self {
+            GET_USER_SPY.with_borrow_mut(|spy| {
+                spy.expect_call_times(times, expectation, expectation_display);
+            });
+            self
+        }
 
-    pub(crate) fn assert_any_call_matches(args: fn(i32) -> bool) {
-        GET_USER_SPY.with_borrow(|spy| {
-            assert!(spy.any_call_matches(args), "Expected call matching predicate, but none found.")
-        })
-    }
+        pub(crate) fn expect_call_range<R: std::ops::RangeBounds<usize>>(
+            self,
+            range: R,
+            expectation: fn(&(i32, String)) -> bool,
+            expectation_display: &'static str
+        ) -> Self {
+            GET_USER_SPY.with_borrow_mut(|spy| {
+                spy.expect_call_range(range, expectation, expectation_display);
+            });
+            self
+        }
 
-    pub(crate) fn any_call_equals(args: i32) -> bool {
-        GET_USER_SPY.with_borrow(|spy| { spy.any_call_equals(args) })
-    }
+        pub(crate) fn expect_call_once(
+            self,
+            expectation: fn(&(i32, String)) -> bool,
+            expectation_display: &'static str
+        ) -> Self {
+            GET_USER_SPY.with_borrow_mut(|spy| {
+                spy.expect_call_once(expectation, expectation_display);
+            });
+            self
+        }
 
-    pub(crate) fn assert_any_call_equals(args: i32) {
-        GET_USER_SPY.with_borrow(|spy| {
-            assert!(
-                spy.any_call_equals(args),
-                "Expected call with arguments ({}), but none found.",
-                args
-            )
-        })
-    }
+        pub(crate) fn in_sequence(self) -> Self {
+            GET_USER_SPY.with_borrow_mut(|spy| {
+                spy.in_sequence();
+            });
+            self
+        }
 
-    pub(crate) fn nth_call_matches(n: usize, args: fn(i32) -> bool) -> bool {
-        GET_USER_SPY.with_borrow(|spy| { spy.nth_call_matches(n, args) })
-    }
+        pub(crate) fn expect_range<R: std::ops::RangeBounds<usize>>(self, range: R) -> Self {
+            GET_USER_SPY.with_borrow_mut(|spy| {
+                spy.expect_range(range);
+            });
+            self
+        }
 
-    pub(crate) fn assert_nth_call_matches(n: usize, args: fn(i32) -> bool) {
-        GET_USER_SPY.with_borrow(|spy| {
-            assert!(spy.nth_call_matches(n, args), "Expected call {} matching predicate.", n)
-        })
-    }
+        pub(crate) fn expect_times(self, times: usize) -> Self {
+            GET_USER_SPY.with_borrow_mut(|spy| {
+                spy.expect_times(times);
+            });
+            self
+        }
 
-    pub(crate) fn nth_call_equals(n: usize, args: i32) -> bool {
-        GET_USER_SPY.with_borrow(|spy| { spy.nth_call_equals(n, args) })
-    }
-
-    pub(crate) fn assert_nth_call_equals(n: usize, args: i32) {
-        GET_USER_SPY.with_borrow(|spy| {
-            assert!(spy.nth_call_equals(n, args), "Expected call {} with arguments ({}).", n, args)
-        })
+        pub(crate) fn expect_never(self) -> Self {
+            GET_USER_SPY.with_borrow_mut(|spy| {
+                spy.expect_never();
+            });
+            self
+        }
     }
 }
 
-fn handle_user(id: i32) -> String {
-    let user = get_user(id);
+fn handle_user(id: i32, id2: String) -> String {
+    let user = get_user(id, id2);
     user
 }
 
@@ -110,27 +127,16 @@ mod tests {
 
     #[test]
     fn test_handle_user_spy() {
-        get_user_spy::setup();
+        let spy = get_user_spy::GetUserSpyInterface
+            ::new()
+            .setup()
+            .expect_call(|i| *i == (1, "2".into()), "i == (1, \"2\")")
+            .in_sequence();
 
-        let result = handle_user(1);
+        let result = handle_user(1, "2".into());
 
-        assert_eq!(result, "User 1");
+        assert_eq!(result, "User 1 2");
 
-        assert!(get_user_spy::called_times(1));
-        get_user_spy::assert_called_times(1);
-        get_user_spy::assert_any_call_matches(|id| id == 1);
-        get_user_spy::assert_any_call_equals(1);
-        get_user_spy::assert_nth_call_matches(0, |id| id == 1);
-        get_user_spy::assert_nth_call_equals(0, 1);
-
-        get_user_spy::clear();
-
-        let result = handle_user(2);
-
-        assert_eq!(result, "User 2");
-
-        get_user_spy::assert_called_times(1);
-        get_user_spy::assert_any_call_matches(|id| id == 2);
-        get_user_spy::assert_nth_call_matches(0, |id| id == 2);
+        spy.verify();
     }
 }
