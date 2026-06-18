@@ -49,9 +49,9 @@ impl<Args: Debug> Spy<Args> {
     }
 
     /// Check if a expectation is met for the given args
-    pub fn record(&mut self, args: &Args) {
+    pub fn record(&mut self, args: Args) -> Args {
         if let Some(call_expectations) = &mut self.call_expectations {
-            match call_expectations.record_call(args) {
+            match call_expectations.record_call(&args) {
                 Ok(()) => (),
                 Err(e) => panic!("Expectation for {} spy were not met: {}", self.name, e),
             }
@@ -60,6 +60,7 @@ impl<Args: Debug> Spy<Args> {
                 times_expectation.increment_times_called();
             }
         }
+        args
     }
 
     pub fn verify(&mut self) {
@@ -208,16 +209,16 @@ mod tests {
     fn record_calls_succeeds_after_setup() {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
-        spy.record(&1);
-        spy.record(&2);
+        spy.record(1);
+        spy.record(2);
         spy.verify();
     }
 
     #[test]
     fn record_calls_without_setup_succeeds_and_does_not_panic() {
         let mut spy = Spy::<i32>::new("test");
-        spy.record(&1);
-        spy.record(&2);
+        spy.record(1);
+        spy.record(2);
     }
 
     //
@@ -268,7 +269,7 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_call(is_one, "1");
-        spy.record(&1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -277,9 +278,9 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_call(is_one, "1");
-        spy.record(&1);
-        spy.record(&1);
-        spy.record(&1);
+        spy.record(1);
+        spy.record(1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -301,7 +302,7 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_call_once(is_one, "1");
-        spy.record(&1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -320,8 +321,8 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_call_once(is_one, "1");
-        spy.record(&1);
-        spy.record(&1);
+        spy.record(1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -334,8 +335,8 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_call_times(2, is_one, "1");
-        spy.record(&1);
-        spy.record(&1);
+        spy.record(1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -345,7 +346,7 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_call_times(2, is_one, "1");
-        spy.record(&1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -355,9 +356,9 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_call_times(2, is_one, "1");
-        spy.record(&1);
-        spy.record(&1);
-        spy.record(&1);
+        spy.record(1);
+        spy.record(1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -371,8 +372,8 @@ mod tests {
         spy.setup();
         spy.expect_call(is_one, "1");
         spy.expect_call(is_two, "2");
-        spy.record(&1);
-        spy.record(&2);
+        spy.record(1);
+        spy.record(2);
         spy.verify();
     }
 
@@ -383,7 +384,7 @@ mod tests {
         spy.setup();
         spy.expect_call(is_one, "1");
         spy.expect_call(is_two, "2");
-        spy.record(&1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -396,8 +397,8 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_times(2);
-        spy.record(&1);
-        spy.record(&2);
+        spy.record(1);
+        spy.record(2);
         spy.verify();
     }
 
@@ -407,7 +408,7 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_times(2);
-        spy.record(&1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -417,9 +418,9 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_times(2);
-        spy.record(&1);
-        spy.record(&2);
-        spy.record(&1);
+        spy.record(1);
+        spy.record(2);
+        spy.record(1);
         spy.verify();
     }
 
@@ -441,7 +442,7 @@ mod tests {
         let mut spy = Spy::<i32>::new("test");
         spy.setup();
         spy.expect_never();
-        spy.record(&1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -468,7 +469,7 @@ mod tests {
         spy.setup();
         spy.expect_call_once(is_one, "1");
         spy.expect_times(1);
-        spy.record(&1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -479,7 +480,7 @@ mod tests {
         spy.setup();
         spy.expect_call_once(is_one, "1");
         spy.expect_times(2);
-        spy.record(&1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -490,7 +491,7 @@ mod tests {
         spy.setup();
         spy.expect_call_once(is_two, "2");
         spy.expect_times(1);
-        spy.record(&1);
+        spy.record(1);
         spy.verify();
     }
 
@@ -505,8 +506,8 @@ mod tests {
         spy.expect_call(is_one, "1");
         spy.expect_call(is_two, "2");
         spy.in_sequence();
-        spy.record(&1);
-        spy.record(&2);
+        spy.record(1);
+        spy.record(2);
         spy.verify();
     }
 
@@ -518,8 +519,8 @@ mod tests {
         spy.expect_call(is_one, "1");
         spy.expect_call(is_two, "2");
         spy.in_sequence();
-        spy.record(&2);
-        spy.record(&1);
+        spy.record(2);
+        spy.record(1);
         spy.verify();
     }
 
@@ -531,7 +532,7 @@ mod tests {
         spy.expect_call(is_one, "1");
         spy.expect_call(is_two, "2");
         spy.in_sequence();
-        spy.record(&2);
+        spy.record(2);
         spy.verify();
     }
 
@@ -542,10 +543,10 @@ mod tests {
         spy.expect_call(is_one, "1");
         spy.expect_call(is_two, "2");
         spy.in_sequence();
-        spy.record(&1);
-        spy.record(&1);
-        spy.record(&2);
-        spy.record(&2);
+        spy.record(1);
+        spy.record(1);
+        spy.record(2);
+        spy.record(2);
         spy.verify();
     }
 
@@ -557,9 +558,9 @@ mod tests {
         spy.expect_call_once(is_one, "1");
         spy.expect_call_once(is_two, "2");
         spy.in_sequence();
-        spy.record(&1);
-        spy.record(&2);
-        spy.record(&2);
+        spy.record(1);
+        spy.record(2);
+        spy.record(2);
         spy.verify();
     }
 }
