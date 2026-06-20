@@ -1,10 +1,20 @@
 use quote::quote;
 
-use crate::fakeable::{ inline_call::insert_inline_call_into_fn_block };
+use crate::{
+    extract::{ function::extract_function_info, impl_block::extract_item_impl_info },
+    fakeable::{
+        generate_module_info::{
+            generate_fakeable_info_from_function,
+            generate_fakeable_info_from_impl_block,
+        },
+        inline_call::insert_inline_call_into_fn_block,
+    },
+};
 
-mod extract;
 mod fake_module;
 mod inline_call;
+mod generate_module_info;
+mod info;
 
 pub fn handle_fakeable(
     _attr: proc_macro::TokenStream,
@@ -15,31 +25,16 @@ pub fn handle_fakeable(
     let expanded = match syn::parse::<syn::Item>(item.clone()) {
         Ok(syn::Item::Fn(mut item_fn)) => {
             // If it's a function, extract the fake module info for that function
-            let info = extract::function::extract_fakeable_info_from_fn(&item_fn)?;
+            let function_info = extract_function_info(&item_fn)?;
+            let info = generate_fakeable_info_from_function(&function_info)?;
 
             // Create the fake module code based on the extracted information
             let module = fake_module::generate_fake_module_code(&info)?;
 
-            let param_idents: Vec<syn::Ident> = item_fn.sig.inputs
-                .iter()
-                .filter_map(|input| {
-                    match input {
-                        syn::FnArg::Typed(pat_type) => {
-                            if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
-                                Some(pat_ident.ident.clone())
-                            } else {
-                                None
-                            }
-                        }
-                        _ => None,
-                    }
-                })
-                .collect();
-
             // Insert the inline call into the original function's block
             let modified_block = insert_inline_call_into_fn_block(
                 &item_fn.block,
-                &param_idents,
+                &function_info.param_idents,
                 &info.module_name,
                 &info.interface_struct_name,
                 info.generic_info.as_ref().map(|gi| &gi.generic_idents[..])
@@ -54,7 +49,8 @@ pub fn handle_fakeable(
         }
         Ok(syn::Item::Impl(item_impl)) => {
             // If it's an impl block, extract fake module info for each method
-            let infos = extract::impl_block::extract_fakeable_info_from_impl_block(&item_impl)?;
+            let item_impl_info = extract_item_impl_info(&item_impl)?;
+            let infos = generate_fakeable_info_from_impl_block(&item_impl_info)?;
 
             // Create the fake module code based on the extracted information for each method
             let modules = infos
@@ -70,31 +66,19 @@ pub fn handle_fakeable(
 
             for method in &mut modified_impl.items {
                 if let syn::ImplItem::Fn(ref mut method_fn) = *method {
+                    let item_impl_method_info = item_impl_info
+                        .iter()
+                        .find(|info| info.method_name == method_fn.sig.ident)
+                        .expect("Could not find matching method info for method in impl block");
+
                     let info = info_iter
                         .next()
                         .expect("Mismatch between number of methods and extracted info");
 
-                    let param_idents: Vec<syn::Ident> = method_fn.sig.inputs
-                        .iter()
-                        .filter_map(|input| {
-                            match input {
-                                syn::FnArg::Typed(pat_type) => {
-                                    if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
-                                        Some(pat_ident.ident.clone())
-                                    } else {
-                                        None
-                                    }
-                                }
-                                syn::FnArg::Receiver(_) =>
-                                    Some(syn::Ident::new("self", method_fn.sig.ident.span())),
-                            }
-                        })
-                        .collect();
-
                     // Insert the inline call into the method's block
                     method_fn.block = insert_inline_call_into_fn_block(
                         &method_fn.block,
-                        &param_idents,
+                        &item_impl_method_info.param_idents,
                         &info.module_name,
                         &info.interface_struct_name,
                         info.generic_info.as_ref().map(|gi| &gi.generic_idents[..])

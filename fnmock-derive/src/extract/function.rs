@@ -6,17 +6,17 @@ use crate::extract::{
 
 pub struct FunctionInfo {
     pub name: syn::Ident,
-    pub param_types: Vec<syn::Type>,
+    pub _param_types: Vec<syn::Type>,
     pub param_idents: Vec<syn::Ident>,
     pub fn_ptr_type: syn::Type,
     pub generic_info: Option<FunctionGenericInfo>,
 }
 
 pub struct FunctionGenericInfo {
-    pub generic_count: usize,
-    pub generic_type_params: Vec<syn::TypeParam>,
-    pub generic_idents: Vec<syn::Ident>,
-    pub generic_type_ids: Vec<syn::Expr>,
+    pub count: usize,
+    pub type_params: Vec<syn::TypeParam>,
+    pub idents: Vec<syn::Ident>,
+    pub type_ids: Vec<syn::Expr>,
 }
 
 /// Extracts the function information from a `syn::ItemFn`, including the function name, parameter types, parameter identifiers, function pointer type, and generic information if present.
@@ -30,7 +30,7 @@ pub fn extract_function_info(item_fn: &syn::ItemFn) -> syn::Result<FunctionInfo>
 
     Ok(FunctionInfo {
         name,
-        param_types,
+        _param_types: param_types,
         param_idents,
         fn_ptr_type,
         generic_info,

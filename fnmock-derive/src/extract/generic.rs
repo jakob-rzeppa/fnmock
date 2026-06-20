@@ -6,21 +6,21 @@ use crate::extract::function::FunctionGenericInfo;
 ///
 /// This is used for free functions and not impl blocks, as impl blocks require special handling to combine the generic parameters from both the struct and the method.
 pub fn extract_generic_function_info(generics: &syn::Generics) -> Option<FunctionGenericInfo> {
-    let generic_count = generics.params.len();
-    let generic_type_params = extract_generic_type_params(generics);
+    let count = generics.params.len();
+    let type_params = extract_generic_type_params(generics);
 
-    if generic_type_params.is_empty() {
+    if type_params.is_empty() {
         return None;
     }
 
-    let generic_idents = extract_generic_idents_from_params(&generic_type_params);
-    let generic_type_ids = build_type_id_array(&generic_idents);
+    let idents = extract_generic_idents_from_params(&type_params);
+    let type_ids = build_type_id_array(&idents);
 
     Some(FunctionGenericInfo {
-        generic_count,
-        generic_type_params,
-        generic_idents,
-        generic_type_ids,
+        count,
+        type_params,
+        idents,
+        type_ids,
     })
 }
 
@@ -46,10 +46,10 @@ pub fn extract_generic_impl_info(
     let generic_type_ids = build_type_id_array(&generic_idents);
 
     Some(FunctionGenericInfo {
-        generic_count: generic_params.len(),
-        generic_type_params: generic_params,
-        generic_idents,
-        generic_type_ids,
+        count: generic_params.len(),
+        type_params: generic_params,
+        idents: generic_idents,
+        type_ids: generic_type_ids,
     })
 }
 

@@ -10,7 +10,7 @@ use crate::extract::{
 pub struct ItemImplMethodInfo {
     pub struct_name: syn::Ident,
     pub method_name: syn::Ident,
-    pub param_types: Vec<syn::Type>,
+    pub _param_types: Vec<syn::Type>,
     pub param_idents: Vec<syn::Ident>,
     pub fn_ptr_type: syn::Type,
     pub generic_info: Option<ItemImplMethodGenericInfo>,
@@ -58,14 +58,14 @@ fn extract_single_item_impl_info_for_method(
     Ok(ItemImplMethodInfo {
         struct_name,
         method_name,
-        param_types,
+        _param_types: param_types,
         param_idents,
         fn_ptr_type,
         generic_info: generic_info.map(|info| ItemImplMethodGenericInfo {
-            count: info.generic_count,
-            type_params: info.generic_type_params,
-            idents: info.generic_idents,
-            type_ids: info.generic_type_ids,
+            count: info.count,
+            type_params: info.type_params,
+            idents: info.idents,
+            type_ids: info.type_ids,
         }),
     })
 }

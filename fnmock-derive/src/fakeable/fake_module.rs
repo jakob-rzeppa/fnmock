@@ -1,6 +1,6 @@
 use quote::quote;
 
-use crate::{ fakeable::extract::info::FakeableInfo, module_builder::ModuleBuilder };
+use crate::{ fakeable::info::FakeableInfo, module_builder::ModuleBuilder };
 
 pub fn generate_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMod> {
     if let Some(_) = &info.generic_info {
