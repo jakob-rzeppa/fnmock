@@ -7,7 +7,6 @@ use crate::{
         extract_generic_idents_from_params,
         extract_generic_type_params,
     },
-    helpers::snake_to_pascal_case,
     names::{ NameType, build_interface_struct_name, build_module_name, build_store_name },
 };
 

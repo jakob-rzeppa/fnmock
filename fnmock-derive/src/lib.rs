@@ -2,7 +2,6 @@ use crate::{ fake::handle_fake, fakeable::handle_fakeable };
 
 mod fakeable;
 mod fake;
-mod helpers;
 mod generic_helpers;
 mod module_builder;
 mod names;

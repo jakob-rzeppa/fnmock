@@ -1,8 +1,7 @@
-use quote::{ format_ident, quote };
+use quote::quote;
 use syn::parse_macro_input;
 
 use crate::{
-    helpers::{ pascal_to_snake_case, snake_to_pascal_case },
     names::{
         NameType,
         build_impl_interface_struct_name,
