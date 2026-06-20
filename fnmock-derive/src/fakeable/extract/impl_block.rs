@@ -1,13 +1,6 @@
-use quote::{ quote };
-use syn::{ spanned::Spanned, visit_mut::VisitMut };
-
 use crate::{
+    extract::impl_block::extract_item_impl_info,
     fakeable::extract::info::{ FakeableGenericInfo, FakeableInfo },
-    generic_helpers::{
-        build_type_id_array,
-        extract_generic_idents_from_params,
-        extract_generic_type_params,
-    },
     names::{
         NameType,
         build_impl_interface_struct_name,
@@ -19,159 +12,41 @@ use crate::{
 pub fn extract_fakeable_info_from_impl_block(
     item_impl: &syn::ItemImpl
 ) -> syn::Result<Vec<FakeableInfo>> {
-    let fakebale_module_info = item_impl.items
-        .iter()
-        .filter_map(|item| {
-            if let syn::ImplItem::Fn(impl_fn) = item {
-                Some(extract_fakeable_info_from_single_impl_method(item_impl, impl_fn))
-            } else {
-                None
-            }
-        })
-        .collect::<syn::Result<Vec<FakeableInfo>>>()?;
+    let item_impl_info = extract_item_impl_info(item_impl)?;
 
-    Ok(fakebale_module_info)
-}
-
-fn extract_fakeable_info_from_single_impl_method(
-    item_impl: &syn::ItemImpl,
-    impl_fn: &syn::ImplItemFn
-) -> syn::Result<FakeableInfo> {
-    let (module_name, store_name, display_name, interface_struct_name) = build_names(
-        &item_impl.self_ty, // Convert the self type to a string and remove spaces
-        &impl_fn.sig.ident
-    )?;
-    let fn_ptr_type = extract_and_build_fn_ptr_type(item_impl, &impl_fn.sig);
-
-    let generic_info = extract_generic_info(item_impl, &impl_fn.sig);
-
-    Ok(FakeableInfo {
-        module_name,
-        store_name,
-        display_name,
-        interface_struct_name,
-        fn_ptr_type,
-        generic_info,
-    })
-}
-
-fn build_names(
-    struct_type: &syn::Type,
-    method_name: &syn::Ident
-) -> syn::Result<(syn::Ident, syn::Ident, String, syn::Ident)> {
-    let struct_name = match struct_type {
-        syn::Type::Path(tp) => {
-            // Usually the last segment is the concrete type.
-            // Example: Foo<T> -> Path segments [..., Foo<T>]
-            let seg = tp.path.segments.last().expect("Expected at least one segment in path");
-            &seg.ident
-        }
-        _ => {
-            return Err(
-                syn::Error::new(
-                    struct_type.span(),
-                    "Unsupported struct type. Only simple paths / generics are supported for impl blocks."
-                )
-            );
-        }
-    };
-
-    let module_name = build_impl_module_name(struct_name, method_name, NameType::Fake);
-    let store_name = build_impl_store_name(struct_name, method_name, NameType::Fake);
-    let display_name = format!("{} {}", struct_name, method_name);
-    let interface_struct_name = build_impl_interface_struct_name(
-        struct_name,
-        method_name,
-        NameType::Fake
-    );
-
-    Ok((module_name, store_name, display_name, interface_struct_name))
-}
-
-fn extract_generic_info(
-    item_impl: &syn::ItemImpl,
-    fn_sig: &syn::Signature
-) -> Option<FakeableGenericInfo> {
-    if fn_sig.generics.params.is_empty() && item_impl.generics.params.is_empty() {
-        return None;
-    }
-
-    let struct_generic_params = extract_generic_type_params(&item_impl.generics);
-    let fn_generic_params = extract_generic_type_params(&fn_sig.generics);
-    let generic_params = struct_generic_params
+    item_impl_info
         .into_iter()
-        .chain(fn_generic_params.into_iter())
-        .collect::<Vec<_>>();
+        .map(|method_info| {
+            let module_name = build_impl_module_name(
+                &method_info.struct_name,
+                &method_info.method_name,
+                NameType::Fake
+            );
+            let store_name = build_impl_store_name(
+                &method_info.struct_name,
+                &method_info.method_name,
+                NameType::Fake
+            );
+            let display_name = format!("{} {}", method_info.struct_name, method_info.method_name);
+            let interface_struct_name = build_impl_interface_struct_name(
+                &method_info.struct_name,
+                &method_info.method_name,
+                NameType::Fake
+            );
 
-    let generic_idents = extract_generic_idents_from_params(&generic_params);
-    let generic_type_ids = build_type_id_array(&generic_idents);
-
-    Some(FakeableGenericInfo {
-        generic_count: generic_params.len(),
-        generic_params,
-        generic_idents,
-        generic_type_ids,
-    })
-}
-
-fn extract_and_build_fn_ptr_type(impl_item: &syn::ItemImpl, fn_sig: &syn::Signature) -> syn::Type {
-    let mut self_replacer = ReplaceSelf {
-        self_ty: impl_item.self_ty.as_ref(),
-    };
-
-    let fn_param_types: Vec<syn::Type> = fn_sig.inputs
-        .iter()
-        .filter_map(|input| {
-            match input {
-                syn::FnArg::Typed(pat_type) => {
-                    let mut ty = pat_type.ty.as_ref().clone();
-                    self_replacer.visit_type_mut(&mut ty);
-                    Some(ty)
-                }
-                syn::FnArg::Receiver(receiver) => {
-                    let self_ty = &impl_item.self_ty;
-                    if receiver.reference.is_some() {
-                        if receiver.mutability.is_some() {
-                            Some(syn::parse_quote! { &mut #self_ty })
-                        } else {
-                            Some(syn::parse_quote! { &#self_ty })
-                        }
-                    } else {
-                        Some(syn::parse_quote! { #self_ty })
-                    }
-                }
-            }
+            Ok(FakeableInfo {
+                module_name,
+                store_name,
+                display_name,
+                interface_struct_name,
+                fn_ptr_type: method_info.fn_ptr_type,
+                generic_info: method_info.generic_info.map(|info| FakeableGenericInfo {
+                    generic_count: info.count,
+                    generic_params: info.type_params,
+                    generic_idents: info.idents,
+                    generic_type_ids: info.type_ids,
+                }),
+            })
         })
-        .collect();
-
-    let fn_output = &fn_sig.output;
-
-    let replaced_self_fn_output = match fn_output {
-        syn::ReturnType::Default => { syn::ReturnType::Default }
-        syn::ReturnType::Type(arrow, ty) => {
-            let mut ty = ty.clone();
-            self_replacer.visit_type_mut(ty.as_mut());
-            syn::ReturnType::Type(*arrow, ty)
-        }
-    };
-
-    let fn_ptr_tokens = quote! { fn(#(#fn_param_types),*) #replaced_self_fn_output };
-    syn::parse(fn_ptr_tokens.into()).expect("Failed to parse function pointer type")
-}
-
-struct ReplaceSelf<'a> {
-    self_ty: &'a syn::Type,
-}
-
-impl syn::visit_mut::VisitMut for ReplaceSelf<'_> {
-    fn visit_type_mut(&mut self, ty: &mut syn::Type) {
-        if let syn::Type::Path(syn::TypePath { qself: None, path }) = ty {
-            if path.is_ident("Self") {
-                *ty = self.self_ty.clone();
-                return;
-            }
-        }
-
-        syn::visit_mut::visit_type_mut(self, ty);
-    }
+        .collect()
 }

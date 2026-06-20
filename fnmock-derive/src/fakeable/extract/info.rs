@@ -35,5 +35,5 @@ pub struct FakeableGenericInfo {
     pub generic_params: Vec<syn::TypeParam>,
 
     /// The `TypeId` expressions for the generic parameters, in the order they appear in the code (e.g. `[std::any::TypeId::of::<T>(), std::any::TypeId::of::<I>()]`).
-    pub generic_type_ids: Vec<proc_macro2::TokenStream>,
+    pub generic_type_ids: Vec<syn::Expr>,
 }

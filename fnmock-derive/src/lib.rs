@@ -2,9 +2,9 @@ use crate::{ fake::handle_fake, fakeable::handle_fakeable };
 
 mod fakeable;
 mod fake;
-mod generic_helpers;
 mod module_builder;
 mod names;
+mod extract;
 
 #[proc_macro_attribute]
 pub fn fakeable(
