@@ -1,7 +1,16 @@
 use quote::{ format_ident, quote };
 use syn::parse_macro_input;
 
-use crate::helpers::{ pascal_to_snake_case, snake_to_pascal_case };
+use crate::{
+    helpers::{ pascal_to_snake_case, snake_to_pascal_case },
+    names::{
+        NameType,
+        build_impl_interface_struct_name,
+        build_impl_module_name,
+        build_interface_struct_name,
+        build_module_name,
+    },
+};
 
 enum FakeInput {
     Function {
@@ -70,11 +79,8 @@ pub fn handle_fake(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let expanded = match input {
         FakeInput::Function { ident, generics } => {
-            let module_name = format_ident!("{}_fake", ident);
-            let interface_struct_name = format_ident!(
-                "{}FakeInterface",
-                snake_to_pascal_case(&ident.to_string())
-            );
+            let module_name = build_module_name(&ident, NameType::Fake);
+            let interface_struct_name = build_interface_struct_name(&ident, NameType::Fake);
 
             if let Some(generics) = generics {
                 quote! {
@@ -90,17 +96,13 @@ pub fn handle_fake(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let struct_name = struct_path.path.segments
                 .last()
                 .expect("Struct name could not be determined from path.")
-                .ident.to_string();
+                .ident.clone();
 
-            let module_name = format_ident!(
-                "{}_{}_fake",
-                pascal_to_snake_case(&struct_name),
-                method_ident
-            );
-            let interface_struct_name = format_ident!(
-                "{}{}FakeInterface",
-                struct_name.to_string(),
-                snake_to_pascal_case(&method_ident.to_string())
+            let module_name = build_impl_module_name(&struct_name, &method_ident, NameType::Fake);
+            let interface_struct_name = build_impl_interface_struct_name(
+                &struct_name,
+                &method_ident,
+                NameType::Fake
             );
 
             let combined_generics = match (struct_generics, method_generics) {

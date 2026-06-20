@@ -5,6 +5,7 @@ mod fake;
 mod helpers;
 mod generic_helpers;
 mod module_builder;
+mod names;
 
 #[proc_macro_attribute]
 pub fn fakeable(

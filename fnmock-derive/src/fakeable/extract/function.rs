@@ -1,13 +1,14 @@
 use quote::quote;
 
 use crate::{
-    fakeable::extract::{ info::{ FakeableGenericInfo, FakeableInfo } },
+    fakeable::extract::info::{ FakeableGenericInfo, FakeableInfo },
     generic_helpers::{
         build_type_id_array,
         extract_generic_idents_from_params,
         extract_generic_type_params,
     },
     helpers::snake_to_pascal_case,
+    names::{ NameType, build_interface_struct_name, build_module_name, build_store_name },
 };
 
 pub fn extract_fakeable_info_from_fn(item_fn: &syn::ItemFn) -> syn::Result<FakeableInfo> {
@@ -30,16 +31,10 @@ pub fn extract_fakeable_info_from_fn(item_fn: &syn::ItemFn) -> syn::Result<Fakea
 }
 
 fn build_names(fn_name: &syn::Ident) -> (syn::Ident, syn::Ident, String, syn::Ident) {
-    let module_name = syn::Ident::new(&format!("{}_fake", fn_name), fn_name.span());
-    let store_name = syn::Ident::new(
-        &format!("{}_FAKE_STORE", fn_name.to_string().to_uppercase()),
-        fn_name.span()
-    );
-    let display_name = format!("{} fake", fn_name);
-    let interface_struct_name = syn::Ident::new(
-        &format!("{}FakeInterface", snake_to_pascal_case(&fn_name.to_string())),
-        fn_name.span()
-    );
+    let module_name = build_module_name(fn_name, NameType::Fake);
+    let store_name = build_store_name(fn_name, NameType::Fake);
+    let display_name = format!("{}", fn_name);
+    let interface_struct_name = build_interface_struct_name(fn_name, NameType::Fake);
 
     (module_name, store_name, display_name, interface_struct_name)
 }

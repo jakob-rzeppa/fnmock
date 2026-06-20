@@ -1,14 +1,14 @@
-use quote::{ ToTokens, quote };
-use syn::visit_mut::VisitMut;
+use quote::{ quote };
+use syn::{ spanned::Spanned, visit_mut::VisitMut };
 
 use crate::{
-    fakeable::extract::{ info::{ FakeableGenericInfo, FakeableInfo } },
+    fakeable::extract::info::{ FakeableGenericInfo, FakeableInfo },
     generic_helpers::{
         build_type_id_array,
         extract_generic_idents_from_params,
         extract_generic_type_params,
     },
-    helpers::{ pascal_to_snake_case, snake_to_pascal_case },
+    names::{ NameType, build_impl_interface_struct_name, build_impl_module_name, build_store_name },
 };
 
 pub fn extract_fakeable_info_from_impl_block(
@@ -35,7 +35,7 @@ fn extract_fakeable_info_from_single_impl_method(
     let (module_name, store_name, display_name, interface_struct_name) = build_names(
         &item_impl.self_ty, // Convert the self type to a string and remove spaces
         &impl_fn.sig.ident
-    );
+    )?;
     let fn_ptr_type = extract_and_build_fn_ptr_type(item_impl, &impl_fn.sig);
 
     let generic_info = extract_generic_info(item_impl, &impl_fn.sig);
@@ -53,39 +53,34 @@ fn extract_fakeable_info_from_single_impl_method(
 fn build_names(
     struct_type: &syn::Type,
     method_name: &syn::Ident
-) -> (syn::Ident, syn::Ident, String, syn::Ident) {
-    let struct_name = struct_type
-        .to_token_stream()
-        .to_string()
-        .replace(' ', "")
-        .split('<')
-        .next()
-        .unwrap_or("")
-        .to_string();
+) -> syn::Result<(syn::Ident, syn::Ident, String, syn::Ident)> {
+    let struct_name = match struct_type {
+        syn::Type::Path(tp) => {
+            // Usually the last segment is the concrete type.
+            // Example: Foo<T> -> Path segments [..., Foo<T>]
+            let seg = tp.path.segments.last().unwrap();
+            &seg.ident
+        }
+        _ => {
+            return Err(
+                syn::Error::new(
+                    struct_type.span(),
+                    "Unsupported struct type. Only simple paths / generics are supported for impl blocks."
+                )
+            );
+        }
+    };
 
-    let module_name = syn::Ident::new(
-        &format!("{}_{}_fake", pascal_to_snake_case(&struct_name), &method_name.to_string()),
-        method_name.span()
-    );
-    let store_name = syn::Ident::new(
-        &format!(
-            "{}_{}_FAKE_STORE",
-            pascal_to_snake_case(&struct_name).to_uppercase(),
-            method_name.to_string().to_uppercase()
-        ),
-        method_name.span()
-    );
-    let display_name = format!("{} {} fake", struct_name, method_name);
-    let interface_struct_name = syn::Ident::new(
-        &format!(
-            "{}{}FakeInterface",
-            struct_name.to_string(),
-            snake_to_pascal_case(&method_name.to_string())
-        ),
-        method_name.span()
+    let module_name = build_impl_module_name(struct_name, method_name, NameType::Fake);
+    let store_name = build_store_name(method_name, NameType::Fake);
+    let display_name = format!("{} {}", struct_name, method_name);
+    let interface_struct_name = build_impl_interface_struct_name(
+        struct_name,
+        method_name,
+        NameType::Fake
     );
 
-    (module_name, store_name, display_name, interface_struct_name)
+    Ok((module_name, store_name, display_name, interface_struct_name))
 }
 
 fn extract_generic_info(
