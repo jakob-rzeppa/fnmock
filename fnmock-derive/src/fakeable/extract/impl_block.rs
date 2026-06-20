@@ -8,7 +8,12 @@ use crate::{
         extract_generic_idents_from_params,
         extract_generic_type_params,
     },
-    names::{ NameType, build_impl_interface_struct_name, build_impl_module_name, build_store_name },
+    names::{
+        NameType,
+        build_impl_interface_struct_name,
+        build_impl_module_name,
+        build_impl_store_name,
+    },
 };
 
 pub fn extract_fakeable_info_from_impl_block(
@@ -58,7 +63,7 @@ fn build_names(
         syn::Type::Path(tp) => {
             // Usually the last segment is the concrete type.
             // Example: Foo<T> -> Path segments [..., Foo<T>]
-            let seg = tp.path.segments.last().unwrap();
+            let seg = tp.path.segments.last().expect("Expected at least one segment in path");
             &seg.ident
         }
         _ => {
@@ -72,7 +77,7 @@ fn build_names(
     };
 
     let module_name = build_impl_module_name(struct_name, method_name, NameType::Fake);
-    let store_name = build_store_name(method_name, NameType::Fake);
+    let store_name = build_impl_store_name(struct_name, method_name, NameType::Fake);
     let display_name = format!("{} {}", struct_name, method_name);
     let interface_struct_name = build_impl_interface_struct_name(
         struct_name,
