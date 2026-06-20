@@ -1,6 +1,6 @@
 use quote::quote;
 
-use crate::fakeable::extract::info::FakeableInfo;
+use crate::{ fakeable::extract::info::FakeableInfo, module_builder::{ self, ModuleBuilder } };
 
 pub fn generate_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMod> {
     if let Some(_) = &info.generic_info {
@@ -17,50 +17,52 @@ fn generate_regular_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
     let interface_struct_name = &info.interface_struct_name;
     let fn_ptr_type = &info.fn_ptr_type;
 
-    let code =
-        quote! {
-            #[cfg(test)]
-            mod #module_name {
-                use super::*;
+    let mut module_builder = ModuleBuilder::new();
 
-                thread_local! {
-                    static #store_name: std::cell::RefCell<fnmock::fake_store::FakeStore<#fn_ptr_type>> =
-                        std::cell::RefCell::new(fnmock::fake_store::FakeStore::new(stringify!(#display_name)));
+    module_builder.set_name(module_name.clone());
+
+    module_builder.set_store(
+        quote! {
+            static #store_name: std::cell::RefCell<fnmock::fake_store::FakeStore<#fn_ptr_type>> =
+                std::cell::RefCell::new(fnmock::fake_store::FakeStore::new(stringify!(#display_name)));
+        }
+    );
+
+    module_builder.set_interface_struct(
+        quote! {
+            pub(crate) struct #interface_struct_name;
+
+            impl #interface_struct_name {
+                pub(crate) fn new() -> Self {
+                    Self
                 }
 
-                pub(crate) struct #interface_struct_name;
+                pub(crate) fn setup(self, function: #fn_ptr_type) -> Self {
+                    #store_name.with(|store| {
+                        store.borrow_mut().setup(function);
+                    });
+                    self
+                }
 
-                impl #interface_struct_name {
-                    pub(crate) fn new() -> Self {
-                        Self
-                    }
+                pub(crate) fn clear(self) -> Self {
+                    #store_name.with(|store| {
+                        store.borrow_mut().clear();
+                    });
+                    self
+                }
 
-                    pub(crate) fn setup(self, function: #fn_ptr_type) -> Self {
-                        #store_name.with(|store| {
-                            store.borrow_mut().setup(function);
-                        });
-                        self
-                    }
+                pub(crate) fn is_set(&self) -> bool {
+                    #store_name.with(|store| store.borrow().is_set())
+                }
 
-                    pub(crate) fn clear(self) -> Self {
-                        #store_name.with(|store| {
-                            store.borrow_mut().clear();
-                        });
-                        self
-                    }
-
-                    pub(crate) fn is_set(&self) -> bool {
-                        #store_name.with(|store| store.borrow().is_set())
-                    }
-
-                    pub(crate) fn get(&self) -> std::rc::Rc<#fn_ptr_type> {
-                        #store_name.with(|store| store.borrow().get())
-                    }
+                pub(crate) fn get(&self) -> std::rc::Rc<#fn_ptr_type> {
+                    #store_name.with(|store| store.borrow().get())
                 }
             }
-        };
+        }
+    );
 
-    syn::parse2(code)
+    module_builder.build_module()
 }
 
 fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMod> {
@@ -85,58 +87,60 @@ fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
         );
     };
 
-    let code =
+    let mut module_builder = ModuleBuilder::new();
+
+    module_builder.set_name(module_name.clone());
+
+    module_builder.set_store(
         quote! {
-            #[cfg(test)]
-            mod #module_name {
-                use super::*;
+            static #store_name: std::cell::RefCell<fnmock::generic_fake_store::GenericFakeStore<#generic_count>> = 
+                std::cell::RefCell::new(
+                    fnmock::generic_fake_store::GenericFakeStore::new(stringify!(#display_name))
+                );
+        }
+    );
 
-                thread_local! {
-                    static #store_name: std::cell::RefCell<fnmock::generic_fake_store::GenericFakeStore<#generic_count>> = 
-                        std::cell::RefCell::new(
-                            fnmock::generic_fake_store::GenericFakeStore::new(stringify!(#display_name))
-                        );
+    module_builder.set_interface_struct(
+        quote! {
+            pub(crate) struct #interface_struct_name<#(#generic_params),*> {
+                _marker: std::marker::PhantomData<(#(#generic_idents),*)>,
+            }
+
+            impl<#(#generic_params),*> #interface_struct_name<#(#generic_idents),*> {
+                pub(crate) fn new() -> Self {
+                    Self {
+                        _marker: std::marker::PhantomData,
+                    }
                 }
 
-                pub(crate) struct #interface_struct_name<#(#generic_params),*> {
-                    _marker: std::marker::PhantomData<(#(#generic_idents),*)>,
+                pub(crate) fn setup(self, function: #fn_ptr_type) -> Self {
+                    #store_name.with_borrow_mut(|fake| {
+                        fake.setup_for([#(#generic_type_ids),*], function);
+                    });
+                    self
                 }
 
-                impl<#(#generic_params),*> #interface_struct_name<#(#generic_idents),*> {
-                    pub(crate) fn new() -> Self {
-                        Self {
-                            _marker: std::marker::PhantomData,
-                        }
-                    }
+                pub(crate) fn clear(self) -> Self {
+                    #store_name.with_borrow_mut(|fake| {
+                        fake.clear_for([#(#generic_type_ids),*]);
+                    });
+                    self
+                }
 
-                    pub(crate) fn setup(self, function: #fn_ptr_type) -> Self {
-                        #store_name.with_borrow_mut(|fake| {
-                            fake.setup_for([#(#generic_type_ids),*], function);
-                        });
-                        self
-                    }
+                pub(crate) fn is_set(&self) -> bool {
+                    #store_name.with_borrow(|fake| {
+                        fake.is_set_for([#(#generic_type_ids),*])
+                    })
+                }
 
-                    pub(crate) fn clear(self) -> Self {
-                        #store_name.with_borrow_mut(|fake| {
-                            fake.clear_for([#(#generic_type_ids),*]);
-                        });
-                        self
-                    }
-
-                    pub(crate) fn is_set(&self) -> bool {
-                        #store_name.with_borrow(|fake| {
-                            fake.is_set_for([#(#generic_type_ids),*])
-                        })
-                    }
-
-                    pub(crate) fn get(&self) -> std::rc::Rc<#fn_ptr_type> {
-                        #store_name.with_borrow(|fake| {
-                            fake.get_for::<#fn_ptr_type>([#(#generic_type_ids),*])
-                        })
-                    }
+                pub(crate) fn get(&self) -> std::rc::Rc<#fn_ptr_type> {
+                    #store_name.with_borrow(|fake| {
+                        fake.get_for::<#fn_ptr_type>([#(#generic_type_ids),*])
+                    })
                 }
             }
-        };
+        }
+    );
 
-    syn::parse2(code)
+    module_builder.build_module()
 }
