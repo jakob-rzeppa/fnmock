@@ -1,13 +1,13 @@
-use std::{ collections::VecDeque, fmt::Debug };
+use std::{ any::Any, collections::VecDeque };
 
-use crate::spy::range::CallRange;
+use crate::spy::{ Predicate, range::CallRange };
 
-pub struct CallExpectations<Args: Debug> {
-    calls: VecDeque<CallExpectation<Args>>,
+pub struct CallExpectations<const ARGS_COUNT: usize> {
+    calls: VecDeque<CallExpectation<ARGS_COUNT>>,
     in_sequence: bool,
 }
 
-impl<Args: Debug> CallExpectations<Args> {
+impl<const ARGS_COUNT: usize> CallExpectations<ARGS_COUNT> {
     pub fn new() -> Self {
         Self {
             calls: VecDeque::new(),
@@ -21,19 +21,17 @@ impl<Args: Debug> CallExpectations<Args> {
 
     pub fn add_expectation(
         &mut self,
-        expectation: fn(&Args) -> bool,
-        call_range: CallRange,
-        expectation_display: &'static str
+        predicate: Box<dyn Predicate<ARGS_COUNT>>,
+        call_range: CallRange
     ) {
         self.calls.push_back(CallExpectation {
-            expectation,
+            predicate,
             call_range,
-            expectation_display,
             times_called: 0,
         });
     }
 
-    pub fn record_call(&mut self, args: &Args) -> Result<(), String> {
+    pub fn record_call(&mut self, args: &[Box<dyn Any>; ARGS_COUNT]) -> Result<(), String> {
         if self.in_sequence {
             self.record_call_in_sequence(args)?;
         } else {
@@ -42,17 +40,17 @@ impl<Args: Debug> CallExpectations<Args> {
         Ok(())
     }
 
-    fn record_call_not_in_sequence(&mut self, args: &Args) {
+    fn record_call_not_in_sequence(&mut self, args: &[Box<dyn Any>; ARGS_COUNT]) {
         for call in &mut self.calls {
-            if (call.expectation)(args) {
+            if call.predicate.evaluate(args) {
                 call.times_called += 1;
             }
         }
     }
 
-    fn record_call_in_sequence(&mut self, args: &Args) -> Result<(), String> {
+    fn record_call_in_sequence(&mut self, args: &[Box<dyn Any>; ARGS_COUNT]) -> Result<(), String> {
         if let Some(call) = self.calls.front_mut() {
-            if (call.expectation)(args) {
+            if call.predicate.evaluate(args) {
                 call.times_called += 1;
                 if call.call_range.is_at_max(call.times_called) {
                     self.calls.pop_front();
@@ -69,9 +67,8 @@ impl<Args: Debug> CallExpectations<Args> {
                 } else {
                     return Err(
                         format!(
-                            "{} is not valid for {:?}. Expected {}, but got {}",
-                            call.expectation_display,
-                            args,
+                            "{} is not valid for given arguments. Expected {}, but got {}",
+                            call.predicate.display(),
                             call.call_range,
                             call.times_called
                         )
@@ -80,12 +77,7 @@ impl<Args: Debug> CallExpectations<Args> {
             }
             Ok(())
         } else {
-            Err(
-                format!(
-                    "Arguments ({:?}) are not expected. Every expectation has already been satisfied.",
-                    args
-                )
-            )
+            Err(format!("Call is not expected. Every expectation has already been satisfied."))
         }
     }
 
@@ -121,7 +113,7 @@ impl<Args: Debug> CallExpectations<Args> {
                 Err(
                     format!(
                         "Not all expectations were satisfied. Next expectation {} has {} calls, expected {}.",
-                        call.expectation_display,
+                        call.predicate.display(),
                         call.times_called,
                         call.call_range
                     )
@@ -131,15 +123,14 @@ impl<Args: Debug> CallExpectations<Args> {
     }
 }
 
-struct CallExpectation<Args> {
-    expectation: fn(&Args) -> bool,
-    expectation_display: &'static str,
+struct CallExpectation<const ARGS_COUNT: usize> {
+    predicate: Box<dyn Predicate<ARGS_COUNT>>,
 
     call_range: CallRange,
     times_called: usize,
 }
 
-impl<Args: Debug> CallExpectation<Args> {
+impl<const ARGS_COUNT: usize> CallExpectation<ARGS_COUNT> {
     fn is_met(&self) -> Result<(), String> {
         if self.call_range.is_within(self.times_called) {
             Ok(())
@@ -147,7 +138,7 @@ impl<Args: Debug> CallExpectation<Args> {
             Err(
                 format!(
                     "Expectation {} not met. Expected {}, but got {}.",
-                    self.expectation_display,
+                    self.predicate.display(),
                     self.call_range,
                     self.times_called
                 )
@@ -160,16 +151,52 @@ impl<Args: Debug> CallExpectation<Args> {
 mod tests {
     use super::*;
 
+    struct TestPredicate {
+        display: &'static str,
+        func: Box<dyn Fn(&i32) -> bool>,
+    }
+
+    impl Predicate<1> for TestPredicate {
+        fn evaluate(&self, args: &[Box<dyn std::any::Any>; 1]) -> bool {
+            (self.func)(args[0].downcast_ref::<i32>().unwrap())
+        }
+
+        fn display(&self) -> &'static str {
+            self.display
+        }
+    }
+
+    fn is_one() -> Box<TestPredicate> {
+        Box::new(TestPredicate {
+            display: "x == 1",
+            func: Box::new(|&x| x == 1),
+        })
+    }
+
+    fn is_two() -> Box<TestPredicate> {
+        Box::new(TestPredicate {
+            display: "x == 2",
+            func: Box::new(|&x| x == 2),
+        })
+    }
+
+    fn is_three() -> Box<TestPredicate> {
+        Box::new(TestPredicate {
+            display: "x == 3",
+            func: Box::new(|&x| x == 3),
+        })
+    }
+
     #[test]
     fn test_not_in_sequence_success() {
         let mut expectations = CallExpectations::new();
-        expectations.add_expectation(|&x| x == 1, CallRange::from_range(1..=2), "x == 1");
-        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
+        expectations.add_expectation(is_one(), CallRange::from_range(1..=2));
+        expectations.add_expectation(is_two(), CallRange::from_range(1..=2));
 
-        expectations.record_call(&1).unwrap();
-        expectations.record_call(&2).unwrap();
-        expectations.record_call(&1).unwrap();
-        expectations.record_call(&2).unwrap();
+        expectations.record_call(&[Box::new(1)]).unwrap();
+        expectations.record_call(&[Box::new(2)]).unwrap();
+        expectations.record_call(&[Box::new(1)]).unwrap();
+        expectations.record_call(&[Box::new(2)]).unwrap();
 
         assert_eq!(expectations.calls[0].times_called, 2);
         assert_eq!(expectations.calls[1].times_called, 2);
@@ -180,13 +207,13 @@ mod tests {
     #[test]
     fn test_not_in_sequence_failure() {
         let mut expectations = CallExpectations::new();
-        expectations.add_expectation(|&x| x == 1, CallRange::from_range(3..=3), "x == 1");
-        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
+        expectations.add_expectation(is_one(), CallRange::from_range(3..=3));
+        expectations.add_expectation(is_two(), CallRange::from_range(1..=2));
 
-        expectations.record_call(&1).unwrap();
-        expectations.record_call(&2).unwrap();
-        expectations.record_call(&1).unwrap();
-        expectations.record_call(&2).unwrap();
+        expectations.record_call(&[Box::new(1)]).unwrap();
+        expectations.record_call(&[Box::new(2)]).unwrap();
+        expectations.record_call(&[Box::new(1)]).unwrap();
+        expectations.record_call(&[Box::new(2)]).unwrap();
 
         assert_eq!(expectations.calls[0].times_called, 2); // This is the expectation that will fail, since it expected exactly 3 calls but only got 2
         assert_eq!(expectations.calls[1].times_called, 2);
@@ -203,13 +230,13 @@ mod tests {
     #[test]
     fn test_not_in_sequence_multiple_failures() {
         let mut expectations = CallExpectations::new();
-        expectations.add_expectation(|&x| x == 1, CallRange::from_range(3..=3), "x == 1");
-        expectations.add_expectation(|&x| x == 2, CallRange::from_range(3..=3), "x == 2");
+        expectations.add_expectation(is_one(), CallRange::from_range(3..=3));
+        expectations.add_expectation(is_two(), CallRange::from_range(3..=3));
 
-        expectations.record_call(&1).unwrap();
-        expectations.record_call(&2).unwrap();
-        expectations.record_call(&1).unwrap();
-        expectations.record_call(&2).unwrap();
+        expectations.record_call(&[Box::new(1)]).unwrap();
+        expectations.record_call(&[Box::new(2)]).unwrap();
+        expectations.record_call(&[Box::new(1)]).unwrap();
+        expectations.record_call(&[Box::new(2)]).unwrap();
 
         assert_eq!(expectations.calls[0].times_called, 2);
         assert_eq!(expectations.calls[1].times_called, 2);
@@ -227,13 +254,13 @@ mod tests {
     fn test_in_sequence_success() {
         let mut expectations = CallExpectations::new();
         expectations.in_sequence = true;
-        expectations.add_expectation(|&x| x == 1, CallRange::from_range(1..=2), "x == 1");
-        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
+        expectations.add_expectation(is_one(), CallRange::from_range(1..=2));
+        expectations.add_expectation(is_two(), CallRange::from_range(1..=2));
 
-        expectations.record_call(&1).unwrap();
-        expectations.record_call(&1).unwrap();
-        expectations.record_call(&2).unwrap();
-        expectations.record_call(&2).unwrap();
+        expectations.record_call(&[Box::new(1)]).unwrap();
+        expectations.record_call(&[Box::new(1)]).unwrap();
+        expectations.record_call(&[Box::new(2)]).unwrap();
+        expectations.record_call(&[Box::new(2)]).unwrap();
 
         assert_eq!(expectations.calls.len(), 0); // All expectations should be satisfied and removed from the queue
 
@@ -244,40 +271,46 @@ mod tests {
     fn test_in_sequence_failure_wrong_order() {
         let mut expectations = CallExpectations::new();
         expectations.in_sequence = true;
-        expectations.add_expectation(|&x| x == 1, CallRange::from_range(1..=2), "x == 1");
-        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
-        expectations.add_expectation(|&x| x == 3, CallRange::from_range(1..=2), "x == 3");
+        expectations.add_expectation(is_one(), CallRange::from_range(1..=2));
+        expectations.add_expectation(is_two(), CallRange::from_range(1..=2));
+        expectations.add_expectation(is_three(), CallRange::from_range(1..=2));
 
-        expectations.record_call(&1).unwrap();
-        expectations.record_call(&2).unwrap();
-        let res = expectations.record_call(&1); // This call is out of sequence, since the first expectation expects a call with argument 1, but we already satisfied it and moved on to the next expectation which expects a call with argument 2
+        expectations.record_call(&[Box::new(1)]).unwrap();
+        expectations.record_call(&[Box::new(2)]).unwrap();
+        let res = expectations.record_call(&[Box::new(1)]); // This call is out of sequence, since the first expectation expects a call with argument 1, but we already satisfied it and moved on to the next expectation which expects a call with argument 2
 
         assert!(res.is_err());
         let error_message = res.err().unwrap();
-        assert_eq!(error_message, "x == 3 is not valid for 1. Expected in 1..=2 calls, but got 0");
+        assert_eq!(
+            error_message,
+            "x == 3 is not valid for given arguments. Expected in 1..=2 calls, but got 0"
+        );
     }
 
     #[test]
     fn test_in_sequence_failure_wrong_first_call() {
         let mut expectations = CallExpectations::new();
         expectations.set_in_sequence();
-        expectations.add_expectation(|&x| x == 1, CallRange::from_range(1..=2), "x == 1");
-        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
+        expectations.add_expectation(is_one(), CallRange::from_range(1..=2));
+        expectations.add_expectation(is_two(), CallRange::from_range(1..=2));
 
-        let result = expectations.record_call(&2); // This call is out of sequence, since the first expectation expects a call with argument 1
+        let result = expectations.record_call(&[Box::new(2)]); // This call is out of sequence, since the first expectation expects a call with argument 1
         assert!(result.is_err());
         let error_message = result.err().unwrap();
-        assert_eq!(error_message, "x == 1 is not valid for 2. Expected in 1..=2 calls, but got 0");
+        assert_eq!(
+            error_message,
+            "x == 1 is not valid for given arguments. Expected in 1..=2 calls, but got 0"
+        );
     }
 
     #[test]
     fn test_in_sequence_failure_not_enough_calls() {
         let mut expectations = CallExpectations::new();
         expectations.set_in_sequence();
-        expectations.add_expectation(|&x| x == 1, CallRange::from_range(2..=2), "x == 1");
-        expectations.add_expectation(|&x| x == 2, CallRange::from_range(1..=2), "x == 2");
+        expectations.add_expectation(is_one(), CallRange::from_range(2..=2));
+        expectations.add_expectation(is_two(), CallRange::from_range(1..=2));
 
-        expectations.record_call(&1).unwrap(); // Only one call with argument 1, but the expectation requires exactly 2
+        expectations.record_call(&[Box::new(1)]).unwrap(); // Only one call with argument 1, but the expectation requires exactly 2
 
         let result = expectations.is_met();
         assert!(result.is_err());

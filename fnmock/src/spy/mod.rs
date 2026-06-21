@@ -1,7 +1,7 @@
-use std::{ fmt::Debug, ops::RangeBounds };
+use std::{ any::Any, ops::RangeBounds };
 
 use crate::spy::{
-    call_expectations::CallExpectations,
+    call_expectations::{ CallExpectations },
     range::CallRange,
     times_expectation::TimesExpectation,
 };
@@ -10,17 +10,22 @@ mod times_expectation;
 mod call_expectations;
 mod range;
 
-pub struct Spy<Args: Debug> {
+pub trait Predicate<const ARGS_COUNT: usize> {
+    fn evaluate(&self, args: &[Box<dyn Any>; ARGS_COUNT]) -> bool;
+    fn display(&self) -> &'static str;
+}
+
+pub struct Spy<const ARGS_COUNT: usize> {
     name: &'static str,
 
     /// Expectations about the arguments of calls to the function.
-    call_expectations: Option<CallExpectations<Args>>,
+    call_expectations: Option<CallExpectations<ARGS_COUNT>>,
 
     /// Expectations about the total number of calls to the function.
     times_expectation: Option<TimesExpectation>,
 }
 
-impl<Args: Debug> Spy<Args> {
+impl<const ARGS_COUNT: usize> Spy<ARGS_COUNT> {
     pub fn new(name: &'static str) -> Self {
         Self {
             name,
@@ -49,9 +54,9 @@ impl<Args: Debug> Spy<Args> {
     }
 
     /// Check if a expectation is met for the given args
-    pub fn record(&mut self, args: Args) -> Args {
+    pub fn record(&mut self, args: &[Box<dyn Any>; ARGS_COUNT]) {
         if let Some(call_expectations) = &mut self.call_expectations {
-            match call_expectations.record_call(&args) {
+            match call_expectations.record_call(args) {
                 Ok(()) => (),
                 Err(e) => panic!("Expectation for {} spy were not met: {}", self.name, e),
             }
@@ -60,7 +65,6 @@ impl<Args: Debug> Spy<Args> {
                 times_expectation.increment_times_called();
             }
         }
-        args
     }
 
     pub fn verify(&mut self) {
@@ -91,41 +95,27 @@ impl<Args: Debug> Spy<Args> {
     pub fn expect_call_range<R: RangeBounds<usize>>(
         &mut self,
         range: R,
-        expectation: fn(&Args) -> bool,
-        expectation_display: &'static str
+        predicate: Box<dyn Predicate<ARGS_COUNT>>
     ) {
         self.call_expectations
             .as_mut()
             .expect("Spy not initialized. You need to call setup() before setting expectations.")
-            .add_expectation(expectation, CallRange::from_range(range), expectation_display);
+            .add_expectation(predicate, CallRange::from_range(range));
     }
 
     /// Expects a call with the given arguments to be made at least once.
-    pub fn expect_call(
-        &mut self,
-        expectation: fn(&Args) -> bool,
-        expectation_display: &'static str
-    ) {
-        self.expect_call_range(1.., expectation, expectation_display)
+    pub fn expect_call(&mut self, predicate: Box<dyn Predicate<ARGS_COUNT>>) {
+        self.expect_call_range(1.., predicate);
     }
 
     /// Expects a call with the given arguments to be made exactly once.
-    pub fn expect_call_once(
-        &mut self,
-        expectation: fn(&Args) -> bool,
-        expectation_display: &'static str
-    ) {
-        self.expect_call_range(1..=1, expectation, expectation_display)
+    pub fn expect_call_once(&mut self, predicate: Box<dyn Predicate<ARGS_COUNT>>) {
+        self.expect_call_range(1..=1, predicate);
     }
 
     /// Expects a call with the given arguments to be made a specific number of times.
-    pub fn expect_call_times(
-        &mut self,
-        times: usize,
-        expectation: fn(&Args) -> bool,
-        expectation_display: &'static str
-    ) {
-        self.expect_call_range(times..=times, expectation, expectation_display)
+    pub fn expect_call_times(&mut self, times: usize, predicate: Box<dyn Predicate<ARGS_COUNT>>) {
+        self.expect_call_range(times..=times, predicate);
     }
 
     pub fn in_sequence(&mut self) {
@@ -162,12 +152,32 @@ impl<Args: Debug> Spy<Args> {
 mod tests {
     use super::*;
 
-    fn is_one(v: &i32) -> bool {
-        *v == 1
+    struct TestPredicate {
+        expectation: Box<dyn Fn(&i32) -> bool>,
+        display: &'static str,
     }
 
-    fn is_two(v: &i32) -> bool {
-        *v == 2
+    impl Predicate<1> for TestPredicate {
+        fn evaluate(&self, args: &[Box<dyn Any>; 1]) -> bool {
+            (self.expectation)(args[0].downcast_ref::<i32>().unwrap())
+        }
+        fn display(&self) -> &'static str {
+            self.display
+        }
+    }
+
+    fn is_one() -> Box<TestPredicate> {
+        Box::new(TestPredicate {
+            expectation: Box::new(|&x| x == 1),
+            display: "1",
+        })
+    }
+
+    fn is_two() -> Box<TestPredicate> {
+        Box::new(TestPredicate {
+            expectation: Box::new(|&x| x == 2),
+            display: "2",
+        })
     }
 
     //
@@ -176,14 +186,14 @@ mod tests {
 
     #[test]
     fn setup_then_verify_without_expectations_succeeds() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
         spy.verify();
     }
 
     #[test]
     fn verify_clears_state_allowing_setup_again() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
         spy.verify();
         spy.setup();
@@ -193,32 +203,32 @@ mod tests {
     #[test]
     #[should_panic(expected = "spy not initialized")]
     fn verify_without_setup_panics() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.verify();
     }
 
     #[test]
     #[should_panic(expected = "already initialized")]
     fn setup_twice_without_verify_panics() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
         spy.setup();
     }
 
     #[test]
     fn record_calls_succeeds_after_setup() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.record(1);
-        spy.record(2);
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(2)]);
         spy.verify();
     }
 
     #[test]
     fn record_calls_without_setup_succeeds_and_does_not_panic() {
-        let mut spy = Spy::<i32>::new("test");
-        spy.record(1);
-        spy.record(2);
+        let mut spy = Spy::<1>::new("test");
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(2)]);
     }
 
     //
@@ -228,35 +238,35 @@ mod tests {
     #[test]
     #[should_panic(expected = "Spy not initialized")]
     fn expect_call_before_setup_panics() {
-        let mut spy = Spy::<i32>::new("test");
-        spy.expect_call(is_one, "1");
+        let mut spy = Spy::<1>::new("test");
+        spy.expect_call(is_one());
     }
 
     #[test]
     #[should_panic(expected = "Spy not initialized")]
     fn expect_call_once_before_setup_panics() {
-        let mut spy = Spy::<i32>::new("test");
-        spy.expect_call_once(is_one, "1");
+        let mut spy = Spy::<1>::new("test");
+        spy.expect_call_once(is_one());
     }
 
     #[test]
     #[should_panic(expected = "Spy not initialized")]
     fn expect_call_times_before_setup_panics() {
-        let mut spy = Spy::<i32>::new("test");
-        spy.expect_call_times(2, is_one, "1");
+        let mut spy = Spy::<1>::new("test");
+        spy.expect_call_times(2, is_one());
     }
 
     #[test]
     #[should_panic(expected = "Spy not initialized")]
     fn in_sequence_before_setup_panics() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.in_sequence();
     }
 
     #[test]
     #[should_panic(expected = "Spy not initialized")]
     fn expect_range_before_setup_panics() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.expect_range(1..=2);
     }
 
@@ -266,30 +276,30 @@ mod tests {
 
     #[test]
     fn expect_call_succeeds_when_called_once() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call(is_one, "1");
-        spy.record(1);
+        spy.expect_call(is_one());
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
     #[test]
     fn expect_call_succeeds_when_called_multiple_times() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call(is_one, "1");
-        spy.record(1);
-        spy.record(1);
-        spy.record(1);
+        spy.expect_call(is_one());
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn expect_call_fails_when_never_called() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call(is_one, "1");
+        spy.expect_call(is_one());
         spy.verify();
     }
 
@@ -299,30 +309,30 @@ mod tests {
 
     #[test]
     fn expect_call_once_succeeds() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call_once(is_one, "1");
-        spy.record(1);
+        spy.expect_call_once(is_one());
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn expect_call_once_fails_when_missing() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call_once(is_one, "1");
+        spy.expect_call_once(is_one());
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn expect_call_once_fails_when_called_twice() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call_once(is_one, "1");
-        spy.record(1);
-        spy.record(1);
+        spy.expect_call_once(is_one());
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
@@ -332,33 +342,33 @@ mod tests {
 
     #[test]
     fn expect_call_times_exact_match_succeeds() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call_times(2, is_one, "1");
-        spy.record(1);
-        spy.record(1);
+        spy.expect_call_times(2, is_one());
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn expect_call_times_too_few_fails() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call_times(2, is_one, "1");
-        spy.record(1);
+        spy.expect_call_times(2, is_one());
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn expect_call_times_too_many_fails() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call_times(2, is_one, "1");
-        spy.record(1);
-        spy.record(1);
-        spy.record(1);
+        spy.expect_call_times(2, is_one());
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
@@ -368,23 +378,23 @@ mod tests {
 
     #[test]
     fn multiple_expectations_all_met_succeed() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call(is_one, "1");
-        spy.expect_call(is_two, "2");
-        spy.record(1);
-        spy.record(2);
+        spy.expect_call(is_one());
+        spy.expect_call(is_two());
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(2)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn multiple_expectations_fail_when_one_missing() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call(is_one, "1");
-        spy.expect_call(is_two, "2");
-        spy.record(1);
+        spy.expect_call(is_one());
+        spy.expect_call(is_two());
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
@@ -394,33 +404,33 @@ mod tests {
 
     #[test]
     fn expect_times_exact_match_succeeds() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
         spy.expect_times(2);
-        spy.record(1);
-        spy.record(2);
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(2)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn expect_times_too_few_fails() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
         spy.expect_times(2);
-        spy.record(1);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn expect_times_too_many_fails() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
         spy.expect_times(2);
-        spy.record(1);
-        spy.record(2);
-        spy.record(1);
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(2)]);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
@@ -430,7 +440,7 @@ mod tests {
 
     #[test]
     fn expect_never_succeeds_when_no_calls_are_made() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
         spy.expect_never();
         spy.verify();
@@ -439,10 +449,10 @@ mod tests {
     #[test]
     #[should_panic]
     fn expect_never_fails_when_called() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
         spy.expect_never();
-        spy.record(1);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
@@ -453,7 +463,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Times expectation already set")]
     fn multiple_times_expectations_panics() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
         spy.expect_times(1);
         spy.expect_never();
@@ -465,33 +475,33 @@ mod tests {
 
     #[test]
     fn call_and_times_expectations_both_met() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call_once(is_one, "1");
+        spy.expect_call_once(is_one());
         spy.expect_times(1);
-        spy.record(1);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn call_expectation_met_but_times_fails() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call_once(is_one, "1");
+        spy.expect_call_once(is_one());
         spy.expect_times(2);
-        spy.record(1);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn times_met_but_call_expectation_fails() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call_once(is_two, "2");
+        spy.expect_call_once(is_two());
         spy.expect_times(1);
-        spy.record(1);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
@@ -501,66 +511,66 @@ mod tests {
 
     #[test]
     fn in_sequence_succeeds_when_calls_made_in_order() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call(is_one, "1");
-        spy.expect_call(is_two, "2");
+        spy.expect_call(is_one());
+        spy.expect_call(is_two());
         spy.in_sequence();
-        spy.record(1);
-        spy.record(2);
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(2)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn in_sequence_fails_when_calls_made_out_of_order() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call(is_one, "1");
-        spy.expect_call(is_two, "2");
+        spy.expect_call(is_one());
+        spy.expect_call(is_two());
         spy.in_sequence();
-        spy.record(2);
-        spy.record(1);
+        spy.record(&[Box::new(2)]);
+        spy.record(&[Box::new(1)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn in_sequence_fails_when_calls_made_out_of_order_and_one_missing() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call(is_one, "1");
-        spy.expect_call(is_two, "2");
+        spy.expect_call(is_one());
+        spy.expect_call(is_two());
         spy.in_sequence();
-        spy.record(2);
+        spy.record(&[Box::new(2)]);
         spy.verify();
     }
 
     #[test]
     fn in_sequence_expect_call_allows_multiple_calls_as_long_as_order_is_maintained() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call(is_one, "1");
-        spy.expect_call(is_two, "2");
+        spy.expect_call(is_one());
+        spy.expect_call(is_two());
         spy.in_sequence();
-        spy.record(1);
-        spy.record(1);
-        spy.record(2);
-        spy.record(2);
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(2)]);
+        spy.record(&[Box::new(2)]);
         spy.verify();
     }
 
     #[test]
     #[should_panic]
     fn in_sequence_expect_call_once_fails_when_called_more_than_once() {
-        let mut spy = Spy::<i32>::new("test");
+        let mut spy = Spy::<1>::new("test");
         spy.setup();
-        spy.expect_call_once(is_one, "1");
-        spy.expect_call_once(is_two, "2");
+        spy.expect_call_once(is_one());
+        spy.expect_call_once(is_two());
         spy.in_sequence();
-        spy.record(1);
-        spy.record(2);
-        spy.record(2);
+        spy.record(&[Box::new(1)]);
+        spy.record(&[Box::new(2)]);
+        spy.record(&[Box::new(2)]);
         spy.verify();
     }
 }
