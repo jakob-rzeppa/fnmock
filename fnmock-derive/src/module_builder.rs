@@ -45,7 +45,7 @@ impl ModuleBuilder {
         let code =
             quote! {
             #[cfg(test)]
-            mod #name {
+            pub(crate) mod #name {
                 use super::*;
 
                 thread_local! {
