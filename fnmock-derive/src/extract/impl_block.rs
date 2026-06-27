@@ -26,11 +26,11 @@ pub struct ItemImplMethodGenericInfo {
 
     pub idents: Vec<syn::Ident>,
     pub struct_idents: Vec<syn::Ident>,
-    pub method_idents: Vec<syn::Ident>,
+    pub _method_idents: Vec<syn::Ident>,
 
     pub type_ids: Vec<syn::Expr>,
-    pub struct_type_ids: Vec<syn::Expr>,
-    pub method_type_ids: Vec<syn::Expr>,
+    pub _struct_type_ids: Vec<syn::Expr>,
+    pub _method_type_ids: Vec<syn::Expr>,
 }
 
 /// Extract the ItemImplMethodInfo for each method in an impl block.

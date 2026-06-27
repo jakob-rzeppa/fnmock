@@ -60,11 +60,11 @@ pub fn extract_generic_impl_info(
 
         idents,
         struct_idents,
-        method_idents,
+        _method_idents: method_idents,
 
         type_ids,
-        struct_type_ids,
-        method_type_ids,
+        _struct_type_ids: struct_type_ids,
+        _method_type_ids: method_type_ids,
     })
 }
 
