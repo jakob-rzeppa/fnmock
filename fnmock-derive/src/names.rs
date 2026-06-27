@@ -5,6 +5,12 @@ pub enum NameType {
 impl NameType {
     fn suffix_module(&self) -> &'static str {
         match self {
+            NameType::Fake => "fake_module",
+        }
+    }
+
+    fn suffix_access_function(&self) -> &'static str {
+        match self {
             NameType::Fake => "fake",
         }
     }
@@ -24,9 +30,18 @@ impl NameType {
 
 /// Builds the module name for a function fake, spy etc.
 ///
-/// For a function named `get_user`, this will generate `get_user_fake`.
+/// For a function named `get_user`, this will generate `get_user_fake_module`.
 pub fn build_module_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident {
     syn::Ident::new(&format!("{}_{}", fn_name, name_type.suffix_module()), fn_name.span())
+}
+
+/// Builds the access function name for a function fake, spy etc.
+///
+/// This is used for methods and standalone functions.
+///
+/// For a function named `get_user`, this will generate `get_user_fake`.
+pub fn build_access_function_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident {
+    syn::Ident::new(&format!("{}_{}", fn_name, name_type.suffix_access_function()), fn_name.span())
 }
 
 /// Builds the module name for a impl block fake, spy etc.

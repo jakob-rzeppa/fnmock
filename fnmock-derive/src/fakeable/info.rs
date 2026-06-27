@@ -1,6 +1,9 @@
 /// Information about a fake module that is being generated for a struct method or a free function.
 #[derive(Clone)]
 pub struct FakeableInfo {
+    /// Access function name for the fake interface (e.g. "get_user_fake").
+    pub access_function_name: syn::Ident,
+
     /// The name of the module that will be generated (e.g. "get_user_fake").
     /// For struct method fakes, this is the struct name + method name with "_fake" appended (e.g. "user_repository_get_user_fake").
     /// For free function fakes, this is the function name with "_fake" appended (e.g. "handle_user_fake").

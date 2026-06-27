@@ -12,8 +12,6 @@ fn handle_user(id: i32, name: String) -> String {
 
 #[cfg(test)]
 mod tests {
-    use fnmock::fake;
-
     use super::*;
 
     #[test]
@@ -25,7 +23,7 @@ mod tests {
 
     #[test]
     fn test_handle_user_with_fake() {
-        fake!(get_user<i32, String>).setup(|id, name| format!("Fake User {} ({})", id, name));
+        get_user_fake::<i32, String>().setup(|id, name| format!("Fake User {} ({})", id, name));
 
         let result = handle_user(1, "Alice".into());
 

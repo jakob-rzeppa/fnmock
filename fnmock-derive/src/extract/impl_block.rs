@@ -19,9 +19,18 @@ pub struct ItemImplMethodInfo {
 /// The generics of the struct and method are combined, in the order of struct generics followed by method generics.
 pub struct ItemImplMethodGenericInfo {
     pub count: usize,
+
     pub type_params: Vec<syn::TypeParam>,
+    pub struct_type_params: Vec<syn::TypeParam>,
+    pub method_type_params: Vec<syn::TypeParam>,
+
     pub idents: Vec<syn::Ident>,
+    pub struct_idents: Vec<syn::Ident>,
+    pub method_idents: Vec<syn::Ident>,
+
     pub type_ids: Vec<syn::Expr>,
+    pub struct_type_ids: Vec<syn::Expr>,
+    pub method_type_ids: Vec<syn::Expr>,
 }
 
 /// Extract the ItemImplMethodInfo for each method in an impl block.
@@ -61,12 +70,7 @@ fn extract_single_item_impl_info_for_method(
         _param_types: param_types,
         param_idents,
         fn_ptr_type,
-        generic_info: generic_info.map(|info| ItemImplMethodGenericInfo {
-            count: info.count,
-            type_params: info.type_params,
-            idents: info.idents,
-            type_ids: info.type_ids,
-        }),
+        generic_info,
     })
 }
 

@@ -5,8 +5,6 @@ fn get_user() -> String {
 
 #[cfg(test)]
 mod tests {
-    use fnmock::fake;
-
     use super::*;
 
     #[test]
@@ -19,7 +17,7 @@ mod tests {
     #[test]
     fn test_get_user_fake() {
         // Set up the fake implementation for get_user
-        fake!(get_user).setup(|| "Bob".to_string());
+        get_user_fake().setup(|| "Bob".to_string());
 
         // Call the mocked function and assert the return value
         let result = get_user();

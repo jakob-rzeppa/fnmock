@@ -19,8 +19,6 @@ impl User {
 
 #[cfg(test)]
 mod tests {
-    use fnmock::fake;
-
     use super::*;
 
     #[test]
@@ -32,7 +30,7 @@ mod tests {
 
     #[test]
     fn test_format_user_with_fake_user() {
-        fake!(User, format_user).setup(|user| format!("Fake formatted user: {}", user.name));
+        User::format_user_fake().setup(|user| format!("Fake formatted user: {}", user.name));
         let user = User::new("Bob");
         let result = User::format_user(user);
         assert_eq!(result, "Fake formatted user: Bob");

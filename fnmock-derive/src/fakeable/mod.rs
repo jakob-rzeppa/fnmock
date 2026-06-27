@@ -15,6 +15,7 @@ mod fake_module;
 mod inline_call;
 mod generate_module_info;
 mod info;
+mod access_function;
 
 pub fn handle_fakeable(
     _attr: proc_macro::TokenStream,
@@ -41,8 +42,13 @@ pub fn handle_fakeable(
             );
             item_fn.block = Box::new(modified_block);
 
+            // Generate the access function
+            let access_function = access_function::generate_access_function_for_standalone(&info)?;
+
             quote! {
                 #item_fn
+
+                #access_function
 
                 #module
             }
@@ -57,6 +63,12 @@ pub fn handle_fakeable(
                 .iter()
                 .map(|info| fake_module::generate_fake_module_code(&info))
                 .collect::<syn::Result<Vec<_>>>()?;
+
+            // Generate the access methods for the impl block
+            let access_methods = access_function::generate_access_methods_for_impl_block(
+                &infos,
+                &item_impl_info
+            )?;
 
             // Insert the inline call into each method's block
             let mut modified_impl = item_impl.clone();
@@ -88,6 +100,8 @@ pub fn handle_fakeable(
 
             quote! {
                 #modified_impl
+
+                #access_methods
 
                 #(#modules)*
             }

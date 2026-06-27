@@ -13,8 +13,6 @@ impl<T: 'static> User<T> {
 
 #[cfg(test)]
 mod tests {
-    use fnmock::fake;
-
     use super::*;
 
     #[test]
@@ -25,7 +23,7 @@ mod tests {
 
     #[test]
     fn test_fake_new() {
-        fake!(User<String>, new).setup(|name| User {
+        User::new_fake().setup(|name| User {
             name: format!("Fake{}", name),
         });
         let user = User::new("Bob".to_string());

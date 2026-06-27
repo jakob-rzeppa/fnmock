@@ -1,6 +1,6 @@
 use quote::quote;
 
-use crate::extract::function::FunctionGenericInfo;
+use crate::extract::{ function::FunctionGenericInfo, impl_block::ItemImplMethodGenericInfo };
 
 /// Extracts the generic information from a `Generics` object, including the count of generic parameters, the generic type parameters themselves, their identifiers, and their corresponding `TypeId` expressions.
 ///
@@ -30,26 +30,41 @@ pub fn extract_generic_function_info(generics: &syn::Generics) -> Option<Functio
 pub fn extract_generic_impl_info(
     item_impl: &syn::ItemImpl,
     method: &syn::ImplItemFn
-) -> Option<FunctionGenericInfo> {
+) -> Option<ItemImplMethodGenericInfo> {
     if method.sig.generics.params.is_empty() && item_impl.generics.params.is_empty() {
         return None;
     }
 
-    let struct_generic_params = extract_generic_type_params(&item_impl.generics);
-    let fn_generic_params = extract_generic_type_params(&method.sig.generics);
-    let generic_params = struct_generic_params
+    let struct_type_params = extract_generic_type_params(&item_impl.generics);
+    let method_type_params = extract_generic_type_params(&method.sig.generics);
+    let type_params = struct_type_params
+        .clone()
         .into_iter()
-        .chain(fn_generic_params.into_iter())
+        .chain(method_type_params.clone().into_iter())
         .collect::<Vec<_>>();
 
-    let generic_idents = extract_generic_idents_from_params(&generic_params);
-    let generic_type_ids = build_type_id_array(&generic_idents);
+    let struct_idents = extract_generic_idents_from_params(&struct_type_params);
+    let method_idents = extract_generic_idents_from_params(&method_type_params);
+    let idents = extract_generic_idents_from_params(&type_params);
 
-    Some(FunctionGenericInfo {
-        count: generic_params.len(),
-        type_params: generic_params,
-        idents: generic_idents,
-        type_ids: generic_type_ids,
+    let struct_type_ids = build_type_id_array(&struct_idents);
+    let method_type_ids = build_type_id_array(&method_idents);
+    let type_ids = build_type_id_array(&idents);
+
+    Some(ItemImplMethodGenericInfo {
+        count: type_params.len(),
+
+        type_params,
+        struct_type_params,
+        method_type_params,
+
+        idents,
+        struct_idents,
+        method_idents,
+
+        type_ids,
+        struct_type_ids,
+        method_type_ids,
     })
 }
 

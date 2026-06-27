@@ -1,8 +1,9 @@
 use crate::{
-    extract::{ function::{ FunctionInfo }, impl_block::{ ItemImplMethodInfo } },
+    extract::{ function::FunctionInfo, impl_block::ItemImplMethodInfo },
     fakeable::info::{ FakeableGenericInfo, FakeableInfo },
     names::{
         NameType,
+        build_access_function_name,
         build_impl_interface_struct_name,
         build_impl_module_name,
         build_impl_store_name,
@@ -16,11 +17,13 @@ pub fn generate_fakeable_info_from_function(
     function_info: &FunctionInfo
 ) -> syn::Result<FakeableInfo> {
     let module_name = build_module_name(&function_info.name, NameType::Fake);
+    let access_function_name = build_access_function_name(&function_info.name, NameType::Fake);
     let store_name = build_store_name(&function_info.name, NameType::Fake);
     let display_name = format!("{}", function_info.name);
     let interface_struct_name = build_interface_struct_name(&function_info.name, NameType::Fake);
 
     Ok(FakeableInfo {
+        access_function_name,
         module_name,
         store_name,
         display_name,
@@ -46,6 +49,10 @@ pub fn generate_fakeable_info_from_impl_block(
                 &method_info.method_name,
                 NameType::Fake
             );
+            let access_function_name = build_access_function_name(
+                &method_info.method_name,
+                NameType::Fake
+            );
             let store_name = build_impl_store_name(
                 &method_info.struct_name,
                 &method_info.method_name,
@@ -61,6 +68,7 @@ pub fn generate_fakeable_info_from_impl_block(
             Ok(FakeableInfo {
                 module_name,
                 store_name,
+                access_function_name,
                 display_name,
                 interface_struct_name,
                 fn_ptr_type: method_info.fn_ptr_type.clone(),

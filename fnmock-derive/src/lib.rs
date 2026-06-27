@@ -1,7 +1,6 @@
-use crate::{ fake::handle_fake, fakeable::handle_fakeable };
+use crate::{ fakeable::handle_fakeable };
 
 mod fakeable;
-mod fake;
 mod module_builder;
 mod names;
 mod extract;
@@ -17,9 +16,4 @@ pub fn fakeable(
         Ok(expanded) => expanded.into(),
         Err(e) => e.to_compile_error().into(),
     }
-}
-
-#[proc_macro]
-pub fn fake(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    handle_fake(input)
 }

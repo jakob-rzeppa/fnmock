@@ -19,8 +19,6 @@ impl User {
 
 #[cfg(test)]
 mod tests {
-    use fnmock::fake;
-
     use super::*;
 
     #[test]
@@ -32,7 +30,7 @@ mod tests {
 
     #[test]
     fn test_consume_with_fake_user() {
-        fake!(User, consume).setup(|user| format!("Fake consumed user: {}", user.name));
+        User::consume_fake().setup(|user| format!("Fake consumed user: {}", user.name));
         let user = User::new("Bob");
         let result = user.consume();
         assert_eq!(result, "Fake consumed user: Bob");

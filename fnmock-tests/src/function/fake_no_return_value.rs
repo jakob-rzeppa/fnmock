@@ -5,8 +5,6 @@ fn append_to_string(original: &mut String, new: &str) {
 
 #[cfg(test)]
 mod tests {
-    use fnmock::fake;
-
     use super::*;
 
     #[test]
@@ -19,7 +17,7 @@ mod tests {
     #[test]
     fn test_append_to_string_fake() {
         // Set up the fake implementation for append_to_string
-        fake!(append_to_string).setup(|original, new| {
+        append_to_string_fake().setup(|original, new| {
             original.push_str(new);
         });
 

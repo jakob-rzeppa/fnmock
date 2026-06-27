@@ -19,8 +19,6 @@ async fn handle_user(user_id: u32) -> String {
 
 #[cfg(test)]
 mod tests {
-    use fnmock::fake;
-
     use super::*;
 
     #[tokio::test]
@@ -31,7 +29,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_handle_user_with_fake_repo() {
-        fake!(UserRepository, get_user<u32>).setup(|_, i| {
+        UserRepository::get_user_fake::<u32>().setup(|_, i| {
             if i == 1 { Some(format!("FakeUser{}", i)) } else { None }
         });
 

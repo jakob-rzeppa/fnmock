@@ -19,8 +19,6 @@ impl User {
 
 #[cfg(test)]
 mod tests {
-    use fnmock::fake;
-
     use super::*;
 
     #[test]
@@ -37,7 +35,7 @@ mod tests {
 
     #[test]
     fn test_fake_default() {
-        fake!(User, default).setup(|| User {
+        User::default_fake().setup(|| User {
             name: "FakeDefault".to_string(),
         });
         let user = User::default();
@@ -46,7 +44,7 @@ mod tests {
 
     #[test]
     fn test_fake_new() {
-        fake!(User, new).setup(|name| User {
+        User::new_fake().setup(|name| User {
             name: format!("Fake{}", name),
         });
         let user = User::new("Bob");

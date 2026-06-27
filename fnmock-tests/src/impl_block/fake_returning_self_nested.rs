@@ -23,8 +23,6 @@ impl User {
 
 #[cfg(test)]
 mod tests {
-    use fnmock::fake;
-
     use super::*;
 
     #[test]
@@ -44,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_fake_new() {
-        fake!(User, new).setup(|name| {
+        User::new_fake().setup(|name| {
             let name = format!("Fake{}", name);
 
             let mut res = Box::new(HashMap::new());
