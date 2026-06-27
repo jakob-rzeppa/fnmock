@@ -12,14 +12,16 @@ pub fn generate_access_function_for_standalone(info: &FakeableInfo) -> syn::Resu
         let generic_params = generic_info.generic_params.as_slice();
 
         quote! {
-            pub(crate) fn #access_function_name<#(#generic_params),*>() -> #module_name::#interface_struct_name<#(#generic_idents),*> {
-                #module_name::#interface_struct_name::new()
+            #[cfg(test)]
+            pub(crate) fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
+                self::#module_name::#interface_struct_name::new()
             }
         }
     } else {
         quote! {
-            pub(crate) fn #access_function_name() -> #module_name::#interface_struct_name {
-                #module_name::#interface_struct_name::new()
+            #[cfg(test)]
+            pub(crate) fn #access_function_name() -> self::#module_name::#interface_struct_name {
+                self::#module_name::#interface_struct_name::new()
             }
         }
     };
@@ -52,6 +54,7 @@ pub fn generate_access_methods_for_impl_block(
 
         syn::parse2(
             quote! {
+                #[cfg(test)]
                 impl<#(#struct_generics),*> #struct_name<#(#struct_generic_idents),*> {
                     #(#access_methods)*
                 }
@@ -60,6 +63,7 @@ pub fn generate_access_methods_for_impl_block(
     } else {
         syn::parse2(
             quote! {
+                #[cfg(test)]
                 impl #struct_name {
                     #(#access_methods)*
                 }
@@ -86,14 +90,14 @@ fn generate_access_method_for_impl_block(
         let method_generic_params = method_generic_info.method_type_params.as_slice();
 
         quote! {
-            pub(crate) fn #access_function_name<#(#method_generic_params),*>() -> #module_name::#interface_struct_name<#(#generic_idents),*> {
-                #module_name::#interface_struct_name::new()
+            pub(crate) fn #access_function_name<#(#method_generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
+                self::#module_name::#interface_struct_name::new()
             }
         }
     } else {
         quote! {
-            pub(crate) fn #access_function_name() -> #module_name::#interface_struct_name {
-                #module_name::#interface_struct_name::new()
+            pub(crate) fn #access_function_name() -> self::#module_name::#interface_struct_name {
+                self::#module_name::#interface_struct_name::new()
             }
         }
     };

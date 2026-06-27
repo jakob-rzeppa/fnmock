@@ -12,7 +12,7 @@ pub fn insert_inline_call_into_fn_block(
             {
                 #[cfg(test)]
                 {
-                    let fake = #module_name::#interface_struct_name::<#(#generic_idents),*>::new();
+                    let fake = self::#module_name::#interface_struct_name::<#(#generic_idents),*>::new();
                     if fake.is_set() {
                         let implementation = fake.get();
                         return implementation(#(#param_idents),*);
@@ -27,7 +27,7 @@ pub fn insert_inline_call_into_fn_block(
             {
                 #[cfg(test)]
                 {
-                    let fake = #module_name::#interface_struct_name::new();
+                    let fake = self::#module_name::#interface_struct_name::new();
                     if fake.is_set() {
                         let implementation = fake.get();
                         return implementation(#(#param_idents),*);

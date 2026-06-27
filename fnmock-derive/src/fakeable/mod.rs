@@ -43,14 +43,16 @@ pub fn handle_fakeable(
             item_fn.block = Box::new(modified_block);
 
             // Generate the access function
-            let access_function = access_function::generate_access_function_for_standalone(&info)?;
+            let access_function = access_function
+                ::generate_access_function_for_standalone(&info)
+                .expect("msg");
 
             quote! {
+                #module
+
                 #item_fn
 
                 #access_function
-
-                #module
             }
         }
         Ok(syn::Item::Impl(item_impl)) => {
@@ -99,11 +101,11 @@ pub fn handle_fakeable(
             }
 
             quote! {
+                #(#modules)*
+                
                 #modified_impl
 
                 #access_methods
-
-                #(#modules)*
             }
         }
         Ok(item) => {

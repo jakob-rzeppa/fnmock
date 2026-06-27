@@ -44,17 +44,17 @@ impl ModuleBuilder {
 
         let code =
             quote! {
-            #[cfg(test)]
-            pub(crate) mod #name {
-                use super::*;
+                #[cfg(test)]
+                pub(crate) mod #name {
+                    use super::*;
 
-                thread_local! {
-                    #store
+                    thread_local! {
+                        #store
+                    }
+
+                    #interface_struct
                 }
-
-                #interface_struct
-            }
-        };
+            };
 
         syn::parse2(code)
     }

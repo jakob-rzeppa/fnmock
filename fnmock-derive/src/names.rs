@@ -32,7 +32,10 @@ impl NameType {
 ///
 /// For a function named `get_user`, this will generate `get_user_fake_module`.
 pub fn build_module_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident {
-    syn::Ident::new(&format!("{}_{}", fn_name, name_type.suffix_module()), fn_name.span())
+    syn::Ident::new(
+        &format!("{}_{}", fn_name, name_type.suffix_module()),
+        proc_macro2::Span::mixed_site()
+    )
 }
 
 /// Builds the access function name for a function fake, spy etc.
@@ -41,7 +44,10 @@ pub fn build_module_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Iden
 ///
 /// For a function named `get_user`, this will generate `get_user_fake`.
 pub fn build_access_function_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident {
-    syn::Ident::new(&format!("{}_{}", fn_name, name_type.suffix_access_function()), fn_name.span())
+    syn::Ident::new(
+        &format!("{}_{}", fn_name, name_type.suffix_access_function()),
+        proc_macro2::Span::mixed_site()
+    )
 }
 
 /// Builds the module name for a impl block fake, spy etc.
@@ -59,7 +65,7 @@ pub fn build_impl_module_name(
             &method_name.to_string(),
             name_type.suffix_module()
         ),
-        method_name.span()
+        proc_macro2::Span::mixed_site()
     )
 }
 
@@ -69,7 +75,7 @@ pub fn build_impl_module_name(
 pub fn build_store_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident {
     syn::Ident::new(
         &format!("{}_{}", fn_name.to_string().to_uppercase(), name_type.suffix_store()),
-        fn_name.span()
+        proc_macro2::Span::mixed_site()
     )
 }
 
@@ -88,7 +94,7 @@ pub fn build_impl_store_name(
             method_name.to_string().to_uppercase(),
             name_type.suffix_store()
         ),
-        method_name.span()
+        proc_macro2::Span::mixed_site()
     )
 }
 
@@ -102,7 +108,7 @@ pub fn build_interface_struct_name(fn_name: &syn::Ident, name_type: NameType) ->
             snake_to_pascal_case(&fn_name.to_string()),
             name_type.suffix_interface_struct()
         ),
-        fn_name.span()
+        proc_macro2::Span::mixed_site()
     )
 }
 
@@ -121,7 +127,7 @@ pub fn build_impl_interface_struct_name(
             snake_to_pascal_case(&method_name.to_string()),
             name_type.suffix_interface_struct()
         ),
-        method_name.span()
+        proc_macro2::Span::mixed_site()
     )
 }
 
