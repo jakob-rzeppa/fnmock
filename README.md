@@ -7,9 +7,6 @@ A Rust mocking framework for standalone functions and methods in a impl block.
 
 ## TODO
 
-- Create function `get_user_fake` under `get_user` to get the interface struct without the `fake!()` macro
-  - functions
-  - impl blocks
 - Find a way to allow references in spies
 
 ## License
