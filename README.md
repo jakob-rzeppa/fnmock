@@ -5,9 +5,10 @@ A Rust mocking framework for standalone functions and methods in a impl block.
 [![Crates.io](https://img.shields.io/crates/v/fnmock.svg)](https://crates.io/crates/fnmock)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-## TODO
+## Planned
 
-- Find a way to allow references in spies
+- Spies
+- Mocks
 
 ## License
 

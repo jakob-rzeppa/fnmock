@@ -15,5 +15,3 @@ mod fake_empty_params;
 
 /// Function returning ()
 mod fake_no_return_value;
-
-mod spy_regular;
