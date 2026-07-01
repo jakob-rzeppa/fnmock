@@ -168,7 +168,7 @@ mod tests {
     fn test_build_module_name() {
         let fn_name = syn::Ident::new("get_user", proc_macro2::Span::call_site());
         let module_name = build_module_name(&fn_name, NameType::Fake);
-        assert_eq!(module_name.to_string(), "get_user_fake");
+        assert_eq!(module_name.to_string(), "get_user_fake_module");
     }
 
     #[test]
@@ -176,7 +176,7 @@ mod tests {
         let struct_name = syn::Ident::new("UserService", proc_macro2::Span::call_site());
         let method_name = syn::Ident::new("get_user", proc_macro2::Span::call_site());
         let module_name = build_impl_module_name(&struct_name, &method_name, NameType::Fake);
-        assert_eq!(module_name.to_string(), "user_service_get_user_fake");
+        assert_eq!(module_name.to_string(), "user_service_get_user_fake_module");
     }
 
     #[test]

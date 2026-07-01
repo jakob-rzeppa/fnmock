@@ -25,6 +25,10 @@ mod fake_associated_function;
 /// Using Self type in method parameters
 mod fake_self_as_param_type;
 
+/// Method using dyn trait objects
+mod fake_dyn;
+// fnmock does not support `impl Trait` in parameters or return types. Use generic type parameters instead.
+
 /// Returning ()
 mod fake_returning_nothing;
 /// Returning Self

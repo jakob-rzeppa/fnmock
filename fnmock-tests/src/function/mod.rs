@@ -5,6 +5,10 @@ mod fake_regular_async;
 /// Generic function using where clauses
 mod fake_generic_where;
 
+/// Function using dyn trait objects
+mod fake_dyn;
+// fnmock does not support `impl Trait` in parameters or return types. Use generic type parameters instead.
+
 /// Generic function
 mod fake_generic;
 /// Generic async function
