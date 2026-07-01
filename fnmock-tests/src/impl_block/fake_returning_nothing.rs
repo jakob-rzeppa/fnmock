@@ -2,14 +2,6 @@ struct User {
     name: String,
 }
 
-impl User {
-    pub fn new(name: &str) -> Self {
-        User {
-            name: name.to_string(),
-        }
-    }
-}
-
 #[fnmock::fakeable]
 impl User {
     pub fn set_name(&mut self, name: &str) {
@@ -23,7 +15,7 @@ mod tests {
 
     #[test]
     fn test_set_name_with_real_user() {
-        let mut user = User::new("Alice");
+        let mut user = User { name: "Alice".into() };
         user.set_name("Bob");
         assert_eq!(user.name, "Bob");
     }
@@ -33,7 +25,7 @@ mod tests {
         User::set_name_fake().setup(|user, name| {
             user.name = name.to_string();
         });
-        let mut user = User::new("Alice");
+        let mut user = User { name: "Alice".into() };
         user.set_name("Bob");
         assert_eq!(user.name, "Bob");
     }

@@ -5,27 +5,22 @@ async fn get_user<T: Display + 'static, N: Display + 'static>(id: T, name: N) ->
     format!("User {} ({})", id, name)
 }
 
-async fn handle_user(id: i32, name: String) -> String {
-    let user = get_user(id, name);
-    user.await
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_handle_user_no_fake() {
-        let result = handle_user(1, "Alice".into()).await;
+    async fn test_get_user_no_fake() {
+        let result = get_user::<i32, String>(1, "Alice".into()).await;
 
         assert_eq!(result, "User 1 (Alice)");
     }
 
     #[tokio::test]
-    async fn test_handle_user_with_fake() {
+    async fn test_get_user_with_fake() {
         get_user_fake::<i32, String>().setup(|id, name| format!("Fake User {} ({})", id, name));
 
-        let result = handle_user(1, "Alice".into()).await;
+        let result = get_user::<i32, String>(1, "Alice".into()).await;
 
         assert_eq!(result, "Fake User 1 (Alice)");
     }

@@ -5,27 +5,22 @@ fn get_user<T: Display + 'static, N: Display + 'static>(id: T, name: N) -> Strin
     format!("User {} ({})", id, name)
 }
 
-fn handle_user(id: i32, name: String) -> String {
-    let user = get_user(id, name);
-    user
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_handle_user_no_fake() {
-        let result = handle_user(1, "Alice".into());
+    fn test_get_user_no_fake() {
+        let result = get_user::<i32, String>(1, "Alice".into());
 
         assert_eq!(result, "User 1 (Alice)");
     }
 
     #[test]
-    fn test_handle_user_with_fake() {
+    fn test_get_user_with_fake() {
         get_user_fake::<i32, String>().setup(|id, name| format!("Fake User {} ({})", id, name));
 
-        let result = handle_user(1, "Alice".into());
+        let result = get_user::<i32, String>(1, "Alice".into());
 
         assert_eq!(result, "Fake User 1 (Alice)");
     }

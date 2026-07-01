@@ -27,8 +27,21 @@ mod tests {
         UserRepository::<String>
             ::get_user_fake::<u32>()
             .setup(|_, i| Some(format!("FakeUser{}", i)));
+
         let repo = UserRepository::<String> { users: Vec::new() };
+
         let result = repo.get_user::<u32>(1);
         assert_eq!(result, Some("FakeUser1".into()));
+
+        let result = repo.get_user::<i32>(2);
+        assert_eq!(result, Some("User2".into()));
+
+        let repo = UserRepository::<&'static str> { users: Vec::new() };
+
+        let result = repo.get_user::<u32>(1);
+        assert_eq!(result, Some("User1".into()));
+
+        let result = repo.get_user::<i32>(2);
+        assert_eq!(result, Some("User2".into()));
     }
 }

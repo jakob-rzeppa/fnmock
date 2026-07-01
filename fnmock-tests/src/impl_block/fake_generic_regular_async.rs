@@ -2,12 +2,6 @@ pub struct UserRepository<T> {
     users: Vec<T>,
 }
 
-impl<T: 'static> UserRepository<T> {
-    pub fn new() -> Self {
-        Self { users: Vec::new() }
-    }
-}
-
 #[fnmock::fakeable]
 impl<T: 'static> UserRepository<T> {
     pub async fn get_user(&self, user_id: u32) -> Option<String> {
@@ -16,7 +10,7 @@ impl<T: 'static> UserRepository<T> {
 }
 
 async fn handle_user(user_id: u32) -> String {
-    let repo = UserRepository::<String>::new();
+    let repo = UserRepository::<String> { users: Vec::new() };
     match repo.get_user(user_id).await {
         Some(user) => format!("Found: {}", user),
         None => "User not found".to_string(),
