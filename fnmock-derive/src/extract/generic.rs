@@ -8,6 +8,7 @@ use crate::extract::{ function::FunctionGenericInfo, impl_block::ItemImplMethodG
 pub fn extract_generic_function_info(generics: &syn::Generics) -> Option<FunctionGenericInfo> {
     let count = generics.params.len();
     let type_params = extract_generic_type_params(generics);
+    let type_params = merge_where_bounds_into_type_params(generics, type_params);
 
     if type_params.is_empty() {
         return None;
@@ -37,6 +38,8 @@ pub fn extract_generic_impl_info(
 
     let struct_type_params = extract_generic_type_params(&item_impl.generics);
     let method_type_params = extract_generic_type_params(&method.sig.generics);
+    let struct_type_params = merge_where_bounds_into_type_params(&item_impl.generics, struct_type_params);
+    let method_type_params = merge_where_bounds_into_type_params(&method.sig.generics, method_type_params);
     let type_params = struct_type_params
         .clone()
         .into_iter()
@@ -82,6 +85,39 @@ pub fn extract_generic_type_params(generics: &syn::Generics) -> Vec<syn::TypePar
             }
         })
         .collect()
+}
+
+fn merge_where_bounds_into_type_params(
+    generics: &syn::Generics,
+    mut type_params: Vec<syn::TypeParam>
+) -> Vec<syn::TypeParam> {
+    let Some(where_clause) = &generics.where_clause else {
+        return type_params;
+    };
+
+    for predicate in &where_clause.predicates {
+        let syn::WherePredicate::Type(type_predicate) = predicate else {
+            continue;
+        };
+
+        let syn::Type::Path(type_path) = &type_predicate.bounded_ty else {
+            continue;
+        };
+
+        if type_path.qself.is_some() {
+            continue;
+        }
+
+        let Some(segment) = type_path.path.segments.last() else {
+            continue;
+        };
+
+        if let Some(type_param) = type_params.iter_mut().find(|type_param| type_param.ident == segment.ident) {
+            type_param.bounds.extend(type_predicate.bounds.iter().cloned());
+        }
+    }
+
+    type_params
 }
 
 /// Extract the generic idents (e.g. `T`, `U`) from a list of generic parameters (e.g. `T: Display + 'static`, `U: 'static`)
