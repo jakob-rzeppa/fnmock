@@ -72,12 +72,12 @@ fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
     let interface_struct_name = &info.interface_struct_name;
     let fn_ptr_type = &info.fn_ptr_type;
 
-    let (generic_count, generic_idents, generic_params, generic_type_ids) = if
+    let (generic_count, generic_types, generic_params, generic_type_ids) = if
         let Some(generic_info) = &info.generic_info
     {
         (
             generic_info.generic_count,
-            &generic_info.generic_idents,
+            &generic_info.generic_types,
             &generic_info.generic_params,
             &generic_info.generic_type_ids,
         )
@@ -103,10 +103,10 @@ fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
     module_builder.set_interface_struct(
         quote! {
             pub(crate) struct #interface_struct_name<#(#generic_params),*> {
-                _marker: std::marker::PhantomData<(#(#generic_idents),*)>,
+                _marker: std::marker::PhantomData<(#(#generic_types),*)>,
             }
 
-            impl<#(#generic_params),*> #interface_struct_name<#(#generic_idents),*> {
+            impl<#(#generic_params),*> #interface_struct_name<#(#generic_types),*> {
                 pub(crate) fn new() -> Self {
                     Self {
                         _marker: std::marker::PhantomData,

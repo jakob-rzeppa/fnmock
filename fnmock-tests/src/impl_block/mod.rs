@@ -43,3 +43,10 @@ mod fake_different_fakes_for_generics;
 
 /// Using where clauses for generic type parameters
 mod fake_generic_where;
+
+/// Using lifetimes in method parameters
+mod fake_method_lifetimes;
+/// Using lifetimes in struct definition
+mod fake_struct_lifetimes;
+/// Using lifetimes in both struct definition and method parameters
+mod fake_struct_and_method_lifetimes;

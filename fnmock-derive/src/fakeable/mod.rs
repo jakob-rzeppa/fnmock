@@ -1,7 +1,7 @@
 use quote::quote;
 
 use crate::{
-    extract::{ function::extract_function_info, impl_block::extract_item_impl_info },
+    extract::{ function::extract_function_info, item_impl::extract_item_impl_info },
     fakeable::{
         generate_module_info::{
             generate_fakeable_info_from_function,
@@ -38,7 +38,7 @@ pub fn handle_fakeable(
                 &function_info.param_idents,
                 &info.module_name,
                 &info.interface_struct_name,
-                info.generic_info.as_ref().map(|gi| &gi.generic_idents[..])
+                info.generic_info.as_ref().map(|gi| &gi.generic_types[..])
             );
             item_fn.block = Box::new(modified_block);
 
@@ -48,11 +48,11 @@ pub fn handle_fakeable(
                 .expect("msg");
 
             quote! {
-                #module
-
                 #item_fn
 
                 #access_function
+
+                #module
             }
         }
         Ok(syn::Item::Impl(item_impl)) => {
@@ -68,6 +68,7 @@ pub fn handle_fakeable(
 
             // Generate the access methods for the impl block
             let access_methods = access_function::generate_access_methods_for_impl_block(
+                &item_impl,
                 &infos,
                 &item_impl_info
             )?;
@@ -95,17 +96,17 @@ pub fn handle_fakeable(
                         &item_impl_method_info.param_idents,
                         &info.module_name,
                         &info.interface_struct_name,
-                        info.generic_info.as_ref().map(|gi| &gi.generic_idents[..])
+                        info.generic_info.as_ref().map(|gi| &gi.generic_types[..])
                     );
                 }
             }
 
             quote! {
-                #(#modules)*
-                
                 #modified_impl
 
                 #access_methods
+
+                #(#modules)*
             }
         }
         Ok(item) => {

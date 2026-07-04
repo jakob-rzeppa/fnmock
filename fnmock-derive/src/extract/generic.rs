@@ -1,98 +1,51 @@
-use quote::quote;
-
-use crate::extract::{ function::FunctionGenericInfo, impl_block::ItemImplMethodGenericInfo };
-
-/// Extracts the generic information from a `Generics` object, including the count of generic parameters, the generic type parameters themselves, their identifiers, and their corresponding `TypeId` expressions.
-///
-/// This is used for free functions and not impl blocks, as impl blocks require special handling to combine the generic parameters from both the struct and the method.
-pub fn extract_generic_function_info(generics: &syn::Generics) -> Option<FunctionGenericInfo> {
-    let count = generics.params.len();
-    let type_params = extract_generic_type_params(generics);
-    let type_params = merge_where_bounds_into_type_params(generics, type_params);
-
-    if type_params.is_empty() {
-        return None;
-    }
-
-    let idents = extract_generic_idents_from_params(&type_params);
-    let type_ids = build_type_id_array(&idents);
-
-    Some(FunctionGenericInfo {
-        count,
-        type_params,
-        idents,
-        type_ids,
-    })
-}
-
-/// Extract the generic type parameters (e.g. `T: Display + 'static`, `U: 'static`) from a impl block method.
-///
-/// The generics of the struct and method are combined, in the order of struct generics followed by method generics.
-pub fn extract_generic_impl_info(
-    item_impl: &syn::ItemImpl,
-    method: &syn::ImplItemFn
-) -> Option<ItemImplMethodGenericInfo> {
-    if method.sig.generics.params.is_empty() && item_impl.generics.params.is_empty() {
-        return None;
-    }
-
-    let struct_type_params = extract_generic_type_params(&item_impl.generics);
-    let method_type_params = extract_generic_type_params(&method.sig.generics);
-    let struct_type_params = merge_where_bounds_into_type_params(&item_impl.generics, struct_type_params);
-    let method_type_params = merge_where_bounds_into_type_params(&method.sig.generics, method_type_params);
-    let type_params = struct_type_params
-        .clone()
-        .into_iter()
-        .chain(method_type_params.clone().into_iter())
-        .collect::<Vec<_>>();
-
-    let struct_idents = extract_generic_idents_from_params(&struct_type_params);
-    let method_idents = extract_generic_idents_from_params(&method_type_params);
-    let idents = extract_generic_idents_from_params(&type_params);
-
-    let struct_type_ids = build_type_id_array(&struct_idents);
-    let method_type_ids = build_type_id_array(&method_idents);
-    let type_ids = build_type_id_array(&idents);
-
-    Some(ItemImplMethodGenericInfo {
-        count: type_params.len(),
-
-        type_params,
-        struct_type_params,
-        method_type_params,
-
-        idents,
-        struct_idents,
-        _method_idents: method_idents,
-
-        type_ids,
-        _struct_type_ids: struct_type_ids,
-        _method_type_ids: method_type_ids,
-    })
-}
+use quote::{ ToTokens, quote };
+use syn::parse_quote;
 
 /// Extract the generic type parameters (e.g. `T: Display + 'static`, `U: 'static`) from a `Generics` object
 ///
 /// Returns a vector of `TypeParam` objects representing the generic type parameters
-pub fn extract_generic_type_params(generics: &syn::Generics) -> Vec<syn::TypeParam> {
-    generics.params
+pub fn extract_generic_type_params(generics: &syn::Generics) -> syn::Result<Vec<syn::TypeParam>> {
+    let mut type_params: Vec<syn::TypeParam> = generics.params
         .iter()
         .filter_map(|param| {
-            if let syn::GenericParam::Type(type_param) = param {
-                Some(type_param.clone())
-            } else {
-                None
+            match param {
+                syn::GenericParam::Type(type_param) => Some(type_param.clone()),
+                _ => None,
             }
         })
-        .collect()
+        .collect();
+
+    merge_where_bounds_into_type_params(generics, &mut type_params);
+
+    // Check if any of the type parameters have a lifetime bound. If so, we check if it is static. If not we panic, because we don't support non-static lifetimes in generic parameters for fakeable functions.
+    for type_param in &type_params {
+        for bound in &type_param.bounds {
+            if let syn::TypeParamBound::Lifetime(lifetime) = bound {
+                if lifetime.ident != "static" {
+                    return Err(
+                        syn::Error::new_spanned(
+                            &lifetime,
+                            format!(
+                                "Non-static lifetime '{}' found in generic parameter '{}'. Only 'static lifetimes are supported in generic parameters for fakeable functions.",
+                                lifetime.ident,
+                                type_param.ident
+                            )
+                        )
+                    );
+                }
+            }
+        }
+    }
+
+    Ok(type_params)
 }
 
 fn merge_where_bounds_into_type_params(
     generics: &syn::Generics,
-    mut type_params: Vec<syn::TypeParam>
-) -> Vec<syn::TypeParam> {
+    type_params: &mut Vec<syn::TypeParam>
+) {
     let Some(where_clause) = &generics.where_clause else {
-        return type_params;
+        return;
     };
 
     for predicate in &where_clause.predicates {
@@ -100,36 +53,52 @@ fn merge_where_bounds_into_type_params(
             continue;
         };
 
-        let syn::Type::Path(type_path) = &type_predicate.bounded_ty else {
-            continue;
+        let type_param = if
+            let Some(existing) = type_params
+                .iter_mut()
+                .find(
+                    |param|
+                        param.ident.to_token_stream().to_string() ==
+                        type_predicate.bounded_ty.to_token_stream().to_string()
+                )
+        {
+            // If the type parameter already exists, use the existing one
+            existing
+        } else {
+            panic!(
+                "Type parameter {} in where clause does not exist in the generic parameters",
+                type_predicate.bounded_ty.to_token_stream().to_string()
+            );
         };
 
-        if type_path.qself.is_some() {
-            continue;
-        }
+        for bound in &type_predicate.bounds {
+            if
+                type_param.bounds
+                    .iter()
+                    .any(|existing| {
+                        existing.to_token_stream().to_string() ==
+                            bound.to_token_stream().to_string()
+                    })
+            {
+                continue;
+            }
 
-        let Some(segment) = type_path.path.segments.last() else {
-            continue;
-        };
-
-        if let Some(type_param) = type_params.iter_mut().find(|type_param| type_param.ident == segment.ident) {
-            type_param.bounds.extend(type_predicate.bounds.iter().cloned());
+            type_param.bounds.push(bound.clone());
         }
     }
-
-    type_params
 }
 
-/// Extract the generic idents (e.g. `T`, `U`) from a list of generic parameters (e.g. `T: Display + 'static`, `U: 'static`)
-pub fn extract_generic_idents_from_params(generic_params: &[syn::TypeParam]) -> Vec<syn::Ident> {
+/// Extract the generic types (e.g. `T`, `U`) from a list of generic parameters (e.g. `T: Display + 'static`, `U: 'static`)
+pub fn extract_generic_types_from_type_params(generic_params: &[syn::TypeParam]) -> Vec<syn::Type> {
     generic_params
         .iter()
         .map(|param| param.ident.clone())
+        .map(|ident| parse_quote!(#ident))
         .collect()
 }
 
 /// Build TypeId array: [TypeId::of::<T>(), TypeId::of::<U>(), ...]
-pub fn build_type_id_array(generic_idents: &[syn::Ident]) -> Vec<syn::Expr> {
+pub fn build_type_id_array(generic_idents: &[syn::Type]) -> Vec<syn::Expr> {
     generic_idents
         .iter()
         .map(|ident| {

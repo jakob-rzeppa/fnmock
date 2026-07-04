@@ -19,3 +19,6 @@ mod fake_empty_params;
 
 /// Function returning ()
 mod fake_no_return_value;
+
+/// Function with lifetime generics
+mod fake_lifetimes;

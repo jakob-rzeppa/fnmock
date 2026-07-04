@@ -1,6 +1,7 @@
 use quote::quote;
+use syn::parse_quote;
 
-use crate::{ extract::impl_block::ItemImplMethodInfo, fakeable::info::FakeableInfo };
+use crate::{ extract::item_impl::info::ImplItemFnInfo, fakeable::info::FakeableInfo };
 
 pub fn generate_access_function_for_standalone(info: &FakeableInfo) -> syn::Result<syn::ItemFn> {
     let access_function_name = &info.access_function_name;
@@ -8,12 +9,12 @@ pub fn generate_access_function_for_standalone(info: &FakeableInfo) -> syn::Resu
     let interface_struct_name = &info.interface_struct_name;
 
     let access_function_code = if let Some(generic_info) = &info.generic_info {
-        let generic_idents = generic_info.generic_idents.as_slice();
+        let generic_types = generic_info.generic_types.as_slice();
         let generic_params = generic_info.generic_params.as_slice();
 
         quote! {
             #[cfg(test)]
-            pub(crate) fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
+            pub(crate) fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_types),*> {
                 self::#module_name::#interface_struct_name::new()
             }
         }
@@ -29,9 +30,17 @@ pub fn generate_access_function_for_standalone(info: &FakeableInfo) -> syn::Resu
     syn::parse2(access_function_code)
 }
 
+/// Generates access methods for an impl block.
+///
+/// # Arguments
+///
+/// - `original_item_impl`: The `syn::ItemImpl` representing the original impl block. Should be a reference, so we can clone it and create a new impl block with the access methods.
+/// - `fakeable_infos`: A slice of `FakeableInfo` structs, each representing a method in the impl block that is marked as fakeable.
+/// - `item_impl_info`: A slice of `ImplItemFnInfo` structs, each representing a method in the impl block. This is used to extract information about the methods, such as their names and generics.
 pub fn generate_access_methods_for_impl_block(
+    original_item_impl: &syn::ItemImpl,
     fakeable_infos: &[FakeableInfo],
-    item_impl_info: &[ItemImplMethodInfo]
+    item_impl_info: &[ImplItemFnInfo]
 ) -> syn::Result<syn::ItemImpl> {
     let access_methods: Vec<syn::ImplItemFn> = fakeable_infos
         .iter()
@@ -41,40 +50,18 @@ pub fn generate_access_methods_for_impl_block(
         })
         .collect::<syn::Result<Vec<_>>>()?;
 
-    let struct_name = &item_impl_info.first().expect("No methods in impl block").struct_name;
+    let mut access_item_impl = original_item_impl.clone();
+    access_item_impl.items = access_methods.into_iter().map(syn::ImplItem::Fn).collect();
 
-    if
-        let Some(generic_info) = item_impl_info
-            .first()
-            .expect("No methods in impl block")
-            .generic_info.as_ref()
-    {
-        let struct_generics = &generic_info.struct_type_params;
-        let struct_generic_idents = &generic_info.struct_idents;
-
-        syn::parse2(
-            quote! {
-                #[cfg(test)]
-                impl<#(#struct_generics),*> #struct_name<#(#struct_generic_idents),*> {
-                    #(#access_methods)*
-                }
-            }
-        )
-    } else {
-        syn::parse2(
-            quote! {
-                #[cfg(test)]
-                impl #struct_name {
-                    #(#access_methods)*
-                }
-            }
-        )
-    }
+    Ok(parse_quote!(
+        #[cfg(test)]
+        #access_item_impl
+    ))
 }
 
 fn generate_access_method_for_impl_block(
     fakeable_info: &FakeableInfo,
-    item_impl_info: &ItemImplMethodInfo
+    item_impl_info: &ImplItemFnInfo
 ) -> syn::Result<syn::ImplItemFn> {
     let access_function_name = &fakeable_info.access_function_name;
     let module_name = &fakeable_info.module_name;
@@ -86,11 +73,11 @@ fn generate_access_method_for_impl_block(
             &item_impl_info.generic_info,
         )
     {
-        let generic_idents = fakeable_generic_info.generic_idents.as_slice();
+        let generic_types = fakeable_generic_info.generic_types.as_slice();
         let method_generic_params = method_generic_info.method_type_params.as_slice();
 
         quote! {
-            pub(crate) fn #access_function_name<#(#method_generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
+            pub(crate) fn #access_function_name<#(#method_generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_types),*> {
                 self::#module_name::#interface_struct_name::new()
             }
         }

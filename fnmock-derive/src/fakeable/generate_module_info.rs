@@ -1,5 +1,5 @@
 use crate::{
-    extract::{ function::FunctionInfo, impl_block::ItemImplMethodInfo },
+    extract::{ function::info::FunctionInfo, item_impl::info::ImplItemFnInfo },
     fakeable::info::{ FakeableGenericInfo, FakeableInfo },
     names::{
         NameType,
@@ -31,7 +31,7 @@ pub fn generate_fakeable_info_from_function(
         fn_ptr_type: function_info.fn_ptr_type.clone(),
         generic_info: function_info.generic_info.as_ref().map(|info| FakeableGenericInfo {
             generic_count: info.count,
-            generic_idents: info.idents.clone(),
+            generic_types: info.types.clone(),
             generic_params: info.type_params.clone(),
             generic_type_ids: info.type_ids.clone(),
         }),
@@ -39,7 +39,7 @@ pub fn generate_fakeable_info_from_function(
 }
 
 pub fn generate_fakeable_info_from_impl_block(
-    item_impl_info: &[ItemImplMethodInfo]
+    item_impl_info: &[ImplItemFnInfo]
 ) -> syn::Result<Vec<FakeableInfo>> {
     item_impl_info
         .into_iter()
@@ -75,7 +75,7 @@ pub fn generate_fakeable_info_from_impl_block(
                 generic_info: method_info.generic_info.as_ref().map(|info| FakeableGenericInfo {
                     generic_count: info.count,
                     generic_params: info.type_params.clone(),
-                    generic_idents: info.idents.clone(),
+                    generic_types: info.types.clone(),
                     generic_type_ids: info.type_ids.clone(),
                 }),
             })

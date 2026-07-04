@@ -2,39 +2,17 @@ use syn::{ spanned::Spanned, visit_mut::VisitMut };
 
 use crate::extract::{
     fn_ptr_type::build_fn_ptr_type,
-    generic::extract_generic_impl_info,
+    item_impl::{ generics::extract_generic_impl_info, info::ImplItemFnInfo },
+    lifetimes::{ extract_lifetimes_from_generics },
     params::{ extract_param_idents, extract_param_types },
     replace_self::ReplaceSelf,
 };
 
-pub struct ItemImplMethodInfo {
-    pub struct_name: syn::Ident,
-    pub method_name: syn::Ident,
-    pub _param_types: Vec<syn::Type>,
-    pub param_idents: Vec<syn::Ident>,
-    pub fn_ptr_type: syn::Type,
-    pub generic_info: Option<ItemImplMethodGenericInfo>,
-}
+pub mod info;
+mod generics;
 
-/// The generics of the struct and method are combined, in the order of struct generics followed by method generics.
-pub struct ItemImplMethodGenericInfo {
-    pub count: usize,
-
-    pub type_params: Vec<syn::TypeParam>,
-    pub struct_type_params: Vec<syn::TypeParam>,
-    pub method_type_params: Vec<syn::TypeParam>,
-
-    pub idents: Vec<syn::Ident>,
-    pub struct_idents: Vec<syn::Ident>,
-    pub _method_idents: Vec<syn::Ident>,
-
-    pub type_ids: Vec<syn::Expr>,
-    pub _struct_type_ids: Vec<syn::Expr>,
-    pub _method_type_ids: Vec<syn::Expr>,
-}
-
-/// Extract the ItemImplMethodInfo for each method in an impl block.
-pub fn extract_item_impl_info(item_impl: &syn::ItemImpl) -> syn::Result<Vec<ItemImplMethodInfo>> {
+/// Extract the ImplItemFnInfo for each method in an impl block.
+pub fn extract_item_impl_info(item_impl: &syn::ItemImpl) -> syn::Result<Vec<ImplItemFnInfo>> {
     let mut method_infos = Vec::new();
 
     for item in &item_impl.items {
@@ -47,24 +25,34 @@ pub fn extract_item_impl_info(item_impl: &syn::ItemImpl) -> syn::Result<Vec<Item
     Ok(method_infos)
 }
 
-/// Extract the ItemImplMethodInfo for a single method in an impl block.
+/// Extract the ImplItemFnInfo for a single method in an impl block.
 fn extract_single_item_impl_info_for_method(
     item_impl: &syn::ItemImpl,
     method: &syn::ImplItemFn
-) -> syn::Result<ItemImplMethodInfo> {
+) -> syn::Result<ImplItemFnInfo> {
     let struct_name = extract_struct_ident(&item_impl.self_ty)?;
     let method_name = method.sig.ident.clone();
+
+    let generic_info = extract_generic_impl_info(item_impl, method)?;
+    let struct_lifetimes = extract_lifetimes_from_generics(&item_impl.generics);
+    let method_lifetimes = extract_lifetimes_from_generics(&method.sig.generics);
+    // We know, there can be no duplicate lifetimes between the struct and method, because Rust would not allow that in the first place.
+    // Therefore, we can safely combine the lifetimes from the struct and method into a single list of lifetimes for the function pointer type.
+    let lifetimes = struct_lifetimes
+        .clone()
+        .into_iter()
+        .chain(method_lifetimes.clone().into_iter())
+        .collect::<Vec<_>>();
 
     let params = method.sig.inputs.iter().cloned().collect::<Vec<_>>();
     let param_types = extract_param_types(&params, Some(&item_impl.self_ty));
     let param_idents = extract_param_idents(&params);
 
     let return_type = extract_return_type(&method.sig.output, &item_impl.self_ty);
-    let fn_ptr_type = build_fn_ptr_type(&param_types, &return_type)?;
 
-    let generic_info = extract_generic_impl_info(item_impl, method);
+    let fn_ptr_type = build_fn_ptr_type(&lifetimes, &param_types, &return_type)?;
 
-    Ok(ItemImplMethodInfo {
+    Ok(ImplItemFnInfo {
         struct_name,
         method_name,
         _param_types: param_types,

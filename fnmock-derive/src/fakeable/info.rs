@@ -31,8 +31,8 @@ pub struct FakeableInfo {
 pub struct FakeableGenericInfo {
     pub generic_count: usize,
 
-    /// The identifiers of the generic parameters.
-    pub generic_idents: Vec<syn::Ident>,
+    /// The types of the generic parameters.
+    pub generic_types: Vec<syn::Type>,
 
     /// The generic parameters, including their bounds (e.g. `T: Display + 'static` and `I: 'static`).
     pub generic_params: Vec<syn::TypeParam>,
