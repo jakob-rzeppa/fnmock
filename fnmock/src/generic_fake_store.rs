@@ -3,15 +3,13 @@ use std::{ any::{ Any, TypeId }, collections::HashMap, rc::Rc };
 /// A store for fake implementations of generic functions, keyed by the TypeIds of their generic parameters.
 /// This allows faking generic functions with different type parameters without needing a separate static variable for each combination of types.
 ///
-/// # Do not use this struct directly!
+/// The Store needs to know the number of generic parameters at compile time, which is specified by the `GENERIC_COUNT` const generic parameter.
 ///
-/// You should never interact with this struct directly. Instead, use the `#[fake_function]` macro which generates a wrapper
-/// around this store for each generic function, providing a convenient API for setting and getting fake implementations based on the generic type parameters.
+/// We store the fake implementations as `Rc<dyn Any>` so that we can downcast them to the correct function type when retrieving them.
+/// This allows us to store different function types in the same store.
 ///
-/// When using the macro `#[fake_function]`, the generated proxy module will ensure that you can only set and get fake implementations
-/// for the specific generic type combinations that are supported by the macro, and it will handle the TypeId management for you.
-/// The macro will also ensure that you can only get an implementation if it has been set, so you don't have to worry about
-/// handling missing implementations when using the generated API.
+/// In the macros we generate, we use `Box<dyn Fn(...) -> ...>` for the function type, which is a trait object that can be stored in the `Any` type.
+/// This leads to the closures being stored as Rc<Box<dyn Fn(...) -> ...>> in the store. This is a workaround for the fact that we cannot store `Rc<dyn Fn(...) -> ...>` directly in the store, because `dyn Fn(...) -> ...` is not `Sized`, and therefore cannot be used as a parameter on its own.
 pub struct GenericFakeStore<const GENERIC_COUNT: usize> {
     /// A name for the fake store, used in error messages to make it clear which function's fake store is being referred to.
     name: &'static str,
@@ -27,18 +25,15 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
 
     /// Set a fake implementation for a specific combination of generic types.
     ///
-    /// The `Function` type parameter should be a function pointer that matches the signature of the function being faked,
-    /// with the generic parameters replaced by concrete types. For example, if faking a function `fn foo<T>(x: T) -> String`,
-    /// the `Function` type parameter for setting a fake implementation for `T = i32` should be `fn(i32) -> String`.
+    /// The `Function` type parameter should be a boxed closure that matches the signature of the faked function for the given combination of generic types.
+    /// For example, if the function being faked is `fn foo<T, U>(x: T, y: U) -> String`, and you want to set a
+    /// fake implementation for `T = i32` and `U = String`, then the `Function` type parameter should be `Box<dyn Fn(i32, String) -> String>`.
     ///
-    /// The `generic_types` parameter is an array of `TypeId` that specifies the concrete types for the generic parameters.
-    /// The order of types in the array should match the order of generic parameters in the function signature.
-    /// For example, for a function `fn foo<T, U>(x: T, y: U) -> String`, if setting a fake implementation for `T = i32` and `U = String`,
-    /// the `generic_types` parameter should be `[TypeId::of::<i32>(), TypeId::of::<String>()]`.
-    pub fn setup_for<Function: Any + 'static>(
+    /// You **NEED** to specify the type of the closure in the generic parameter of the `setup_for` function, otherwise the compiler might infer the wrong type and you will get a runtime panic when trying to retrieve the fake implementation.
+    pub fn setup_for<WrappedClosure: 'static>(
         &mut self,
         generic_types: [TypeId; GENERIC_COUNT],
-        f: Function
+        f: WrappedClosure
     ) {
         self.impls.insert(generic_types, Rc::new(f));
     }
@@ -60,15 +55,14 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
 
     /// Get the fake implementation for a specific combination of generic types.
     ///
-    /// Panics if no implementation is set for the given types or if the stored implementation cannot be downcast to the expected function type.
+    /// The `Function` type parameter should be a boxed closure that matches the signature of the faked function for the given combination of generic types.
+    /// It needs to match the generic that was passed to `setup_for` for the same combination of generic types exactly.
     ///
-    /// The `Function` type parameter should match the type of the function pointer that was set for the given generic types.
-    /// For example, if a fake implementation for `T = i32` and `U = String` was set using a function pointer of type `fn(i32, String) -> String`,
-    /// then the `Function` type parameter for getting that implementation should also be `fn(i32, String) -> String`.
-    pub fn get_for<Function: Any + 'static>(
+    /// Panics if no implementation is set for the given types or if the stored implementation cannot be downcast to the expected function type.
+    pub fn get_for<WrappedClosure: 'static>(
         &self,
         generic_types: [TypeId; GENERIC_COUNT]
-    ) -> Rc<Function> {
+    ) -> Rc<WrappedClosure> {
         self.impls
             .get(&generic_types)
             .cloned()
@@ -80,7 +74,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
                     generic_types
                 )
             })
-            .downcast::<Function>()
+            .downcast::<WrappedClosure>()
             .unwrap_or_else(|_| {
                 // When using the macro API, the macro ensures that the type of get_for and setup_for match, so this should never happen if the API is used correctly.
                 unreachable!(
@@ -103,23 +97,23 @@ mod tests {
         assert!(!store.is_set_for([TypeId::of::<i32>(), TypeId::of::<String>()]));
         assert!(!store.is_set_for([TypeId::of::<u32>(), TypeId::of::<String>()]));
 
-        store.setup_for::<fn(i32, String) -> String>(
+        store.setup_for::<Box<dyn Fn(i32, String) -> String>>(
             [TypeId::of::<i32>(), TypeId::of::<String>()],
-            |a: i32, b: String| format!("Fake for i32, String: {} {}", a, b)
+            Box::new(|a: i32, b: String| format!("Fake for i32, String: {} {}", a, b))
         );
-        store.setup_for::<fn(u32, String) -> String>(
+        store.setup_for::<Box<dyn Fn(u32, String) -> String>>(
             [TypeId::of::<u32>(), TypeId::of::<String>()],
-            |a: u32, b: String| format!("Fake for u32, String: {} {}", a, b)
+            Box::new(|a: u32, b: String| format!("Fake for u32, String: {} {}", a, b))
         );
 
         assert!(store.is_set_for([TypeId::of::<i32>(), TypeId::of::<String>()]));
         assert!(store.is_set_for([TypeId::of::<u32>(), TypeId::of::<String>()]));
 
-        let f1 = store.get_for::<fn(i32, String) -> String>([
+        let f1 = store.get_for::<Box<dyn Fn(i32, String) -> String>>([
             TypeId::of::<i32>(),
             TypeId::of::<String>(),
         ]);
-        let f2 = store.get_for::<fn(u32, String) -> String>([
+        let f2 = store.get_for::<Box<dyn Fn(u32, String) -> String>>([
             TypeId::of::<u32>(),
             TypeId::of::<String>(),
         ]);

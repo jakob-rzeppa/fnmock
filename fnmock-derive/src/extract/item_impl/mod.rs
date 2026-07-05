@@ -1,9 +1,9 @@
 use syn::{ spanned::Spanned, visit_mut::VisitMut };
 
 use crate::extract::{
-    fn_ptr_type::build_fn_ptr_type,
+    fn_closure_trait::{ build_fn_closure_trait },
     item_impl::{ generics::extract_generic_impl_info, info::ImplItemFnInfo },
-    lifetimes::{ extract_lifetimes_from_generics },
+    lifetimes::extract_lifetimes_from_generics,
     params::{ extract_param_idents, extract_param_types },
     replace_self::ReplaceSelf,
 };
@@ -50,14 +50,14 @@ fn extract_single_item_impl_info_for_method(
 
     let return_type = extract_return_type(&method.sig.output, &item_impl.self_ty);
 
-    let fn_ptr_type = build_fn_ptr_type(&lifetimes, &param_types, &return_type)?;
+    let fn_closure_trait = build_fn_closure_trait(&lifetimes, &param_types, &return_type)?;
 
     Ok(ImplItemFnInfo {
         struct_name,
         method_name,
         _param_types: param_types,
         param_idents,
-        fn_ptr_type,
+        fn_closure_trait,
         generic_info,
     })
 }

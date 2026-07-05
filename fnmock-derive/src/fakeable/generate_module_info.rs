@@ -13,6 +13,7 @@ use crate::{
     },
 };
 
+/// Generates the FakeableInfo for a function.
 pub fn generate_fakeable_info_from_function(
     function_info: &FunctionInfo
 ) -> syn::Result<FakeableInfo> {
@@ -28,7 +29,7 @@ pub fn generate_fakeable_info_from_function(
         store_name,
         display_name,
         interface_struct_name,
-        fn_ptr_type: function_info.fn_ptr_type.clone(),
+        fn_closure_trait: function_info.fn_closure_trait.clone(),
         generic_info: function_info.generic_info.as_ref().map(|info| FakeableGenericInfo {
             generic_count: info.count,
             generic_types: info.types.clone(),
@@ -38,6 +39,7 @@ pub fn generate_fakeable_info_from_function(
     })
 }
 
+/// Generates the FakeableInfo for each method in an impl block.
 pub fn generate_fakeable_info_from_impl_block(
     item_impl_info: &[ImplItemFnInfo]
 ) -> syn::Result<Vec<FakeableInfo>> {
@@ -71,7 +73,7 @@ pub fn generate_fakeable_info_from_impl_block(
                 access_function_name,
                 display_name,
                 interface_struct_name,
-                fn_ptr_type: method_info.fn_ptr_type.clone(),
+                fn_closure_trait: method_info.fn_closure_trait.clone(),
                 generic_info: method_info.generic_info.as_ref().map(|info| FakeableGenericInfo {
                     generic_count: info.count,
                     generic_params: info.type_params.clone(),

@@ -17,8 +17,8 @@ pub struct FakeableInfo {
     /// The name of the struct that provides the API for setting up and accessing the fake implementations (e.g. "GetUserFake").
     pub interface_struct_name: syn::Ident,
 
-    /// The type of the function pointer for the fake implementation (e.g. `fn(&UserRepository<T>, I) -> Option<String>`).
-    pub fn_ptr_type: syn::Type,
+    /// The trait bound of the function closure for the fake implementation (e.g. `Fn(&UserRepository<T>, I) -> Option<String>`).
+    pub fn_closure_trait: syn::TraitBound,
 
     /// Information about the generic parameters for this fake module, if any. For struct method fakes, this includes both the generic parameters from the struct and the method, in the order they appear in the code.
     pub generic_info: Option<FakeableGenericInfo>,

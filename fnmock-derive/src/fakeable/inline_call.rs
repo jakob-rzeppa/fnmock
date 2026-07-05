@@ -1,5 +1,8 @@
 use quote::quote;
 
+/// Inserts an inline call to the fake implementation at the beginning of the original function block.
+///
+/// If the fake is set, it will call the fake implementation and return its result. Otherwise, it will execute the original function block.
 pub fn insert_inline_call_into_fn_block(
     original_block: &syn::Block,
     param_idents: &[syn::Ident],

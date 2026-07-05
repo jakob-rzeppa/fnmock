@@ -56,6 +56,11 @@ impl ModuleBuilder {
                 }
             };
 
-        syn::parse2(code)
+        syn::parse2(code).map_err(|e|
+            syn::Error::new(
+                proc_macro2::Span::mixed_site(),
+                format!("Failed to parse generated module code: {}", e)
+            )
+        )
     }
 }

@@ -3,7 +3,7 @@ pub struct ImplItemFnInfo {
     pub method_name: syn::Ident,
     pub _param_types: Vec<syn::Type>,
     pub param_idents: Vec<syn::Ident>,
-    pub fn_ptr_type: syn::Type,
+    pub fn_closure_trait: syn::TraitBound,
     pub generic_info: Option<ImplItemFnGenericInfo>,
 }
 

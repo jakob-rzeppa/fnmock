@@ -1,7 +1,8 @@
-use quote::quote;
+use quote::{ quote };
 
 use crate::{ fakeable::info::FakeableInfo, module_builder::ModuleBuilder };
 
+/// Generates the code for a fake module based on the provided FakeableInfo.
 pub fn generate_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMod> {
     if let Some(_) = &info.generic_info {
         generate_generic_fake_module_code(info)
@@ -10,12 +11,13 @@ pub fn generate_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMo
     }
 }
 
+/// Generates the code for a regular (non-generic) fake module.
 fn generate_regular_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMod> {
     let module_name = &info.module_name;
     let store_name = &info.store_name;
     let display_name = &info.display_name;
     let interface_struct_name = &info.interface_struct_name;
-    let fn_ptr_type = &info.fn_ptr_type;
+    let fn_closure_trait = &info.fn_closure_trait;
 
     let mut module_builder = ModuleBuilder::new();
 
@@ -23,7 +25,7 @@ fn generate_regular_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
 
     module_builder.set_store(
         quote! {
-            static #store_name: std::cell::RefCell<fnmock::fake_store::FakeStore<#fn_ptr_type>> =
+            static #store_name: std::cell::RefCell<fnmock::fake_store::FakeStore<std::rc::Rc<dyn #fn_closure_trait>>> =
                 std::cell::RefCell::new(fnmock::fake_store::FakeStore::new(stringify!(#display_name)));
         }
     );
@@ -37,9 +39,9 @@ fn generate_regular_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
                     Self
                 }
 
-                pub(crate) fn setup(self, function: #fn_ptr_type) -> Self {
+                pub(crate) fn setup(self, function: impl #fn_closure_trait + 'static) -> Self {
                     #store_name.with(|store| {
-                        store.borrow_mut().setup(function);
+                        store.borrow_mut().setup(std::rc::Rc::new(function));
                     });
                     self
                 }
@@ -55,7 +57,7 @@ fn generate_regular_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
                     #store_name.with(|store| store.borrow().is_set())
                 }
 
-                pub(crate) fn get(&self) -> std::rc::Rc<#fn_ptr_type> {
+                pub(crate) fn get(&self) -> std::rc::Rc<dyn #fn_closure_trait> {
                     #store_name.with(|store| store.borrow().get())
                 }
             }
@@ -65,12 +67,13 @@ fn generate_regular_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
     module_builder.build_module()
 }
 
+/// Generates the code for a generic fake module.
 fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMod> {
     let module_name = &info.module_name;
     let store_name = &info.store_name;
     let display_name = &info.display_name;
     let interface_struct_name = &info.interface_struct_name;
-    let fn_ptr_type = &info.fn_ptr_type;
+    let fn_closure_trait = &info.fn_closure_trait;
 
     let (generic_count, generic_types, generic_params, generic_type_ids) = if
         let Some(generic_info) = &info.generic_info
@@ -113,9 +116,9 @@ fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
                     }
                 }
 
-                pub(crate) fn setup(self, function: #fn_ptr_type) -> Self {
+                pub(crate) fn setup(self, function: impl #fn_closure_trait + 'static) -> Self {
                     #store_name.with_borrow_mut(|fake| {
-                        fake.setup_for([#(#generic_type_ids),*], function);
+                        fake.setup_for::<Box<dyn #fn_closure_trait>>([#(#generic_type_ids),*], Box::new(function));
                     });
                     self
                 }
@@ -133,9 +136,9 @@ fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
                     })
                 }
 
-                pub(crate) fn get(&self) -> std::rc::Rc<#fn_ptr_type> {
+                pub(crate) fn get(&self) -> std::rc::Rc<Box<dyn #fn_closure_trait>> {
                     #store_name.with_borrow(|fake| {
-                        fake.get_for::<#fn_ptr_type>([#(#generic_type_ids),*])
+                        fake.get_for::<Box<dyn #fn_closure_trait>>([#(#generic_type_ids),*])
                     })
                 }
             }

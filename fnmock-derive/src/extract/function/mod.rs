@@ -1,5 +1,5 @@
 use crate::extract::{
-    fn_ptr_type::build_fn_ptr_type,
+    fn_closure_trait::build_fn_closure_trait,
     function::{ generics::extract_generic_function_info, info::FunctionInfo },
     lifetimes::extract_lifetimes_from_generics,
     params::{ extract_param_idents, extract_param_types },
@@ -16,13 +16,13 @@ pub fn extract_function_info(item_fn: &syn::ItemFn) -> syn::Result<FunctionInfo>
     let param_idents = extract_param_idents(&params);
     let generic_info = extract_generic_function_info(&item_fn.sig.generics)?;
     let lifetimes = extract_lifetimes_from_generics(&item_fn.sig.generics);
-    let fn_ptr_type = build_fn_ptr_type(&lifetimes, &param_types, &item_fn.sig.output)?;
+    let fn_closure_trait = build_fn_closure_trait(&lifetimes, &param_types, &item_fn.sig.output)?;
 
     Ok(FunctionInfo {
         name,
         _param_types: param_types,
         param_idents,
-        fn_ptr_type,
+        fn_closure_trait,
         generic_info,
     })
 }

@@ -59,6 +59,7 @@ pub fn generate_access_methods_for_impl_block(
     ))
 }
 
+/// Generates an access method for a single method in an impl block.
 fn generate_access_method_for_impl_block(
     fakeable_info: &FakeableInfo,
     item_impl_info: &ImplItemFnInfo
