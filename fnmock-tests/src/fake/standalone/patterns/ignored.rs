@@ -1,18 +1,12 @@
-// #[fnmock::fakeable]
-// fn ignored(_: String, value: String) -> String {
-//     value
-// }
-
-// #[test]
-// fn test_ignored() {
-//     let result = ignored("Ignored".to_string(), "Test".to_string());
-//     assert_eq!(result, "Test");
-// }
-
-// #[test]
-// fn test_ignored_fake() {
-//     ignored_fake().setup(|_, value| format!("Fake {}", value));
-
-//     let result = ignored("Ignored".to_string(), "Test".to_string());
-//     assert_eq!(result, "Fake Test");
-// }
+//! Ignored parameters like this are not supported.
+//!
+//! ```
+//!  #[fnmock::fakeable]
+//! fn ignored(_: String, value: String) -> String {
+//!     value
+//! }
+//! ```
+//!
+//! You should opt to use `_name` instead of `_` to ignore unused warnings.
+//!
+//! Ignored parameters are not supported, since we need to pass the parameters to the fakeable function, and we cannot pass `_: String` as a parameter.
