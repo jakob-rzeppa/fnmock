@@ -1,6 +1,6 @@
 use crate::{
     extract::{ function::info::FunctionInfo, item_impl::info::ImplItemFnInfo },
-    fakeable::info::{ FakeableGenericInfo, FakeableInfo },
+    fakeable::{ info::{ FakeableGenericInfo, FakeableInfo }, inline_call::info::InlineCallInfo },
     names::{
         NameType,
         build_access_function_name,
@@ -24,6 +24,7 @@ pub fn generate_fakeable_info_from_function(
     let interface_struct_name = build_interface_struct_name(&function_info.name, NameType::Fake);
 
     Ok(FakeableInfo {
+        inline_call_info: InlineCallInfo::try_from(function_info)?,
         access_function_name,
         module_name,
         store_name,
@@ -68,6 +69,7 @@ pub fn generate_fakeable_info_from_impl_block(
             );
 
             Ok(FakeableInfo {
+                inline_call_info: InlineCallInfo::try_from(method_info)?,
                 module_name,
                 store_name,
                 access_function_name,

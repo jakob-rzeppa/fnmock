@@ -39,28 +39,28 @@ pub fn extract_param_types(params: &[syn::FnArg], self_ty: Option<&syn::Type>) -
         .collect()
 }
 
-/// Extracts the parameter identifiers from a list of function parameters.
-pub fn extract_param_idents(params: &[syn::FnArg]) -> Vec<syn::Ident> {
+/// Extracts the parameter patterns / identifiers from a list of function parameters.
+pub fn extract_param_pats(params: &[syn::FnArg]) -> Vec<syn::Pat> {
     params
         .iter()
         .filter_map(|param| {
             match param {
-                syn::FnArg::Typed(pat_type) => {
-                    if let syn::Pat::Ident(pat_ident) = &*pat_type.pat {
-                        Some(pat_ident.ident.clone())
-                    } else {
-                        None
-                    }
-                }
+                syn::FnArg::Typed(pat_type) => { Some(pat_type.pat.as_ref().clone()) }
                 syn::FnArg::Receiver(_) =>
                     Some(
-                        syn::Ident::new(
-                            "self",
-                            params
-                                .first()
-                                .map(|p| p.span())
-                                .unwrap_or_else(proc_macro2::Span::call_site)
-                        )
+                        syn::Pat::Ident(syn::PatIdent {
+                            attrs: Vec::new(),
+                            by_ref: None,
+                            mutability: None,
+                            ident: syn::Ident::new(
+                                "self",
+                                params
+                                    .first()
+                                    .map(|p| p.span())
+                                    .unwrap_or_else(proc_macro2::Span::call_site)
+                            ),
+                            subpat: None,
+                        })
                     ),
             }
         })

@@ -1,10 +1,10 @@
 use syn::{ spanned::Spanned, visit_mut::VisitMut };
 
 use crate::extract::{
-    fn_closure_trait::{ build_fn_closure_trait },
+    fn_closure_trait::build_fn_closure_trait,
     item_impl::{ generics::extract_generic_impl_info, info::ImplItemFnInfo },
     lifetimes::extract_lifetimes_from_generics,
-    params::{ extract_param_idents, extract_param_types },
+    params::{ extract_param_pats, extract_param_types },
     replace_self::ReplaceSelf,
 };
 
@@ -46,7 +46,7 @@ fn extract_single_item_impl_info_for_method(
 
     let params = method.sig.inputs.iter().cloned().collect::<Vec<_>>();
     let param_types = extract_param_types(&params, Some(&item_impl.self_ty));
-    let param_idents = extract_param_idents(&params);
+    let param_pats = extract_param_pats(&params);
 
     let return_type = extract_return_type(&method.sig.output, &item_impl.self_ty);
 
@@ -56,7 +56,7 @@ fn extract_single_item_impl_info_for_method(
         struct_name,
         method_name,
         _param_types: param_types,
-        param_idents,
+        param_pats,
         fn_closure_trait,
         generic_info,
     })

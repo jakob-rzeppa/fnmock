@@ -7,7 +7,7 @@ use crate::{
             generate_fakeable_info_from_function,
             generate_fakeable_info_from_impl_block,
         },
-        inline_call::insert_inline_call_into_fn_block,
+        inline_call::generate::insert_inline_call_into_fn_block,
     },
 };
 
@@ -35,10 +35,7 @@ pub fn handle_fakeable(
             // Insert the inline call into the original function's block
             let modified_block = insert_inline_call_into_fn_block(
                 &item_fn.block,
-                &function_info.param_idents,
-                &info.module_name,
-                &info.interface_struct_name,
-                info.generic_info.as_ref().map(|gi| &gi.generic_types[..])
+                &info.inline_call_info
             );
             item_fn.block = Box::new(modified_block);
 
@@ -81,11 +78,6 @@ pub fn handle_fakeable(
 
             for method in &mut modified_impl.items {
                 if let syn::ImplItem::Fn(ref mut method_fn) = *method {
-                    let item_impl_method_info = item_impl_info
-                        .iter()
-                        .find(|info| info.method_name == method_fn.sig.ident)
-                        .expect("Could not find matching method info for method in impl block");
-
                     let info = info_iter
                         .next()
                         .expect("Mismatch between number of methods and extracted info");
@@ -93,10 +85,7 @@ pub fn handle_fakeable(
                     // Insert the inline call into the method's block
                     method_fn.block = insert_inline_call_into_fn_block(
                         &method_fn.block,
-                        &item_impl_method_info.param_idents,
-                        &info.module_name,
-                        &info.interface_struct_name,
-                        info.generic_info.as_ref().map(|gi| &gi.generic_types[..])
+                        &info.inline_call_info
                     );
                 }
             }

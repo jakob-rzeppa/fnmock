@@ -1,6 +1,10 @@
+use crate::fakeable::inline_call::info::InlineCallInfo;
+
 /// Information about a fake module that is being generated for a struct method or a free function.
 #[derive(Clone)]
 pub struct FakeableInfo {
+    pub inline_call_info: InlineCallInfo,
+
     /// Access function name for the fake interface (e.g. "get_user_fake").
     pub access_function_name: syn::Ident,
 
