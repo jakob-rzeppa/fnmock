@@ -35,7 +35,7 @@ pub struct FakeableGenericInfo {
     pub generic_types: Vec<syn::Type>,
 
     /// The generic parameters, including their bounds (e.g. `T: Display + 'static` and `I: 'static`).
-    pub generic_params: Vec<syn::TypeParam>,
+    pub generic_params: Vec<syn::GenericParam>,
 
     /// The `TypeId` expressions for the generic parameters, in the order they appear in the code (e.g. `[std::any::TypeId::of::<T>(), std::any::TypeId::of::<I>()]`).
     pub generic_type_ids: Vec<syn::Expr>,

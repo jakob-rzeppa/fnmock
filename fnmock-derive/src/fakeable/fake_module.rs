@@ -90,6 +90,13 @@ fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
         );
     };
 
+    let generic_types_without_const_generics = generic_params.iter().filter_map(|param| {
+        match param {
+            syn::GenericParam::Type(type_param) => Some(type_param.ident.clone()),
+            _ => None,
+        }
+    });
+
     let mut module_builder = ModuleBuilder::new();
 
     module_builder.set_name(module_name.clone());
@@ -106,7 +113,7 @@ fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
     module_builder.set_interface_struct(
         quote! {
             pub(crate) struct #interface_struct_name<#(#generic_params),*> {
-                _marker: std::marker::PhantomData<(#(#generic_types),*)>,
+                _marker: std::marker::PhantomData<(#(#generic_types_without_const_generics),*)>,
             }
 
             impl<#(#generic_params),*> #interface_struct_name<#(#generic_types),*> {

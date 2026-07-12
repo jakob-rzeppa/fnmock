@@ -11,11 +11,11 @@ pub struct ImplItemFnGenericInfo {
     pub count: usize,
 
     /// The type params of the struct and method are combined, in the order of struct type params followed by method type params.
-    pub type_params: Vec<syn::TypeParam>,
-    /// The type params of the struct.
-    pub _struct_type_params: Vec<syn::TypeParam>,
-    /// The type params of the method.
-    pub method_type_params: Vec<syn::TypeParam>,
+    pub generic_params: Vec<syn::GenericParam>,
+    /// The type and const params of the struct.
+    pub _struct_generic_params: Vec<syn::GenericParam>,
+    /// The type and const params of the method.
+    pub method_generic_params: Vec<syn::GenericParam>,
 
     /// The generic types of the struct and method are combined, in the order of struct types followed by method types.
     pub types: Vec<syn::Type>,

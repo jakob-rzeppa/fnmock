@@ -1,8 +1,8 @@
 use crate::extract::{
     generic::{
         build_type_id_array,
-        extract_generic_type_params,
-        extract_generic_types_from_type_params,
+        extract_generic_type_and_const_params,
+        extract_generic_types_from_generic_params,
     },
     item_impl::info::ImplItemFnGenericInfo,
 };
@@ -14,33 +14,29 @@ pub fn extract_generic_impl_info(
     item_impl: &syn::ItemImpl,
     method: &syn::ImplItemFn
 ) -> syn::Result<Option<ImplItemFnGenericInfo>> {
-    let struct_type_params = extract_generic_type_params(&item_impl.generics)?;
-    let method_type_params = extract_generic_type_params(&method.sig.generics)?;
-    let type_params = struct_type_params
-        .clone()
-        .into_iter()
-        .chain(method_type_params.clone().into_iter())
-        .collect::<Vec<_>>();
+    let struct_generic_params = extract_generic_type_and_const_params(&item_impl.generics)?;
+    let method_generic_params = extract_generic_type_and_const_params(&method.sig.generics)?;
+    let type_params = struct_generic_params.combine(&method_generic_params);
 
     if type_params.is_empty() {
         return Ok(None);
     }
 
-    let struct_types = extract_generic_types_from_type_params(&struct_type_params);
-    let method_types = extract_generic_types_from_type_params(&method_type_params);
-    let types = extract_generic_types_from_type_params(&type_params);
+    let struct_types = extract_generic_types_from_generic_params(&struct_generic_params);
+    let method_types = extract_generic_types_from_generic_params(&method_generic_params);
+    let types = extract_generic_types_from_generic_params(&type_params);
 
-    let struct_type_ids = build_type_id_array(&struct_types);
-    let method_type_ids = build_type_id_array(&method_types);
-    let type_ids = build_type_id_array(&types);
+    let struct_type_ids = build_type_id_array(&struct_generic_params);
+    let method_type_ids = build_type_id_array(&method_generic_params);
+    let type_ids = build_type_id_array(&type_params);
 
     Ok(
         Some(ImplItemFnGenericInfo {
             count: type_params.len(),
 
-            type_params,
-            _struct_type_params: struct_type_params,
-            method_type_params,
+            generic_params: type_params.to_generic_params(),
+            _struct_generic_params: struct_generic_params.to_generic_params(),
+            method_generic_params: method_generic_params.to_generic_params(),
 
             types,
             _struct_types: struct_types,

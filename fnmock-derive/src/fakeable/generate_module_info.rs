@@ -33,7 +33,7 @@ pub fn generate_fakeable_info_from_function(
         generic_info: function_info.generic_info.as_ref().map(|info| FakeableGenericInfo {
             generic_count: info.count,
             generic_types: info.types.clone(),
-            generic_params: info.type_params.clone(),
+            generic_params: info.generic_params.clone(),
             generic_type_ids: info.type_ids.clone(),
         }),
     })
@@ -76,7 +76,7 @@ pub fn generate_fakeable_info_from_impl_block(
                 fn_closure_trait: method_info.fn_closure_trait.clone(),
                 generic_info: method_info.generic_info.as_ref().map(|info| FakeableGenericInfo {
                     generic_count: info.count,
-                    generic_params: info.type_params.clone(),
+                    generic_params: info.generic_params.clone(),
                     generic_types: info.types.clone(),
                     generic_type_ids: info.type_ids.clone(),
                 }),

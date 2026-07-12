@@ -8,7 +8,7 @@ pub struct FunctionInfo {
 
 pub struct FunctionGenericInfo {
     pub count: usize,
-    pub type_params: Vec<syn::TypeParam>,
+    pub generic_params: Vec<syn::GenericParam>,
     pub types: Vec<syn::Type>,
     pub type_ids: Vec<syn::Expr>,
 }

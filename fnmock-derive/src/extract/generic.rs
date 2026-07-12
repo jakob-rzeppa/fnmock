@@ -1,48 +1,109 @@
 use quote::{ ToTokens, quote };
 use syn::parse_quote;
 
+/// A struct that holds the sanitized generic parameters of a function.
+///
+/// This means that the generic parameters have been filtered to only include type and const parameters,
+/// and any where bounds have been merged into the type parameters.
+pub struct SanitizedGenericParams {
+    generic_params: Vec<syn::GenericParam>,
+}
+
+impl SanitizedGenericParams {
+    /// Create a new `SanitizedGenericParams` from a vector of `GenericParam`.
+    /// This function will panic if any of the generic parameters are lifetime parameters.
+    pub fn new(generic_params: Vec<syn::GenericParam>) -> Self {
+        assert!(
+            generic_params
+                .iter()
+                .all(|param|
+                    matches!(param, syn::GenericParam::Type(_) | syn::GenericParam::Const(_))
+                ),
+            "SanitizedGenericParams should only contain type and const parameters. Lifetime parameters are not allowed."
+        );
+
+        Self { generic_params }
+    }
+
+    pub fn get_generic_params(&self) -> &Vec<syn::GenericParam> {
+        &self.generic_params
+    }
+
+    /// Chain the generic parameters of another `SanitizedGenericParams` into this one.
+    /// This is used to combine the generic parameters of a struct and a method.
+    /// The method generics will be appended to the struct generics, in the order of struct generics followed by method generics.
+    pub fn combine(&self, other: &SanitizedGenericParams) -> Self {
+        Self {
+            generic_params: self.generic_params
+                .iter()
+                .chain(other.generic_params.iter())
+                .cloned()
+                .collect(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.generic_params.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.generic_params.len()
+    }
+
+    pub fn to_generic_params(self) -> Vec<syn::GenericParam> {
+        self.generic_params
+    }
+}
+
 /// Extract the generic type parameters (e.g. `T: Display + 'static`, `U: 'static`) from a `Generics` object
 ///
 /// Returns a vector of `TypeParam` objects representing the generic type parameters
-pub fn extract_generic_type_params(generics: &syn::Generics) -> syn::Result<Vec<syn::TypeParam>> {
-    let mut type_params: Vec<syn::TypeParam> = generics.params
+pub fn extract_generic_type_and_const_params(
+    generics: &syn::Generics
+) -> syn::Result<SanitizedGenericParams> {
+    let mut generic_params: Vec<syn::GenericParam> = generics.params
         .iter()
         .filter_map(|param| {
             match param {
-                syn::GenericParam::Type(type_param) => Some(type_param.clone()),
+                syn::GenericParam::Type(_) => Some(param.clone()),
+                syn::GenericParam::Const(_) => Some(param.clone()),
                 _ => None,
             }
         })
         .collect();
 
-    merge_where_bounds_into_type_params(generics, &mut type_params);
+    merge_where_bounds_into_type_params(generics, &mut generic_params);
 
-    // Check if any of the type parameters have a lifetime bound. If so, we check if it is static. If not we panic, because we don't support non-static lifetimes in generic parameters for fakeable functions.
-    for type_param in &type_params {
-        for bound in &type_param.bounds {
-            if let syn::TypeParamBound::Lifetime(lifetime) = bound {
-                if lifetime.ident != "static" {
-                    return Err(
-                        syn::Error::new_spanned(
-                            &lifetime,
-                            format!(
-                                "Non-static lifetime '{}' found in generic parameter '{}'. Only 'static lifetimes are supported in generic parameters for fakeable functions.",
-                                lifetime.ident,
-                                type_param.ident
+    // Check if any of the type parameters have a lifetime bound. If so, we check if it is static. If not we return a error, because we don't support non-static lifetimes in generic parameters for fakeable functions.
+    for generic_param in &generic_params {
+        if let syn::GenericParam::Type(type_param) = generic_param {
+            for bound in &type_param.bounds {
+                if let syn::TypeParamBound::Lifetime(lifetime) = bound {
+                    if lifetime.ident != "static" {
+                        return Err(
+                            syn::Error::new_spanned(
+                                &lifetime,
+                                format!(
+                                    "Non-static lifetime '{}' found in generic parameter '{}'. Only 'static lifetimes are supported in generic parameters for fakeable functions.",
+                                    lifetime.ident,
+                                    type_param.ident
+                                )
                             )
-                        )
-                    );
+                        );
+                    }
                 }
             }
         }
     }
 
-    Ok(type_params)
+    Ok(SanitizedGenericParams::new(generic_params))
 }
 
+/// Merge the where bounds into the type parameters.
+/// This is necessary because the where bounds are not included in the generic parameters, but we need them to generate the fakeable function.
 fn merge_where_bounds_into_type_params(
     generics: &syn::Generics,
-    type_params: &mut Vec<syn::TypeParam>
+    type_params: &mut Vec<syn::GenericParam>
 ) {
     let Some(where_clause) = &generics.where_clause else {
         return;
@@ -54,13 +115,15 @@ fn merge_where_bounds_into_type_params(
         };
 
         let type_param = if
-            let Some(existing) = type_params
-                .iter_mut()
-                .find(
-                    |param|
-                        param.ident.to_token_stream().to_string() ==
-                        type_predicate.bounded_ty.to_token_stream().to_string()
-                )
+            let Some(syn::GenericParam::Type(existing)) = type_params.iter_mut().find(|param| {
+                match param {
+                    syn::GenericParam::Type(type_param) => {
+                        type_param.ident.to_token_stream().to_string() ==
+                            type_predicate.bounded_ty.to_token_stream().to_string()
+                    }
+                    _ => false,
+                }
+            })
         {
             // If the type parameter already exists, use the existing one
             existing
@@ -89,20 +152,56 @@ fn merge_where_bounds_into_type_params(
 }
 
 /// Extract the generic types (e.g. `T`, `U`) from a list of generic parameters (e.g. `T: Display + 'static`, `U: 'static`)
-pub fn extract_generic_types_from_type_params(generic_params: &[syn::TypeParam]) -> Vec<syn::Type> {
+///
+/// For `const C: usize` this will extract `C`
+pub fn extract_generic_types_from_generic_params(
+    generic_params: &SanitizedGenericParams
+) -> Vec<syn::Type> {
     generic_params
+        .get_generic_params()
         .iter()
-        .map(|param| param.ident.clone())
-        .map(|ident| parse_quote!(#ident))
+        .map(|param| {
+            match param {
+                syn::GenericParam::Type(type_param) => {
+                    let type_ident = &type_param.ident;
+                    parse_quote!(#type_ident)
+                }
+                syn::GenericParam::Const(const_param) => {
+                    let const_ident = &const_param.ident;
+                    parse_quote!(#const_ident)
+                }
+                _ =>
+                    unreachable!(
+                        "SanitizedGenericParams should only contain type and const parameters. Lifetime parameters are not allowed."
+                    ),
+            }
+        })
         .collect()
 }
 
 /// Build TypeId array: [TypeId::of::<T>(), TypeId::of::<U>(), ...]
-pub fn build_type_id_array(generic_idents: &[syn::Type]) -> Vec<syn::Expr> {
+///
+/// Const generics will be represented as the struct type, e.g. for `const C: usize` it will be `usize`.
+/// This way we can use the TypeId array to differentiate between different const generic values, by storing their values.
+pub fn build_type_id_array(generic_idents: &SanitizedGenericParams) -> Vec<syn::Expr> {
     generic_idents
+        .get_generic_params()
         .iter()
-        .map(|ident| {
-            quote! { std::any::TypeId::of::<#ident>() }
+        .map(|param| {
+            match param {
+                syn::GenericParam::Type(type_param) => {
+                    let ident = &type_param.ident;
+                    quote! { std::any::TypeId::of::<#ident>() }
+                }
+                syn::GenericParam::Const(const_param) => {
+                    let const_ty = &const_param.ty;
+                    quote! { std::any::TypeId::of::<#const_ty>() }
+                }
+                _ =>
+                    unreachable!(
+                        "SanitizedGenericParams should only contain type and const parameters. Lifetime parameters are not allowed."
+                    ),
+            }
         })
         .map(|ts| syn::parse2(ts))
         .collect::<syn::Result<_>>()

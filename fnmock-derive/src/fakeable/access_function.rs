@@ -75,7 +75,7 @@ fn generate_access_method_for_impl_block(
         )
     {
         let generic_types = fakeable_generic_info.generic_types.as_slice();
-        let method_generic_params = method_generic_info.method_type_params.as_slice();
+        let method_generic_params = method_generic_info.method_generic_params.as_slice();
 
         quote! {
             pub(crate) fn #access_function_name<#(#method_generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_types),*> {
