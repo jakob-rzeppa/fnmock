@@ -13,6 +13,15 @@ mod generics;
 
 /// Extract the ImplItemFnInfo for each method in an impl block.
 pub fn extract_item_impl_info(item_impl: &syn::ItemImpl) -> syn::Result<Vec<ImplItemFnInfo>> {
+    if let Some((_, trait_path, _)) = &item_impl.trait_ {
+        return Err(
+            syn::Error::new_spanned(
+                trait_path,
+                "The #[fakeable] attribute does not support trait impl blocks (`impl Trait for Type`). Only inherent impl blocks (`impl Type { ... }`) are supported."
+            )
+        );
+    }
+
     let mut method_infos = Vec::new();
 
     for item in &item_impl.items {
@@ -30,6 +39,15 @@ fn extract_single_item_impl_info_for_method(
     item_impl: &syn::ItemImpl,
     method: &syn::ImplItemFn
 ) -> syn::Result<ImplItemFnInfo> {
+    if let Some(const_token) = &method.sig.constness {
+        return Err(
+            syn::Error::new_spanned(
+                const_token,
+                "The #[fakeable] attribute does not support const fn. The fake lookup fnmock injects cannot run in a const context."
+            )
+        );
+    }
+
     let struct_name = extract_struct_ident(&item_impl.self_ty)?;
     let method_name = method.sig.ident.clone();
 
@@ -93,5 +111,49 @@ fn extract_return_type(output: &syn::ReturnType, self_ty: &syn::Type) -> syn::Re
             self_replacer.visit_type_mut(ty.as_mut());
             syn::ReturnType::Type(*arrow, ty)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_trait_impl_block_is_rejected() {
+        let item_impl: syn::ItemImpl = syn::parse_quote! {
+            impl SomeTrait for SomeStruct {
+                fn method(&self) -> i32 { 42 }
+            }
+        };
+
+        let result = extract_item_impl_info(&item_impl);
+
+        assert!(result.is_err(), "expected #[fakeable] on a trait impl block to be rejected");
+    }
+
+    #[test]
+    fn test_inherent_impl_block_is_accepted() {
+        let item_impl: syn::ItemImpl = syn::parse_quote! {
+            impl SomeStruct {
+                fn method(&self) -> i32 { 42 }
+            }
+        };
+
+        let result = extract_item_impl_info(&item_impl);
+
+        assert!(result.is_ok(), "expected #[fakeable] on an inherent impl block to be accepted");
+    }
+
+    #[test]
+    fn test_const_method_is_rejected() {
+        let item_impl: syn::ItemImpl = syn::parse_quote! {
+            impl SomeStruct {
+                const fn method(a: i32) -> i32 { a }
+            }
+        };
+
+        let result = extract_item_impl_info(&item_impl);
+
+        assert!(result.is_err(), "expected #[fakeable] on a const method to be rejected");
     }
 }
