@@ -75,6 +75,8 @@ mod impl_block {
         mod self_boxed;
         mod self_consumed;
         mod self_mut_referenced;
+        mod self_pin_mut;
+        mod self_rc;
         mod self_referenced;
         mod self_referenced_with_params;
         mod self_type;
