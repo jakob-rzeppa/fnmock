@@ -1,9 +1,9 @@
 use quote::{ quote };
 
-use crate::{ fakeable::info::FakeableInfo, module_builder::ModuleBuilder };
+use crate::{ fakeable::fake_module::info::FakeModuleInfo, module_builder::ModuleBuilder };
 
-/// Generates the code for a fake module based on the provided FakeableInfo.
-pub fn generate_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMod> {
+/// Generates the code for a fake module based on the provided FakeModuleInfo.
+pub fn generate_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::ItemMod> {
     if let Some(_) = &info.generic_info {
         generate_generic_fake_module_code(info)
     } else {
@@ -12,7 +12,7 @@ pub fn generate_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMo
 }
 
 /// Generates the code for a regular (non-generic) fake module.
-fn generate_regular_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMod> {
+fn generate_regular_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::ItemMod> {
     let module_name = &info.module_name;
     let store_name = &info.store_name;
     let display_name = &info.display_name;
@@ -68,7 +68,7 @@ fn generate_regular_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
 }
 
 /// Generates the code for a generic fake module.
-fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::ItemMod> {
+fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::ItemMod> {
     let module_name = &info.module_name;
     let store_name = &info.store_name;
     let display_name = &info.display_name;
@@ -103,7 +103,7 @@ fn generate_generic_fake_module_code(info: &FakeableInfo) -> syn::Result<syn::It
 
     module_builder.set_store(
         quote! {
-            static #store_name: std::cell::RefCell<fnmock::generic_fake_store::GenericFakeStore<#generic_count>> = 
+            static #store_name: std::cell::RefCell<fnmock::generic_fake_store::GenericFakeStore<#generic_count>> =
                 std::cell::RefCell::new(
                     fnmock::generic_fake_store::GenericFakeStore::new(stringify!(#display_name))
                 );

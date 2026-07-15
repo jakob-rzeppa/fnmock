@@ -3,18 +3,14 @@ use quote::quote;
 use crate::{
     extract::{ function::extract_function_info, item_impl::extract_item_impl_info },
     fakeable::{
-        generate_module_info::{
-            generate_fakeable_info_from_function,
-            generate_fakeable_info_from_impl_block,
-        },
-        inline_call::generate::insert_inline_call_into_fn_block,
+        access_function::info::AccessFunctionInfo,
+        fake_module::info::FakeModuleInfo,
+        inline_call::info::InlineCallInfo,
     },
 };
 
 mod fake_module;
 mod inline_call;
-mod generate_module_info;
-mod info;
 mod access_function;
 
 pub fn handle_fakeable(
@@ -25,24 +21,27 @@ pub fn handle_fakeable(
     // For free functions, we only create one module, but for impl blocks, we may need to create multiple modules (one per method)
     let expanded = match syn::parse::<syn::Item>(item.clone()) {
         Ok(syn::Item::Fn(mut item_fn)) => {
-            // If it's a function, extract the fake module info for that function
+            // If it's a function, extract the fake info for that function
             let function_info = extract_function_info(&item_fn)?;
-            let info = generate_fakeable_info_from_function(&function_info)?;
+            let inline_call_info = InlineCallInfo::try_from(&function_info)?;
+            let access_function_info = AccessFunctionInfo::try_from(&function_info)?;
+            let fake_module_info = FakeModuleInfo::try_from(&function_info)?;
 
             // Create the fake module code based on the extracted information
-            let module = fake_module::generate_fake_module_code(&info)?;
+            let module = fake_module::generate::generate_fake_module_code(&fake_module_info)?;
 
             // Insert the inline call into the original function's block
-            let modified_block = insert_inline_call_into_fn_block(
+            let modified_block = inline_call::generate::insert_inline_call_into_fn_block(
                 &item_fn.block,
-                &info.inline_call_info
+                &inline_call_info
             );
             item_fn.block = Box::new(modified_block);
 
             // Generate the access function
-            let access_function = access_function
-                ::generate_access_function_for_standalone(&info)
-                .expect("msg");
+            let access_function =
+                access_function::generate::standalone::generate_access_function_for_standalone(
+                    &access_function_info
+                )?;
 
             quote! {
                 #item_fn
@@ -53,39 +52,51 @@ pub fn handle_fakeable(
             }
         }
         Ok(syn::Item::Impl(item_impl)) => {
-            // If it's an impl block, extract fake module info for each method
+            // If it's an impl block, extract fake info for each method
             let item_impl_info = extract_item_impl_info(&item_impl)?;
-            let infos = generate_fakeable_info_from_impl_block(&item_impl_info)?;
+
+            let inline_call_infos = item_impl_info
+                .iter()
+                .map(InlineCallInfo::try_from)
+                .collect::<syn::Result<Vec<_>>>()?;
+            let access_function_infos = item_impl_info
+                .iter()
+                .map(AccessFunctionInfo::try_from)
+                .collect::<syn::Result<Vec<_>>>()?;
+            let fake_module_infos = item_impl_info
+                .iter()
+                .map(FakeModuleInfo::try_from)
+                .collect::<syn::Result<Vec<_>>>()?;
 
             // Create the fake module code based on the extracted information for each method
-            let modules = infos
+            let modules = fake_module_infos
                 .iter()
-                .map(|info| fake_module::generate_fake_module_code(&info))
+                .map(fake_module::generate::generate_fake_module_code)
                 .collect::<syn::Result<Vec<_>>>()?;
 
             // Generate the access methods for the impl block
-            let access_methods = access_function::generate_access_methods_for_impl_block(
-                &item_impl,
-                &infos,
-                &item_impl_info
-            )?;
+            let access_methods =
+                access_function::generate::impl_block::generate_access_methods_for_impl_block(
+                    &item_impl,
+                    &access_function_infos
+                )?;
 
             // Insert the inline call into each method's block
             let mut modified_impl = item_impl.clone();
 
             // We need to iterate over the methods in the impl block and the corresponding info in parallel. We can assume that the order of the info matches the order of the methods in the impl block, since we extract them in that order.
-            let mut info_iter = infos.iter();
+            let mut inline_call_info_iter = inline_call_infos.iter();
 
             for method in &mut modified_impl.items {
                 if let syn::ImplItem::Fn(ref mut method_fn) = *method {
-                    let info = info_iter
+                    let inline_call_info = inline_call_info_iter
                         .next()
                         .expect("Mismatch between number of methods and extracted info");
 
                     // Insert the inline call into the method's block
-                    method_fn.block = insert_inline_call_into_fn_block(
+                    method_fn.block = inline_call::generate::insert_inline_call_into_fn_block(
                         &method_fn.block,
-                        &info.inline_call_info
+                        inline_call_info
                     );
                 }
             }
