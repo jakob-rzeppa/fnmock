@@ -21,3 +21,17 @@ fn test_const_generics_fake() {
     let res = const_generics::<5>("Test".to_string());
     assert_eq!(res, "Fake Test 5");
 }
+
+#[test]
+fn test_const_generics_value_isolation() {
+    const_generics_fake::<5>().setup(|a| format!("Fake {} {}", a, 5));
+
+    // A fake was only set up for C=5, so a call with a different value of C
+    // must still run the real implementation.
+    let res = const_generics::<7>("Test".to_string());
+    assert_eq!(res, "Test 7");
+
+    // The fake for C=5 should remain unaffected.
+    let res = const_generics::<5>("Test".to_string());
+    assert_eq!(res, "Fake Test 5");
+}

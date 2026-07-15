@@ -179,11 +179,12 @@ pub fn extract_generic_types_from_generic_params(
         .collect()
 }
 
-/// Build TypeId array: [TypeId::of::<T>(), TypeId::of::<U>(), ...]
+/// Build a `GenericKeyPart` array: [GenericKeyPart::Type(TypeId::of::<T>()), GenericKeyPart::Const(ConstValue::new(C)), ...]
 ///
-/// Const generics will be represented as the struct type, e.g. for `const C: usize` it will be `usize`.
-/// This way we can use the TypeId array to differentiate between different const generic values, by storing their values.
-pub fn build_type_id_array(generic_idents: &SanitizedGenericParams) -> Vec<syn::Expr> {
+/// Type parameters are keyed by their `TypeId`. Const parameters are keyed by their actual value (via
+/// `fnmock::generic_fake_store::ConstValue::new`), not just the `TypeId` of their type — otherwise every
+/// value of e.g. `const C: usize` would collapse onto the single key `TypeId::of::<usize>()`.
+pub fn build_generic_key_array(generic_idents: &SanitizedGenericParams) -> Vec<syn::Expr> {
     generic_idents
         .get_generic_params()
         .iter()
@@ -191,11 +192,15 @@ pub fn build_type_id_array(generic_idents: &SanitizedGenericParams) -> Vec<syn::
             match param {
                 syn::GenericParam::Type(type_param) => {
                     let ident = &type_param.ident;
-                    quote! { std::any::TypeId::of::<#ident>() }
+                    quote! { fnmock::generic_fake_store::key::GenericKeyPart::Type(std::any::TypeId::of::<#ident>()) }
                 }
                 syn::GenericParam::Const(const_param) => {
-                    let const_ty = &const_param.ty;
-                    quote! { std::any::TypeId::of::<#const_ty>() }
+                    let const_ident = &const_param.ident;
+                    quote! {
+                        fnmock::generic_fake_store::key::GenericKeyPart::Const(
+                            fnmock::generic_fake_store::key::ConstValue::new(#const_ident)
+                        )
+                    }
                 }
                 _ =>
                     unreachable!(
@@ -205,5 +210,5 @@ pub fn build_type_id_array(generic_idents: &SanitizedGenericParams) -> Vec<syn::
         })
         .map(|ts| syn::parse2(ts))
         .collect::<syn::Result<_>>()
-        .expect("Type ids must be parsable to an expression. This should not fail.")
+        .expect("Generic key parts must be parsable to an expression. This should not fail.")
 }

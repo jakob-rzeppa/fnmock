@@ -1,6 +1,6 @@
 use crate::extract::{
     generic::{
-        build_type_id_array,
+        build_generic_key_array,
         extract_generic_type_and_const_params,
         extract_generic_types_from_generic_params,
     },
@@ -26,9 +26,9 @@ pub fn extract_generic_impl_info(
     let method_types = extract_generic_types_from_generic_params(&method_generic_params);
     let types = extract_generic_types_from_generic_params(&type_params);
 
-    let struct_type_ids = build_type_id_array(&struct_generic_params);
-    let method_type_ids = build_type_id_array(&method_generic_params);
-    let type_ids = build_type_id_array(&type_params);
+    let struct_generic_keys = build_generic_key_array(&struct_generic_params);
+    let method_generic_keys = build_generic_key_array(&method_generic_params);
+    let generic_keys = build_generic_key_array(&type_params);
 
     Ok(
         Some(ImplItemFnGenericInfo {
@@ -42,9 +42,9 @@ pub fn extract_generic_impl_info(
             _struct_types: struct_types,
             _method_types: method_types,
 
-            type_ids,
-            _struct_type_ids: struct_type_ids,
-            _method_type_ids: method_type_ids,
+            generic_keys,
+            _struct_generic_keys: struct_generic_keys,
+            _method_generic_keys: method_generic_keys,
         })
     )
 }

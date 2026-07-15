@@ -24,10 +24,10 @@ pub struct ImplItemFnGenericInfo {
     /// The generic types of the method.
     pub _method_types: Vec<syn::Type>,
 
-    /// The type IDs of the struct and method are combined, in the order of struct type IDs followed by method type IDs.
-    pub type_ids: Vec<syn::Expr>,
-    /// The type IDs of the struct.
-    pub _struct_type_ids: Vec<syn::Expr>,
-    /// The type IDs of the method.
-    pub _method_type_ids: Vec<syn::Expr>,
+    /// The generic keys of the struct and method are combined, in the order of struct generic keys followed by method generic keys.
+    pub generic_keys: Vec<syn::Expr>,
+    /// The generic keys of the struct.
+    pub _struct_generic_keys: Vec<syn::Expr>,
+    /// The generic keys of the method.
+    pub _method_generic_keys: Vec<syn::Expr>,
 }

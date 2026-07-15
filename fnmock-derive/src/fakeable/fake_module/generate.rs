@@ -75,14 +75,14 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
     let interface_struct_name = &info.interface_struct_name;
     let fn_closure_trait = &info.fn_closure_trait;
 
-    let (generic_count, generic_types, generic_params, generic_type_ids) = if
+    let (generic_count, generic_types, generic_params, generic_keys) = if
         let Some(generic_info) = &info.generic_info
     {
         (
             generic_info.generic_count,
             &generic_info.generic_types,
             &generic_info.generic_params,
-            &generic_info.generic_type_ids,
+            &generic_info.generic_keys,
         )
     } else {
         unreachable!(
@@ -125,27 +125,27 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
 
                 pub(crate) fn setup(self, function: impl #fn_closure_trait + 'static) -> Self {
                     #store_name.with_borrow_mut(|fake| {
-                        fake.setup_for::<Box<dyn #fn_closure_trait>>([#(#generic_type_ids),*], Box::new(function));
+                        fake.setup_for::<Box<dyn #fn_closure_trait>>([#(#generic_keys),*], Box::new(function));
                     });
                     self
                 }
 
                 pub(crate) fn clear(self) -> Self {
                     #store_name.with_borrow_mut(|fake| {
-                        fake.clear_for([#(#generic_type_ids),*]);
+                        fake.clear_for([#(#generic_keys),*]);
                     });
                     self
                 }
 
                 pub(crate) fn is_set(&self) -> bool {
                     #store_name.with_borrow(|fake| {
-                        fake.is_set_for([#(#generic_type_ids),*])
+                        fake.is_set_for([#(#generic_keys),*])
                     })
                 }
 
                 pub(crate) fn get(&self) -> std::rc::Rc<Box<dyn #fn_closure_trait>> {
                     #store_name.with_borrow(|fake| {
-                        fake.get_for::<Box<dyn #fn_closure_trait>>([#(#generic_type_ids),*])
+                        fake.get_for::<Box<dyn #fn_closure_trait>>([#(#generic_keys),*])
                     })
                 }
             }

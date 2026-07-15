@@ -35,8 +35,9 @@ pub struct FakeModuleGenericInfo {
     /// The generic parameters, including their bounds (e.g. `T: Display + 'static` and `I: 'static`).
     pub generic_params: Vec<syn::GenericParam>,
 
-    /// The `TypeId` expressions for the generic parameters, in the order they appear in the code (e.g. `[std::any::TypeId::of::<T>(), std::any::TypeId::of::<I>()]`).
-    pub generic_type_ids: Vec<syn::Expr>,
+    /// The `GenericKeyPart` expressions for the generic parameters, in the order they appear in the code
+    /// (e.g. `[GenericKeyPart::Type(TypeId::of::<T>()), GenericKeyPart::Const(I.into_const_value())]`).
+    pub generic_keys: Vec<syn::Expr>,
 }
 
 impl TryFrom<&FunctionInfo> for FakeModuleInfo {
@@ -61,7 +62,7 @@ impl TryFrom<&FunctionInfo> for FakeModuleInfo {
                 generic_count: info.count,
                 generic_types: info.types.clone(),
                 generic_params: info.generic_params.clone(),
-                generic_type_ids: info.type_ids.clone(),
+                generic_keys: info.generic_keys.clone(),
             }),
         })
     }
@@ -102,7 +103,7 @@ impl TryFrom<&ImplItemFnInfo> for FakeModuleInfo {
                 generic_count: info.count,
                 generic_types: info.types.clone(),
                 generic_params: info.generic_params.clone(),
-                generic_type_ids: info.type_ids.clone(),
+                generic_keys: info.generic_keys.clone(),
             }),
         })
     }
