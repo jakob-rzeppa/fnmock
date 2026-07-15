@@ -14,12 +14,12 @@ mod inline_call;
 mod access_function;
 
 pub fn handle_fakeable(
-    _attr: proc_macro::TokenStream,
-    item: proc_macro::TokenStream
+    _attr: proc_macro2::TokenStream,
+    item: proc_macro2::TokenStream
 ) -> syn::Result<proc_macro2::TokenStream> {
     // First, parse the input to get the necessary information for creating the fake modules
     // For free functions, we only create one module, but for impl blocks, we may need to create multiple modules (one per method)
-    let expanded = match syn::parse::<syn::Item>(item.clone()) {
+    let expanded = match syn::parse2::<syn::Item>(item.clone()) {
         Ok(syn::Item::Fn(mut item_fn)) => {
             // If it's a function, extract the fake info for that function
             let function_info = extract_function_info(&item_fn)?;

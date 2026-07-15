@@ -19,5 +19,5 @@ pub fn build_fn_closure_trait(
     } else {
         quote! { for<#(#lifetimes),*> Fn(#(#params),*) #output }
     };
-    syn::parse(fn_ptr_tokens.into())
+    syn::parse2(fn_ptr_tokens)
 }

@@ -45,5 +45,5 @@ pub fn insert_inline_call_into_fn_block(
         }
     };
 
-    syn::parse(new_block.into()).expect("Failed to parse the new block with inline call")
+    syn::parse2(new_block).expect("Failed to parse the new block with inline call")
 }
