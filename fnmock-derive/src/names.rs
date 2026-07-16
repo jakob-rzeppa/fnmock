@@ -52,7 +52,7 @@ pub fn build_access_function_name(fn_name: &syn::Ident, name_type: NameType) -> 
 
 /// Builds the module name for a impl block fake, spy etc.
 ///
-/// For a struct named `UserService` and a method named `get_user`, this will generate `user_service_get_user_fake`.
+/// For a struct named `UserService` and a method named `get_user`, this will generate `user_service_struct_get_user_fake_module`.
 pub fn build_impl_module_name(
     struct_name: &syn::Ident,
     method_name: &syn::Ident,
@@ -60,7 +60,7 @@ pub fn build_impl_module_name(
 ) -> syn::Ident {
     syn::Ident::new(
         &format!(
-            "{}_{}_{}",
+            "{}_struct_{}_{}",
             pascal_to_snake_case(&struct_name.to_string()),
             &method_name.to_string(),
             name_type.suffix_module()
