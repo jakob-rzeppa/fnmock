@@ -128,10 +128,9 @@ fn merge_where_bounds_into_type_params(
             // If the type parameter already exists, use the existing one
             existing
         } else {
-            panic!(
-                "Type parameter {} in where clause does not exist in the generic parameters",
-                type_predicate.bounded_ty.to_token_stream().to_string()
-            );
+            // Non-parameter where bounds can be ignored by the fakeable macro, because they don't affect the generic parameters of the function.
+            // For example, `where Vec<T>: Clone` is a non-parameter where bound, because it doesn't affect the generic parameter `T`. We can ignore it and continue.
+            continue;
         };
 
         for bound in &type_predicate.bounds {

@@ -34,6 +34,7 @@ mod generics {
     mod const_generics;
     mod unused_generic;
     mod unused_lifetime;
+    mod non_parameter_where;
 }
 mod patterns {
     mod ignored;
