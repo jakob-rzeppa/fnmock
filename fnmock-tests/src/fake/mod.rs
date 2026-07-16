@@ -55,6 +55,7 @@ mod trait_based {
     mod boxed;
     mod referenced;
     mod referenced_mut;
+    mod impl_traits;
 }
 
 mod impl_block {
