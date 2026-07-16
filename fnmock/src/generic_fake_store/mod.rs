@@ -72,7 +72,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
             .cloned()
             .unwrap_or_else(|| {
                 // When using the macro API, the macro ensures that get is only called when is_set_for is true, so this should never happen if the API is used correctly.
-                unreachable!(
+                panic!(
                     "Generic fake {} for {:#?} should only be called with initialized types, since is_set_for is checked before calling. This should never happen if the API is used correctly.",
                     self.name,
                     generic_keys
@@ -81,7 +81,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
             .downcast::<WrappedClosure>()
             .unwrap_or_else(|_| {
                 // When using the macro API, the macro ensures that the type of get_for and setup_for match, so this should never happen if the API is used correctly.
-                unreachable!(
+                panic!(
                     "Downcast of generic fake {} for {:#?} failed. This should never happen if the API is used correctly. Expected function type does not match the type of the provided implementation.",
                     self.name,
                     generic_keys

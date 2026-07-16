@@ -43,7 +43,7 @@ impl<WrappedClosure: Clone> FakeStore<WrappedClosure> {
     pub fn get(&self) -> WrappedClosure {
         self.implementation.clone().unwrap_or_else(|| {
             // When using the macro API, the macro ensures that get is only called when is_set is true, so this should never happen if the API is used correctly.
-            unreachable!(
+            panic!(
                 "Fake {} should only be called when initialized, since is_set is checked before calling. This should never happen if the API is used correctly.",
                 self.name
             );
