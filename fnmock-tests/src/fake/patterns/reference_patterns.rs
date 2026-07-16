@@ -1,4 +1,4 @@
-//! Reference patterns are supported for fakes.
+//! Reference patterns are not supported for fakes.
 //!
 //! ```
 //! #[fnmock::fakeable]
@@ -7,6 +7,5 @@
 //! }
 //! ```
 //!
-//! This is because we can ignore the `ref` keyword in the pattern and just get the identifier name for the fake call value.
-//! The signature of the fake function will need a value, not a reference, and we cannot obtain a value from a reference in the general case.
+//! The signature of the fake function will need a owned value, not a reference, and we cannot obtain a value from a reference in the general case.
 //! Therefore, we do not support `ref` patterns for fake call values.
