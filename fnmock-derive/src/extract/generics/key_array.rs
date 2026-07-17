@@ -17,13 +17,13 @@ pub fn build_generic_key_array(
             let ts = match param {
                 syn::GenericParam::Type(type_param) => {
                     let ident = &type_param.ident;
-                    quote! { fnmock::generic_fake_store::key::GenericKeyPart::Type(std::any::TypeId::of::<#ident>()) }
+                    quote! { ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<#ident>()) }
                 }
                 syn::GenericParam::Const(const_param) => {
                     let const_ident = &const_param.ident;
                     quote! {
-                        fnmock::generic_fake_store::key::GenericKeyPart::Const(
-                            fnmock::generic_fake_store::key::ConstValue::new(#const_ident)
+                        ::fnmock::generic_fake_store::key::GenericKeyPart::Const(
+                            ::fnmock::generic_fake_store::key::ConstValue::new(#const_ident)
                         )
                     }
                 }
@@ -73,7 +73,7 @@ mod tests {
 
         let expected =
             quote! {
-            fnmock::generic_fake_store::key::GenericKeyPart::Type(std::any::TypeId::of::<T>())
+            ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())
         };
 
         assert_eq!(keys[0].to_token_stream().to_string(), expected.to_token_stream().to_string());
@@ -89,8 +89,8 @@ mod tests {
 
         let expected =
             quote! {
-            fnmock::generic_fake_store::key::GenericKeyPart::Const(
-                fnmock::generic_fake_store::key::ConstValue::new(N)
+            ::fnmock::generic_fake_store::key::GenericKeyPart::Const(
+                ::fnmock::generic_fake_store::key::ConstValue::new(N)
             )
         };
 
@@ -109,12 +109,12 @@ mod tests {
 
         let expected_type =
             quote! {
-            fnmock::generic_fake_store::key::GenericKeyPart::Type(std::any::TypeId::of::<T>())
+            ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())
         };
         let expected_const =
             quote! {
-            fnmock::generic_fake_store::key::GenericKeyPart::Const(
-                fnmock::generic_fake_store::key::ConstValue::new(N)
+            ::fnmock::generic_fake_store::key::GenericKeyPart::Const(
+                ::fnmock::generic_fake_store::key::ConstValue::new(N)
             )
         };
 
@@ -139,11 +139,11 @@ mod tests {
         assert_eq!(keys.len(), 2);
         let expected_a =
             quote! {
-            fnmock::generic_fake_store::key::GenericKeyPart::Type(std::any::TypeId::of::<A>())
+            ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<A>())
         };
         let expected_b =
             quote! {
-            fnmock::generic_fake_store::key::GenericKeyPart::Type(std::any::TypeId::of::<B>())
+            ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<B>())
         };
         assert_eq!(keys[0].to_token_stream().to_string(), expected_a.to_token_stream().to_string());
         assert_eq!(keys[1].to_token_stream().to_string(), expected_b.to_token_stream().to_string());

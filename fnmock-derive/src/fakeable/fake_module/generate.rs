@@ -25,8 +25,8 @@ fn generate_regular_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
 
     module_builder.set_store(
         quote! {
-            static #store_name: std::cell::RefCell<fnmock::fake_store::FakeStore<std::rc::Rc<dyn #fn_closure_trait>>> =
-                std::cell::RefCell::new(fnmock::fake_store::FakeStore::new(stringify!(#display_name)));
+            static #store_name: ::std::cell::RefCell<::fnmock::fake_store::FakeStore<::std::rc::Rc<dyn #fn_closure_trait>>> =
+                ::std::cell::RefCell::new(::fnmock::fake_store::FakeStore::new(stringify!(#display_name)));
         }
     );
 
@@ -41,7 +41,7 @@ fn generate_regular_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
 
                 pub(crate) fn setup(self, function: impl #fn_closure_trait + 'static) -> Self {
                     #store_name.with(|store| {
-                        store.borrow_mut().setup(std::rc::Rc::new(function));
+                        store.borrow_mut().setup(::std::rc::Rc::new(function));
                     });
                     self
                 }
@@ -57,7 +57,7 @@ fn generate_regular_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
                     #store_name.with(|store| store.borrow().is_set())
                 }
 
-                pub(crate) fn get(&self) -> std::rc::Rc<dyn #fn_closure_trait> {
+                pub(crate) fn get(&self) -> ::std::rc::Rc<dyn #fn_closure_trait> {
                     #store_name.with(|store| store.borrow().get())
                 }
             }
@@ -103,9 +103,9 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
 
     module_builder.set_store(
         quote! {
-            static #store_name: std::cell::RefCell<fnmock::generic_fake_store::GenericFakeStore<#generic_count>> =
-                std::cell::RefCell::new(
-                    fnmock::generic_fake_store::GenericFakeStore::new(stringify!(#display_name))
+            static #store_name: ::std::cell::RefCell<::fnmock::generic_fake_store::GenericFakeStore<#generic_count>> =
+                ::std::cell::RefCell::new(
+                    ::fnmock::generic_fake_store::GenericFakeStore::new(stringify!(#display_name))
                 );
         }
     );
@@ -113,13 +113,13 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
     module_builder.set_interface_struct(
         quote! {
             pub(crate) struct #interface_struct_name<#(#generic_params),*> {
-                _marker: std::marker::PhantomData<(#(#generic_types_without_const_generics),*)>,
+                _marker: ::std::marker::PhantomData<(#(#generic_types_without_const_generics),*)>,
             }
 
             impl<#(#generic_params),*> #interface_struct_name<#(#generic_types),*> {
                 pub(crate) fn new() -> Self {
                     Self {
-                        _marker: std::marker::PhantomData,
+                        _marker: ::std::marker::PhantomData,
                     }
                 }
 
@@ -143,7 +143,7 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
                     })
                 }
 
-                pub(crate) fn get(&self) -> std::rc::Rc<Box<dyn #fn_closure_trait>> {
+                pub(crate) fn get(&self) -> ::std::rc::Rc<Box<dyn #fn_closure_trait>> {
                     #store_name.with_borrow(|fake| {
                         fake.get_for::<Box<dyn #fn_closure_trait>>([#(#generic_keys),*])
                     })
