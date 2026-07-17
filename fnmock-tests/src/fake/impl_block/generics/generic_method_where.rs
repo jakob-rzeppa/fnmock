@@ -2,7 +2,10 @@ struct GenericMethodWhere;
 
 #[fnmock::fakeable]
 impl GenericMethodWhere {
-    fn echo<T>(&self, a: T) -> T where T: 'static {
+    fn echo<T>(&self, a: T) -> T
+    where
+        T: 'static,
+    {
         a
     }
 }

@@ -1,21 +1,20 @@
 use quote::quote;
 
 use crate::{
-    extract::{ function::extract_function_info, item_impl::extract_item_impl_info },
+    extract::{function::extract_function_info, item_impl::extract_item_impl_info},
     fakeable::{
-        access_function::info::AccessFunctionInfo,
-        fake_module::info::FakeModuleInfo,
+        access_function::info::AccessFunctionInfo, fake_module::info::FakeModuleInfo,
         inline_call::info::InlineCallInfo,
     },
 };
 
+mod access_function;
 mod fake_module;
 mod inline_call;
-mod access_function;
 
 pub fn handle_fakeable(
     _attr: proc_macro2::TokenStream,
-    item: proc_macro2::TokenStream
+    item: proc_macro2::TokenStream,
 ) -> syn::Result<proc_macro2::TokenStream> {
     // First, parse the input to get the necessary information for creating the fake modules
     // For free functions, we only create one module, but for impl blocks, we may need to create multiple modules (one per method)
@@ -33,14 +32,14 @@ pub fn handle_fakeable(
             // Insert the inline call into the original function's block
             let modified_block = inline_call::generate::insert_inline_call_into_fn_block(
                 &item_fn.block,
-                &inline_call_info
+                &inline_call_info,
             )?;
             item_fn.block = Box::new(modified_block);
 
             // Generate the access function
             let access_function =
                 access_function::generate::standalone::generate_access_function_for_standalone(
-                    &access_function_info
+                    &access_function_info,
                 )?;
 
             quote! {
@@ -78,7 +77,7 @@ pub fn handle_fakeable(
             let access_methods =
                 access_function::generate::impl_block::generate_access_methods_for_impl_block(
                     &item_impl,
-                    &access_function_infos
+                    &access_function_infos,
                 )?;
 
             // Insert the inline call into each method's block
@@ -101,7 +100,7 @@ pub fn handle_fakeable(
                     // Insert the inline call into the method's block
                     method_fn.block = inline_call::generate::insert_inline_call_into_fn_block(
                         &method_fn.block,
-                        inline_call_info
+                        inline_call_info,
                     )?;
                 }
             }
@@ -115,12 +114,10 @@ pub fn handle_fakeable(
             }
         }
         Ok(item) => {
-            return Err(
-                syn::Error::new_spanned(
-                    item,
-                    "The #[fakeable] attribute can only be applied to functions and impl blocks."
-                )
-            );
+            return Err(syn::Error::new_spanned(
+                item,
+                "The #[fakeable] attribute can only be applied to functions and impl blocks.",
+            ));
         }
         Err(e) => {
             return Err(e);

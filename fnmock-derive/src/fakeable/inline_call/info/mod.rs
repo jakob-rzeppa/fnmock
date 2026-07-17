@@ -1,12 +1,9 @@
 use crate::{
-    extract::{ function::info::FunctionInfo, item_impl::info::ImplItemFnInfo },
+    extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
     fakeable::inline_call::info::fake_call_value::FakeCallValue,
     names::{
-        NameType,
-        build_impl_interface_struct_name,
-        build_impl_module_name,
-        build_interface_struct_name,
-        build_module_name,
+        build_impl_interface_struct_name, build_impl_module_name, build_interface_struct_name,
+        build_module_name, NameType,
     },
 };
 
@@ -25,12 +22,11 @@ impl TryFrom<&FunctionInfo> for InlineCallInfo {
 
     fn try_from(function_info: &FunctionInfo) -> Result<Self, Self::Error> {
         let module_name = build_module_name(&function_info.name, NameType::Fake);
-        let interface_struct_name = build_interface_struct_name(
-            &function_info.name,
-            NameType::Fake
-        );
+        let interface_struct_name =
+            build_interface_struct_name(&function_info.name, NameType::Fake);
 
-        let fake_call_values = function_info.param_pats
+        let fake_call_values = function_info
+            .param_pats
             .iter()
             .map(FakeCallValue::try_from)
             .collect::<Result<Vec<_>, _>>()?;
@@ -57,15 +53,16 @@ impl TryFrom<&ImplItemFnInfo> for InlineCallInfo {
         let module_name = build_impl_module_name(
             &impl_item_fn_info.struct_name,
             &impl_item_fn_info.method_name,
-            NameType::Fake
+            NameType::Fake,
         );
         let interface_struct_name = build_impl_interface_struct_name(
             &impl_item_fn_info.struct_name,
             &impl_item_fn_info.method_name,
-            NameType::Fake
+            NameType::Fake,
         );
 
-        let fake_call_values = impl_item_fn_info.param_pats
+        let fake_call_values = impl_item_fn_info
+            .param_pats
             .iter()
             .map(FakeCallValue::try_from)
             .collect::<Result<Vec<_>, _>>()?;
@@ -115,13 +112,18 @@ mod tests {
         };
         let function_info = extract_function_info(&item_fn).expect("valid standalone function");
 
-        let info = InlineCallInfo::try_from(&function_info).expect(
-            "conversion should succeed for a non-generic standalone function"
-        );
+        let info = InlineCallInfo::try_from(&function_info)
+            .expect("conversion should succeed for a non-generic standalone function");
 
         assert_eq!(info.module_name.to_string(), "get_user_fake_module");
-        assert_eq!(info.interface_struct_name.to_string(), "GetUserFakeInterface");
-        assert_eq!(render_fake_call_values(&info.fake_call_values), vec!["id".to_string()]);
+        assert_eq!(
+            info.interface_struct_name.to_string(),
+            "GetUserFakeInterface"
+        );
+        assert_eq!(
+            render_fake_call_values(&info.fake_call_values),
+            vec!["id".to_string()]
+        );
         assert!(
             info.generic_idents.is_none(),
             "expected no generic_idents for a non-generic standalone function"
@@ -168,13 +170,11 @@ mod tests {
                 x
             }
         };
-        let function_info = extract_function_info(&item_fn).expect(
-            "valid generic standalone function"
-        );
+        let function_info =
+            extract_function_info(&item_fn).expect("valid generic standalone function");
 
-        let info = InlineCallInfo::try_from(&function_info).expect(
-            "conversion should succeed for a generic standalone function"
-        );
+        let info = InlineCallInfo::try_from(&function_info)
+            .expect("conversion should succeed for a generic standalone function");
 
         let Some(generic_idents) = info.generic_idents else {
             panic!("expected generic_idents to be Some for a generic standalone function");
@@ -195,7 +195,10 @@ mod tests {
             panic!("a `ref` parameter pattern should be rejected during conversion");
         };
         let message = error.to_string().to_lowercase();
-        assert!(message.contains("ref"), "error message should mention `ref`, got: {message}");
+        assert!(
+            message.contains("ref"),
+            "error message should mention `ref`, got: {message}"
+        );
     }
 
     #[test]
@@ -210,12 +213,17 @@ mod tests {
         let impl_infos = extract_item_impl_info(&item_impl).expect("valid inherent impl block");
         let impl_info = &impl_infos[0];
 
-        let info = InlineCallInfo::try_from(impl_info).expect(
-            "conversion should succeed for a non-generic impl method"
-        );
+        let info = InlineCallInfo::try_from(impl_info)
+            .expect("conversion should succeed for a non-generic impl method");
 
-        assert_eq!(info.module_name.to_string(), "user_service_struct_get_user_fake_module");
-        assert_eq!(info.interface_struct_name.to_string(), "UserServiceGetUserFakeInterface");
+        assert_eq!(
+            info.module_name.to_string(),
+            "user_service_struct_get_user_fake_module"
+        );
+        assert_eq!(
+            info.interface_struct_name.to_string(),
+            "UserServiceGetUserFakeInterface"
+        );
         assert_eq!(
             render_fake_call_values(&info.fake_call_values),
             vec!["self".to_string(), "id".to_string()]
@@ -235,19 +243,20 @@ mod tests {
                 }
             }
         };
-        let impl_infos = extract_item_impl_info(&item_impl).expect(
-            "valid inherent impl block with struct and method generics"
-        );
+        let impl_infos = extract_item_impl_info(&item_impl)
+            .expect("valid inherent impl block with struct and method generics");
         let impl_info = &impl_infos[0];
 
-        let info = InlineCallInfo::try_from(impl_info).expect(
-            "conversion should succeed for a generic impl method"
-        );
+        let info = InlineCallInfo::try_from(impl_info)
+            .expect("conversion should succeed for a generic impl method");
 
         let Some(generic_idents) = info.generic_idents else {
             panic!("expected generic_idents to be Some when the struct and method are generic");
         };
-        assert_eq!(render_idents(&generic_idents), vec!["S".to_string(), "M".to_string()]);
+        assert_eq!(
+            render_idents(&generic_idents),
+            vec!["S".to_string(), "M".to_string()]
+        );
     }
 
     #[test]
@@ -266,6 +275,9 @@ mod tests {
             panic!("a `ref` parameter pattern should be rejected during conversion");
         };
         let message = error.to_string().to_lowercase();
-        assert!(message.contains("ref"), "error message should mention `ref`, got: {message}");
+        assert!(
+            message.contains("ref"),
+            "error message should mention `ref`, got: {message}"
+        );
     }
 }

@@ -11,7 +11,9 @@ impl<T: Clone + 'static> GenericStruct<T> {
 
 #[test]
 fn test_generic_struct() {
-    let s = GenericStruct { value: "Test".to_string() };
+    let s = GenericStruct {
+        value: "Test".to_string(),
+    };
     assert_eq!(s.get(), "Test");
 }
 
@@ -19,6 +21,8 @@ fn test_generic_struct() {
 fn test_generic_struct_fake() {
     GenericStruct::<String>::get_fake().setup(|_| "Fake".to_string());
 
-    let s = GenericStruct { value: "Test".to_string() };
+    let s = GenericStruct {
+        value: "Test".to_string(),
+    };
     assert_eq!(s.get(), "Fake");
 }

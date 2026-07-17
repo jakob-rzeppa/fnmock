@@ -12,7 +12,7 @@ use quote::quote;
 pub fn build_fn_closure_trait(
     lifetimes: &[syn::Lifetime],
     params: &[syn::Type],
-    output: &syn::ReturnType
+    output: &syn::ReturnType,
 ) -> syn::Result<syn::TraitBound> {
     let fn_ptr_tokens: proc_macro2::TokenStream = if lifetimes.is_empty() {
         quote! { Fn(#(#params),*) #output }
@@ -43,14 +43,20 @@ mod tests {
         let params: Vec<syn::Type> = vec![syn::parse_quote!(i32), syn::parse_quote!(&str)];
         let output: syn::ReturnType = syn::parse_quote!(-> bool);
 
-        let bound = build_fn_closure_trait(&lifetimes, &params, &output).expect(
-            "expected build_fn_closure_trait to succeed"
-        );
+        let bound = build_fn_closure_trait(&lifetimes, &params, &output)
+            .expect("expected build_fn_closure_trait to succeed");
 
         let expected = parse_trait_bound("Fn(i32, &str) -> bool");
-        assert_eq!(bound.to_token_stream().to_string(), expected.to_token_stream().to_string());
+        assert_eq!(
+            bound.to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
+        );
         assert!(
-            !bound.to_token_stream().to_string().trim_start().starts_with("for"),
+            !bound
+                .to_token_stream()
+                .to_string()
+                .trim_start()
+                .starts_with("for"),
             "expected no `for<...>` prefix when there are no lifetimes"
         );
     }
@@ -61,14 +67,20 @@ mod tests {
         let params: Vec<syn::Type> = vec![];
         let output = syn::ReturnType::Default;
 
-        let bound = build_fn_closure_trait(&lifetimes, &params, &output).expect(
-            "expected build_fn_closure_trait to succeed"
-        );
+        let bound = build_fn_closure_trait(&lifetimes, &params, &output)
+            .expect("expected build_fn_closure_trait to succeed");
 
         let expected = parse_trait_bound("Fn()");
-        assert_eq!(bound.to_token_stream().to_string(), expected.to_token_stream().to_string());
+        assert_eq!(
+            bound.to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
+        );
         assert!(
-            !bound.to_token_stream().to_string().trim_start().starts_with("for"),
+            !bound
+                .to_token_stream()
+                .to_string()
+                .trim_start()
+                .starts_with("for"),
             "expected no `for<...>` prefix when there are no lifetimes"
         );
     }
@@ -79,14 +91,20 @@ mod tests {
         let params: Vec<syn::Type> = vec![syn::parse_quote!(&'a str)];
         let output: syn::ReturnType = syn::parse_quote!(-> bool);
 
-        let bound = build_fn_closure_trait(&lifetimes, &params, &output).expect(
-            "expected build_fn_closure_trait to succeed"
-        );
+        let bound = build_fn_closure_trait(&lifetimes, &params, &output)
+            .expect("expected build_fn_closure_trait to succeed");
 
         let expected = parse_trait_bound("for<'a> Fn(&'a str) -> bool");
-        assert_eq!(bound.to_token_stream().to_string(), expected.to_token_stream().to_string());
+        assert_eq!(
+            bound.to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
+        );
         assert!(
-            bound.to_token_stream().to_string().trim_start().starts_with("for"),
+            bound
+                .to_token_stream()
+                .to_string()
+                .trim_start()
+                .starts_with("for"),
             "expected a `for<'a>` prefix when a lifetime is present"
         );
     }
@@ -97,14 +115,20 @@ mod tests {
         let params: Vec<syn::Type> = vec![];
         let output = syn::ReturnType::Default;
 
-        let bound = build_fn_closure_trait(&lifetimes, &params, &output).expect(
-            "expected build_fn_closure_trait to succeed"
-        );
+        let bound = build_fn_closure_trait(&lifetimes, &params, &output)
+            .expect("expected build_fn_closure_trait to succeed");
 
         let expected = parse_trait_bound("for<'a, 'b> Fn()");
-        assert_eq!(bound.to_token_stream().to_string(), expected.to_token_stream().to_string());
+        assert_eq!(
+            bound.to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
+        );
         assert!(
-            bound.to_token_stream().to_string().trim_start().starts_with("for"),
+            bound
+                .to_token_stream()
+                .to_string()
+                .trim_start()
+                .starts_with("for"),
             "expected a `for<'a, 'b>` prefix when two lifetimes are present"
         );
     }

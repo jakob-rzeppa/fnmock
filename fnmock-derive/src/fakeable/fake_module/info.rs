@@ -1,13 +1,8 @@
 use crate::{
-    extract::{ function::info::FunctionInfo, item_impl::info::ImplItemFnInfo },
+    extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
     names::{
-        NameType,
-        build_impl_interface_struct_name,
-        build_impl_module_name,
-        build_impl_store_name,
-        build_interface_struct_name,
-        build_module_name,
-        build_store_name,
+        build_impl_interface_struct_name, build_impl_module_name, build_impl_store_name,
+        build_interface_struct_name, build_module_name, build_store_name, NameType,
     },
 };
 
@@ -47,10 +42,8 @@ impl TryFrom<&FunctionInfo> for FakeModuleInfo {
         let module_name = build_module_name(&function_info.name, NameType::Fake);
         let store_name = build_store_name(&function_info.name, NameType::Fake);
         let display_name = format!("{}", function_info.name);
-        let interface_struct_name = build_interface_struct_name(
-            &function_info.name,
-            NameType::Fake
-        );
+        let interface_struct_name =
+            build_interface_struct_name(&function_info.name, NameType::Fake);
 
         Ok(FakeModuleInfo {
             module_name,
@@ -58,12 +51,15 @@ impl TryFrom<&FunctionInfo> for FakeModuleInfo {
             display_name,
             interface_struct_name,
             fn_closure_trait: function_info.fn_closure_trait.clone(),
-            generic_info: function_info.generic_info.as_ref().map(|info| FakeModuleGenericInfo {
-                generic_count: info.count,
-                generic_idents: info.idents.clone(),
-                generic_params: info.generic_params.clone(),
-                generic_keys: info.generic_keys.clone(),
-            }),
+            generic_info: function_info
+                .generic_info
+                .as_ref()
+                .map(|info| FakeModuleGenericInfo {
+                    generic_count: info.count,
+                    generic_idents: info.idents.clone(),
+                    generic_params: info.generic_params.clone(),
+                    generic_keys: info.generic_keys.clone(),
+                }),
         })
     }
 }
@@ -75,22 +71,21 @@ impl TryFrom<&ImplItemFnInfo> for FakeModuleInfo {
         let module_name = build_impl_module_name(
             &impl_item_fn_info.struct_name,
             &impl_item_fn_info.method_name,
-            NameType::Fake
+            NameType::Fake,
         );
         let store_name = build_impl_store_name(
             &impl_item_fn_info.struct_name,
             &impl_item_fn_info.method_name,
-            NameType::Fake
+            NameType::Fake,
         );
         let display_name = format!(
             "{} {}",
-            impl_item_fn_info.struct_name,
-            impl_item_fn_info.method_name
+            impl_item_fn_info.struct_name, impl_item_fn_info.method_name
         );
         let interface_struct_name = build_impl_interface_struct_name(
             &impl_item_fn_info.struct_name,
             &impl_item_fn_info.method_name,
-            NameType::Fake
+            NameType::Fake,
         );
 
         Ok(FakeModuleInfo {
@@ -99,11 +94,13 @@ impl TryFrom<&ImplItemFnInfo> for FakeModuleInfo {
             display_name,
             interface_struct_name,
             fn_closure_trait: impl_item_fn_info.fn_closure_trait.clone(),
-            generic_info: impl_item_fn_info.generic_info.as_ref().map(|info| FakeModuleGenericInfo {
-                generic_count: info.count,
-                generic_idents: info.idents.clone(),
-                generic_params: info.generic_params.clone(),
-                generic_keys: info.generic_keys.clone(),
+            generic_info: impl_item_fn_info.generic_info.as_ref().map(|info| {
+                FakeModuleGenericInfo {
+                    generic_count: info.count,
+                    generic_idents: info.idents.clone(),
+                    generic_params: info.generic_params.clone(),
+                    generic_keys: info.generic_keys.clone(),
+                }
             }),
         })
     }
@@ -132,14 +129,16 @@ mod tests {
         };
         let function_info = extract_function_info(&item_fn).expect("valid standalone function");
 
-        let info = FakeModuleInfo::try_from(&function_info).expect(
-            "conversion should succeed for a non-generic standalone function"
-        );
+        let info = FakeModuleInfo::try_from(&function_info)
+            .expect("conversion should succeed for a non-generic standalone function");
 
         assert_eq!(info.module_name.to_string(), "get_user_fake_module");
         assert_eq!(info.store_name.to_string(), "GET_USER_FAKE_STORE");
         assert_eq!(info.display_name, "get_user");
-        assert_eq!(info.interface_struct_name.to_string(), "GetUserFakeInterface");
+        assert_eq!(
+            info.interface_struct_name.to_string(),
+            "GetUserFakeInterface"
+        );
         assert!(
             info.generic_info.is_none(),
             "expected no generic_info for a non-generic standalone function"
@@ -158,14 +157,22 @@ mod tests {
         let impl_infos = extract_item_impl_info(&item_impl).expect("valid inherent impl block");
         let impl_info = &impl_infos[0];
 
-        let info = FakeModuleInfo::try_from(impl_info).expect(
-            "conversion should succeed for a non-generic impl method"
-        );
+        let info = FakeModuleInfo::try_from(impl_info)
+            .expect("conversion should succeed for a non-generic impl method");
 
-        assert_eq!(info.module_name.to_string(), "user_service_struct_get_user_fake_module");
-        assert_eq!(info.store_name.to_string(), "USER_SERVICE_GET_USER_FAKE_STORE");
+        assert_eq!(
+            info.module_name.to_string(),
+            "user_service_struct_get_user_fake_module"
+        );
+        assert_eq!(
+            info.store_name.to_string(),
+            "USER_SERVICE_GET_USER_FAKE_STORE"
+        );
         assert_eq!(info.display_name, "UserService get_user");
-        assert_eq!(info.interface_struct_name.to_string(), "UserServiceGetUserFakeInterface");
+        assert_eq!(
+            info.interface_struct_name.to_string(),
+            "UserServiceGetUserFakeInterface"
+        );
     }
 
     #[test]
@@ -175,18 +182,19 @@ mod tests {
                 x
             }
         };
-        let function_info = extract_function_info(&item_fn).expect(
-            "valid generic standalone function"
-        );
+        let function_info =
+            extract_function_info(&item_fn).expect("valid generic standalone function");
 
-        let info = FakeModuleInfo::try_from(&function_info).expect(
-            "conversion should succeed for a generic standalone function"
-        );
+        let info = FakeModuleInfo::try_from(&function_info)
+            .expect("conversion should succeed for a generic standalone function");
 
         let Some(generic_info) = info.generic_info else {
             panic!("expected generic_info to be Some for a generic standalone function");
         };
         assert_eq!(generic_info.generic_count, 1);
-        assert_eq!(render_idents(&generic_info.generic_idents), vec!["T".to_string()]);
+        assert_eq!(
+            render_idents(&generic_info.generic_idents),
+            vec!["T".to_string()]
+        );
     }
 }

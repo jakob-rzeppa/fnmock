@@ -10,7 +10,9 @@ impl SelfType {
     }
 
     fn combine(&self, other: Self) -> Self {
-        Self { value: self.value + other.value }
+        Self {
+            value: self.value + other.value,
+        }
     }
 }
 

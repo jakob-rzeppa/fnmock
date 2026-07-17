@@ -13,7 +13,9 @@ impl ReturnUnit {
 
 #[test]
 fn test_return_unit() {
-    let s = ReturnUnit { calls: Cell::new(0) };
+    let s = ReturnUnit {
+        calls: Cell::new(0),
+    };
     s.record();
     assert_eq!(s.calls.get(), 1);
 }
@@ -22,7 +24,9 @@ fn test_return_unit() {
 fn test_return_unit_fake() {
     ReturnUnit::record_fake().setup(|_| ());
 
-    let s = ReturnUnit { calls: Cell::new(0) };
+    let s = ReturnUnit {
+        calls: Cell::new(0),
+    };
     s.record();
     assert_eq!(s.calls.get(), 0);
 }

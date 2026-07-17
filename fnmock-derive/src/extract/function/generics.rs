@@ -1,8 +1,7 @@
 use crate::extract::{
     function::info::FunctionGenericInfo,
     generics::{
-        key_array::build_generic_key_array,
-        params::extract_generic_type_and_const_params,
+        key_array::build_generic_key_array, params::extract_generic_type_and_const_params,
         types::extract_generic_itents_from_generic_params,
     },
 };
@@ -11,7 +10,7 @@ use crate::extract::{
 ///
 /// This is used for free functions and not impl blocks, as impl blocks require special handling to combine the generic parameters from both the struct and the method.
 pub fn extract_generic_function_info(
-    generics: &syn::Generics
+    generics: &syn::Generics,
 ) -> syn::Result<Option<FunctionGenericInfo>> {
     let generic_params = extract_generic_type_and_const_params(generics)?;
 
@@ -22,14 +21,12 @@ pub fn extract_generic_function_info(
     let idents = extract_generic_itents_from_generic_params(&generic_params)?;
     let generic_keys = build_generic_key_array(&generic_params)?;
 
-    Ok(
-        Some(FunctionGenericInfo {
-            count: generic_params.len(),
-            generic_params: generic_params.to_generic_params(),
-            idents,
-            generic_keys,
-        })
-    )
+    Ok(Some(FunctionGenericInfo {
+        count: generic_params.len(),
+        generic_params: generic_params.to_generic_params(),
+        idents,
+        generic_keys,
+    }))
 }
 
 #[cfg(test)]
@@ -98,6 +95,9 @@ mod tests {
 
         let result = extract_generic_function_info(&generics);
 
-        assert!(result.is_err(), "expected a non-static lifetime bound to be an error");
+        assert!(
+            result.is_err(),
+            "expected a non-static lifetime bound to be an error"
+        );
     }
 }

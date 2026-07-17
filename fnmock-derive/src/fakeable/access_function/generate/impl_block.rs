@@ -11,7 +11,7 @@ use crate::fakeable::access_function::info::AccessFunctionInfo;
 /// - `access_function_infos`: A slice of `AccessFunctionInfo` structs, one per method in the impl block that is marked as fakeable, in the same order as the methods appear in the impl block.
 pub fn generate_access_methods_for_impl_block(
     original_item_impl: &syn::ItemImpl,
-    access_function_infos: &[AccessFunctionInfo]
+    access_function_infos: &[AccessFunctionInfo],
 ) -> syn::Result<syn::ItemImpl> {
     let access_methods: Vec<syn::ImplItemFn> = access_function_infos
         .iter()
@@ -29,7 +29,7 @@ pub fn generate_access_methods_for_impl_block(
 
 /// Generates an access method for a single method in an impl block.
 fn generate_access_method_for_impl_block(
-    info: &AccessFunctionInfo
+    info: &AccessFunctionInfo,
 ) -> syn::Result<syn::ImplItemFn> {
     let access_function_name = &info.access_function_name;
     let module_name = &info.module_name;

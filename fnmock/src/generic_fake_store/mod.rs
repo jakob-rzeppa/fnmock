@@ -1,4 +1,4 @@
-use std::{ any::Any, collections::HashMap, rc::Rc };
+use std::{any::Any, collections::HashMap, rc::Rc};
 
 use crate::generic_fake_store::key::GenericKeyPart;
 
@@ -24,7 +24,10 @@ pub struct GenericFakeStore<const GENERIC_COUNT: usize> {
 
 impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     pub fn new(name: &'static str) -> Self {
-        Self { name, impls: HashMap::new() }
+        Self {
+            name,
+            impls: HashMap::new(),
+        }
     }
 
     /// Set a fake implementation for a specific combination of generic types.
@@ -37,7 +40,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     pub fn setup_for<WrappedClosure: 'static>(
         &mut self,
         generic_keys: [GenericKeyPart; GENERIC_COUNT],
-        f: WrappedClosure
+        f: WrappedClosure,
     ) {
         self.impls.insert(generic_keys, Rc::new(f));
     }
@@ -65,7 +68,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     /// Panics if no implementation is set for the given types or if the stored implementation cannot be downcast to the expected function type.
     pub fn get_for<WrappedClosure: 'static>(
         &self,
-        generic_keys: [GenericKeyPart; GENERIC_COUNT]
+        generic_keys: [GenericKeyPart; GENERIC_COUNT],
     ) -> Rc<WrappedClosure> {
         self.impls
             .get(&generic_keys)
@@ -116,11 +119,11 @@ mod tests {
 
         store.setup_for::<Box<dyn Fn(i32, String) -> String>>(
             i32_string_key.clone(),
-            Box::new(|a: i32, b: String| format!("Fake for i32, String: {} {}", a, b))
+            Box::new(|a: i32, b: String| format!("Fake for i32, String: {} {}", a, b)),
         );
         store.setup_for::<Box<dyn Fn(u32, String) -> String>>(
             u32_string_key.clone(),
-            Box::new(|a: u32, b: String| format!("Fake for u32, String: {} {}", a, b))
+            Box::new(|a: u32, b: String| format!("Fake for u32, String: {} {}", a, b)),
         );
 
         assert!(store.is_set_for(i32_string_key.clone()));
@@ -148,7 +151,7 @@ mod tests {
 
         store.setup_for::<Box<dyn Fn() -> &'static str>>(
             [GenericKeyPart::Const(ConstValue::new(5usize))],
-            Box::new(|| "fake for C=5")
+            Box::new(|| "fake for C=5"),
         );
 
         assert!(store.is_set_for([GenericKeyPart::Const(ConstValue::new(5usize))]));
@@ -165,7 +168,7 @@ mod tests {
         let mut store = GenericFakeStore::<1>::new("test_fn");
         store.setup_for::<Box<dyn Fn() -> &'static str>>(
             [GenericKeyPart::Const(ConstValue::new(CustomKey(1, true)))],
-            Box::new(|| "fake")
+            Box::new(|| "fake"),
         );
 
         assert!(store.is_set_for([GenericKeyPart::Const(ConstValue::new(CustomKey(1, true)))]));

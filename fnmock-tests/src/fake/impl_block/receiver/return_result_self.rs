@@ -6,7 +6,11 @@ struct ReturnResultSelf {
 #[fnmock::fakeable]
 impl ReturnResultSelf {
     fn validated(&self) -> Result<Self, String> {
-        if self.value > 0 { Ok(Self { value: self.value }) } else { Err("invalid".to_string()) }
+        if self.value > 0 {
+            Ok(Self { value: self.value })
+        } else {
+            Err("invalid".to_string())
+        }
     }
 }
 

@@ -6,7 +6,7 @@ use crate::extract::generics::sanitized_params::SanitizedGenericParams;
 ///
 /// For `const C: usize` this will extract `C`
 pub fn extract_generic_itents_from_generic_params(
-    generic_params: &SanitizedGenericParams
+    generic_params: &SanitizedGenericParams,
 ) -> syn::Result<Vec<syn::Ident>> {
     generic_params
         .get_generic_params()
@@ -93,6 +93,9 @@ mod tests {
 
         let result = extract_generic_itents_from_generic_params(&params).unwrap();
 
-        assert_eq!(to_token_strings(&result), vec!["T".to_string(), "N".to_string()]);
+        assert_eq!(
+            to_token_strings(&result),
+            vec!["T".to_string(), "N".to_string()]
+        );
     }
 }

@@ -1,12 +1,12 @@
 use crate::extract::{
     fn_closure_trait::build_fn_closure_trait,
-    function::{ generics::extract_generic_function_info, info::FunctionInfo },
+    function::{generics::extract_generic_function_info, info::FunctionInfo},
     lifetimes::extract_lifetimes_from_generics,
-    params::{ extract_param_pats, extract_param_types },
+    params::{extract_param_pats, extract_param_types},
 };
 
-pub mod info;
 mod generics;
+pub mod info;
 
 /// Extracts the function information from a `syn::ItemFn`, including the function name, parameter types, parameter identifiers, function pointer type, and generic information if present.
 pub fn extract_function_info(item_fn: &syn::ItemFn) -> syn::Result<FunctionInfo> {
@@ -48,7 +48,10 @@ mod tests {
 
         let result = extract_function_info(&item_fn);
 
-        assert!(result.is_err(), "expected #[fakeable] on a const fn to be rejected");
+        assert!(
+            result.is_err(),
+            "expected #[fakeable] on a const fn to be rejected"
+        );
     }
 
     #[test]
@@ -59,7 +62,10 @@ mod tests {
 
         let result = extract_function_info(&item_fn);
 
-        assert!(result.is_ok(), "expected #[fakeable] on a non-const fn to be accepted");
+        assert!(
+            result.is_ok(),
+            "expected #[fakeable] on a non-const fn to be accepted"
+        );
     }
 
     #[test]

@@ -34,7 +34,7 @@ impl NameType {
 pub fn build_module_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident {
     syn::Ident::new(
         &format!("{}_{}", fn_name, name_type.suffix_module()),
-        proc_macro2::Span::mixed_site()
+        proc_macro2::Span::mixed_site(),
     )
 }
 
@@ -46,7 +46,7 @@ pub fn build_module_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Iden
 pub fn build_access_function_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident {
     syn::Ident::new(
         &format!("{}_{}", fn_name, name_type.suffix_access_function()),
-        proc_macro2::Span::mixed_site()
+        proc_macro2::Span::mixed_site(),
     )
 }
 
@@ -56,7 +56,7 @@ pub fn build_access_function_name(fn_name: &syn::Ident, name_type: NameType) -> 
 pub fn build_impl_module_name(
     struct_name: &syn::Ident,
     method_name: &syn::Ident,
-    name_type: NameType
+    name_type: NameType,
 ) -> syn::Ident {
     syn::Ident::new(
         &format!(
@@ -65,7 +65,7 @@ pub fn build_impl_module_name(
             &method_name.to_string(),
             name_type.suffix_module()
         ),
-        proc_macro2::Span::mixed_site()
+        proc_macro2::Span::mixed_site(),
     )
 }
 
@@ -74,8 +74,12 @@ pub fn build_impl_module_name(
 /// For a function named `get_user`, this will generate `GET_USER_FAKE_STORE`.
 pub fn build_store_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident {
     syn::Ident::new(
-        &format!("{}_{}", fn_name.to_string().to_uppercase(), name_type.suffix_store()),
-        proc_macro2::Span::mixed_site()
+        &format!(
+            "{}_{}",
+            fn_name.to_string().to_uppercase(),
+            name_type.suffix_store()
+        ),
+        proc_macro2::Span::mixed_site(),
     )
 }
 
@@ -85,7 +89,7 @@ pub fn build_store_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident
 pub fn build_impl_store_name(
     struct_name: &syn::Ident,
     method_name: &syn::Ident,
-    name_type: NameType
+    name_type: NameType,
 ) -> syn::Ident {
     syn::Ident::new(
         &format!(
@@ -94,7 +98,7 @@ pub fn build_impl_store_name(
             method_name.to_string().to_uppercase(),
             name_type.suffix_store()
         ),
-        proc_macro2::Span::mixed_site()
+        proc_macro2::Span::mixed_site(),
     )
 }
 
@@ -108,7 +112,7 @@ pub fn build_interface_struct_name(fn_name: &syn::Ident, name_type: NameType) ->
             snake_to_pascal_case(&fn_name.to_string()),
             name_type.suffix_interface_struct()
         ),
-        proc_macro2::Span::mixed_site()
+        proc_macro2::Span::mixed_site(),
     )
 }
 
@@ -118,7 +122,7 @@ pub fn build_interface_struct_name(fn_name: &syn::Ident, name_type: NameType) ->
 pub fn build_impl_interface_struct_name(
     struct_name: &syn::Ident,
     method_name: &syn::Ident,
-    name_type: NameType
+    name_type: NameType,
 ) -> syn::Ident {
     syn::Ident::new(
         &format!(
@@ -127,7 +131,7 @@ pub fn build_impl_interface_struct_name(
             snake_to_pascal_case(&method_name.to_string()),
             name_type.suffix_interface_struct()
         ),
-        proc_macro2::Span::mixed_site()
+        proc_macro2::Span::mixed_site(),
     )
 }
 
@@ -176,7 +180,10 @@ mod tests {
         let struct_name = syn::Ident::new("UserService", proc_macro2::Span::call_site());
         let method_name = syn::Ident::new("get_user", proc_macro2::Span::call_site());
         let module_name = build_impl_module_name(&struct_name, &method_name, NameType::Fake);
-        assert_eq!(module_name.to_string(), "user_service_struct_get_user_fake_module");
+        assert_eq!(
+            module_name.to_string(),
+            "user_service_struct_get_user_fake_module"
+        );
     }
 
     #[test]
@@ -205,11 +212,11 @@ mod tests {
     fn test_build_impl_interface_struct_name() {
         let struct_name = syn::Ident::new("UserService", proc_macro2::Span::call_site());
         let method_name = syn::Ident::new("get_user", proc_macro2::Span::call_site());
-        let interface_struct_name = build_impl_interface_struct_name(
-            &struct_name,
-            &method_name,
-            NameType::Fake
+        let interface_struct_name =
+            build_impl_interface_struct_name(&struct_name, &method_name, NameType::Fake);
+        assert_eq!(
+            interface_struct_name.to_string(),
+            "UserServiceGetUserFakeInterface"
         );
-        assert_eq!(interface_struct_name.to_string(), "UserServiceGetUserFakeInterface");
     }
 }

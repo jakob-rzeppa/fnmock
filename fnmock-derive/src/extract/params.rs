@@ -1,11 +1,11 @@
-use syn::{ spanned::Spanned, visit_mut::VisitMut };
+use syn::{spanned::Spanned, visit_mut::VisitMut};
 
 use crate::extract::replace_self::ReplaceSelf;
 
 /// Extracts the parameter types from a list of function parameters, replacing any `Self` types with the provided `self_ty`.
 pub fn extract_param_types(
     params: &[syn::FnArg],
-    self_ty: Option<&syn::Type>
+    self_ty: Option<&syn::Type>,
 ) -> syn::Result<Vec<syn::Type>> {
     // If a `self_ty` is provided, we will replace any `Self` types in the parameter types with the provided `self_ty`.
     // If no `self_ty` is provided, we don't need to replace `Self` in the parameter types, since we are in a standalone function context.
@@ -50,26 +50,21 @@ pub fn extract_param_types(
 pub fn extract_param_pats(params: &[syn::FnArg]) -> Vec<syn::Pat> {
     params
         .iter()
-        .filter_map(|param| {
-            match param {
-                syn::FnArg::Typed(pat_type) => { Some(pat_type.pat.as_ref().clone()) }
-                syn::FnArg::Receiver(_) =>
-                    Some(
-                        syn::Pat::Ident(syn::PatIdent {
-                            attrs: Vec::new(),
-                            by_ref: None,
-                            mutability: None,
-                            ident: syn::Ident::new(
-                                "self",
-                                params
-                                    .first()
-                                    .map(|p| p.span())
-                                    .unwrap_or_else(proc_macro2::Span::call_site)
-                            ),
-                            subpat: None,
-                        })
-                    ),
-            }
+        .filter_map(|param| match param {
+            syn::FnArg::Typed(pat_type) => Some(pat_type.pat.as_ref().clone()),
+            syn::FnArg::Receiver(_) => Some(syn::Pat::Ident(syn::PatIdent {
+                attrs: Vec::new(),
+                by_ref: None,
+                mutability: None,
+                ident: syn::Ident::new(
+                    "self",
+                    params
+                        .first()
+                        .map(|p| p.span())
+                        .unwrap_or_else(proc_macro2::Span::call_site),
+                ),
+                subpat: None,
+            })),
         })
         .collect()
 }
@@ -83,20 +78,17 @@ mod tests {
         use super::*;
 
         fn param_type_string(params: &[syn::FnArg], self_ty: &syn::Type) -> String {
-            let param_types = extract_param_types(params, Some(self_ty)).expect(
-                "extract_param_types should succeed for a receiver with a self type"
-            );
+            let param_types = extract_param_types(params, Some(self_ty))
+                .expect("extract_param_types should succeed for a receiver with a self type");
             assert_eq!(param_types.len(), 1);
             param_types[0].to_token_stream().to_string()
         }
 
         #[test]
         fn test_receiver_without_self_type_returns_error() {
-            let params: Vec<syn::FnArg> = vec![
-                syn::parse_quote! {
-                    self
-                }
-            ];
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! {
+                self
+            }];
 
             let result = extract_param_types(&params, None);
 
@@ -137,13 +129,14 @@ mod tests {
             let self_ty: syn::Type = syn::parse_quote! {
                 MyStruct
             };
-            let params: Vec<syn::FnArg> = vec![
-                syn::parse_quote! {
-                    &self
-                }
-            ];
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! {
+                &self
+            }];
 
-            assert_eq!(param_type_string(&params, &self_ty), quote::quote!(&MyStruct).to_string());
+            assert_eq!(
+                param_type_string(&params, &self_ty),
+                quote::quote!(&MyStruct).to_string()
+            );
         }
 
         #[test]
@@ -151,11 +144,9 @@ mod tests {
             let self_ty: syn::Type = syn::parse_quote! {
                 MyStruct
             };
-            let params: Vec<syn::FnArg> = vec![
-                syn::parse_quote! {
-                    &mut self
-                }
-            ];
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! {
+                &mut self
+            }];
 
             assert_eq!(
                 param_type_string(&params, &self_ty),
@@ -168,13 +159,14 @@ mod tests {
             let self_ty: syn::Type = syn::parse_quote! {
                 MyStruct
             };
-            let params: Vec<syn::FnArg> = vec![
-                syn::parse_quote! {
-                    self
-                }
-            ];
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! {
+                self
+            }];
 
-            assert_eq!(param_type_string(&params, &self_ty), quote::quote!(MyStruct).to_string());
+            assert_eq!(
+                param_type_string(&params, &self_ty),
+                quote::quote!(MyStruct).to_string()
+            );
         }
 
         #[test]
@@ -210,7 +202,10 @@ mod tests {
             };
             let params: Vec<syn::FnArg> = vec![syn::parse_quote! { self: Self }];
 
-            assert_eq!(param_type_string(&params, &self_ty), quote::quote!(MyStruct).to_string());
+            assert_eq!(
+                param_type_string(&params, &self_ty),
+                quote::quote!(MyStruct).to_string()
+            );
         }
 
         #[test]
@@ -218,12 +213,11 @@ mod tests {
             let params: Vec<syn::FnArg> = vec![
                 syn::parse_quote! { a: i32 },
                 syn::parse_quote! { b: String },
-                syn::parse_quote! { c: bool }
+                syn::parse_quote! { c: bool },
             ];
 
-            let param_types = extract_param_types(&params, None).expect(
-                "extract_param_types should succeed for typed params with no self type"
-            );
+            let param_types = extract_param_types(&params, None)
+                .expect("extract_param_types should succeed for typed params with no self type");
 
             let type_strings: Vec<String> = param_types
                 .iter()
@@ -249,11 +243,11 @@ mod tests {
                     &self
                 },
                 syn::parse_quote! { a: i32 },
-                syn::parse_quote! { b: Vec<String> }
+                syn::parse_quote! { b: Vec<String> },
             ];
 
             let param_types = extract_param_types(&params, Some(&self_ty)).expect(
-                "extract_param_types should succeed for a receiver followed by typed params"
+                "extract_param_types should succeed for a receiver followed by typed params",
             );
 
             let type_strings: Vec<String> = param_types
@@ -278,7 +272,7 @@ mod tests {
                 syn::parse_quote! { c: Option<Vec<u8>> },
                 syn::parse_quote! { d: (i32, String) },
                 syn::parse_quote! { e: *const u8 },
-                syn::parse_quote! { f: fn(i32) -> bool }
+                syn::parse_quote! { f: fn(i32) -> bool },
             ];
 
             let param_types = extract_param_types(&params, None).expect(
@@ -289,6 +283,8 @@ mod tests {
                 .iter()
                 .map(|ty| ty.to_token_stream().to_string())
                 .collect();
+
+            #[rustfmt::skip]
             assert_eq!(
                 type_strings,
                 vec![
@@ -310,7 +306,7 @@ mod tests {
             let params: Vec<syn::FnArg> = vec![syn::parse_quote! { other: Self }];
 
             let param_types = extract_param_types(&params, Some(&self_ty)).expect(
-                "extract_param_types should succeed for a non-receiver param typed as `Self`"
+                "extract_param_types should succeed for a non-receiver param typed as `Self`",
             );
 
             assert_eq!(
@@ -326,7 +322,7 @@ mod tests {
             };
             let params: Vec<syn::FnArg> = vec![
                 syn::parse_quote! { others: Vec<Self> },
-                syn::parse_quote! { pair: (Self, Self) }
+                syn::parse_quote! { pair: (Self, Self) },
             ];
 
             let param_types = extract_param_types(&params, Some(&self_ty)).expect(
@@ -348,11 +344,9 @@ mod tests {
             let self_ty: syn::Type = syn::parse_quote! {
                 MyStruct<T>
             };
-            let params: Vec<syn::FnArg> = vec![
-                syn::parse_quote! {
-                    &self
-                }
-            ];
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! {
+                &self
+            }];
 
             assert_eq!(
                 param_type_string(&params, &self_ty),
@@ -367,6 +361,7 @@ mod tests {
             };
             let params: Vec<syn::FnArg> = vec![syn::parse_quote! { self: Box<Self> }];
 
+            #[rustfmt::skip]
             assert_eq!(
                 param_type_string(&params, &self_ty),
                 quote::quote!(Box<MyStruct<T> >).to_string()
@@ -401,9 +396,10 @@ mod tests {
                 "extract_param_types should succeed for `Self` nested inside another type with a generic struct self type"
             );
 
+            #[rustfmt::skip]
             assert_eq!(
                 param_types[0].to_token_stream().to_string(),
-                quote::quote!(Vec<MyStruct<T> >).to_string()
+                quote::quote!(Vec< MyStruct<T> >).to_string()
             );
         }
 
@@ -412,11 +408,9 @@ mod tests {
             let self_ty: syn::Type = syn::parse_quote! {
                 MyStruct<K, V>
             };
-            let params: Vec<syn::FnArg> = vec![
-                syn::parse_quote! {
-                    &mut self
-                }
-            ];
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! {
+                &mut self
+            }];
 
             assert_eq!(
                 param_type_string(&params, &self_ty),
@@ -433,7 +427,7 @@ mod tests {
                 syn::parse_quote! {
                     &self
                 },
-                syn::parse_quote! { other: Self }
+                syn::parse_quote! { other: Self },
             ];
 
             let param_types = extract_param_types(&params, Some(&self_ty)).expect(
@@ -481,7 +475,7 @@ mod tests {
             let params: Vec<syn::FnArg> = vec![
                 syn::parse_quote! { a: i32 },
                 syn::parse_quote! { b: String },
-                syn::parse_quote! { c: bool }
+                syn::parse_quote! { c: bool },
             ];
 
             assert_eq!(
@@ -496,22 +490,18 @@ mod tests {
 
         #[test]
         fn test_by_value_self_receiver_returns_self_ident() {
-            let params: Vec<syn::FnArg> = vec![
-                syn::parse_quote! {
-                    self
-                }
-            ];
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! {
+                self
+            }];
 
             assert_eq!(pat_strings(&params), vec![quote::quote!(self).to_string()]);
         }
 
         #[test]
         fn test_ref_self_receiver_returns_self_ident() {
-            let params: Vec<syn::FnArg> = vec![
-                syn::parse_quote! {
-                    &self
-                }
-            ];
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! {
+                &self
+            }];
 
             assert_eq!(pat_strings(&params), vec![quote::quote!(self).to_string()]);
         }
@@ -530,7 +520,7 @@ mod tests {
                     &self
                 },
                 syn::parse_quote! { a: i32 },
-                syn::parse_quote! { b: Vec<String> }
+                syn::parse_quote! { b: Vec<String> },
             ];
 
             assert_eq!(
@@ -561,14 +551,20 @@ mod tests {
         fn test_tuple_pattern_is_preserved() {
             let params: Vec<syn::FnArg> = vec![syn::parse_quote! { (a, b): (i32, i32) }];
 
-            assert_eq!(pat_strings(&params), vec![quote::quote!((a, b)).to_string()]);
+            assert_eq!(
+                pat_strings(&params),
+                vec![quote::quote!((a, b)).to_string()]
+            );
         }
 
         #[test]
         fn test_struct_destructure_pattern_is_preserved() {
             let params: Vec<syn::FnArg> = vec![syn::parse_quote! { MyStruct { a, b }: MyStruct }];
 
-            assert_eq!(pat_strings(&params), vec![quote::quote!(MyStruct { a, b }).to_string()]);
+            assert_eq!(
+                pat_strings(&params),
+                vec![quote::quote!(MyStruct { a, b }).to_string()]
+            );
         }
 
         #[test]

@@ -15,10 +15,8 @@ fn test_raw_mut_pointers() {
 #[test]
 fn test_raw_mut_pointers_fake() {
     let mut value = "Test".to_string();
-    raw_mut_pointers_fake().setup(|a| {
-        unsafe {
-            (*a).push_str(" fake modified");
-        }
+    raw_mut_pointers_fake().setup(|a| unsafe {
+        (*a).push_str(" fake modified");
     });
     raw_mut_pointers(&mut value as *mut String);
     assert_eq!(value, "Test fake modified");

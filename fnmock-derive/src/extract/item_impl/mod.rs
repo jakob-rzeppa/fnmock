@@ -1,15 +1,15 @@
-use syn::{ spanned::Spanned, visit_mut::VisitMut };
+use syn::{spanned::Spanned, visit_mut::VisitMut};
 
 use crate::extract::{
     fn_closure_trait::build_fn_closure_trait,
-    item_impl::{ generics::extract_generic_impl_info, info::ImplItemFnInfo },
+    item_impl::{generics::extract_generic_impl_info, info::ImplItemFnInfo},
     lifetimes::extract_lifetimes_from_generics,
-    params::{ extract_param_pats, extract_param_types },
+    params::{extract_param_pats, extract_param_types},
     replace_self::ReplaceSelf,
 };
 
-pub mod info;
 mod generics;
+pub mod info;
 
 /// Extract the ImplItemFnInfo for each method in an impl block.
 pub fn extract_item_impl_info(item_impl: &syn::ItemImpl) -> syn::Result<Vec<ImplItemFnInfo>> {
@@ -37,7 +37,7 @@ pub fn extract_item_impl_info(item_impl: &syn::ItemImpl) -> syn::Result<Vec<Impl
 /// Extract the ImplItemFnInfo for a single method in an impl block.
 fn extract_single_item_impl_info_for_method(
     item_impl: &syn::ItemImpl,
-    method: &syn::ImplItemFn
+    method: &syn::ImplItemFn,
 ) -> syn::Result<ImplItemFnInfo> {
     if let Some(const_token) = &method.sig.constness {
         return Err(
@@ -94,14 +94,10 @@ fn extract_struct_ident(self_ty: &syn::Type) -> syn::Result<syn::Ident> {
             )?;
             Ok(seg.ident.clone())
         }
-        _ => {
-            Err(
-                syn::Error::new(
-                    self_ty.span(),
-                    "Unsupported struct type. Only simple paths (+generics) are supported for impl blocks."
-                )
-            )
-        }
+        _ => Err(syn::Error::new(
+            self_ty.span(),
+            "Unsupported struct type. Only simple paths (+generics) are supported for impl blocks.",
+        )),
     }
 }
 
@@ -110,7 +106,7 @@ fn extract_return_type(output: &syn::ReturnType, self_ty: &syn::Type) -> syn::Re
     let mut self_replacer = ReplaceSelf::new(self_ty);
 
     match output {
-        syn::ReturnType::Default => { syn::ReturnType::Default }
+        syn::ReturnType::Default => syn::ReturnType::Default,
         syn::ReturnType::Type(arrow, ty) => {
             let mut ty = ty.clone();
             self_replacer.visit_type_mut(ty.as_mut());
@@ -133,7 +129,10 @@ mod tests {
 
         let result = extract_item_impl_info(&item_impl);
 
-        assert!(result.is_err(), "expected #[fakeable] on a trait impl block to be rejected");
+        assert!(
+            result.is_err(),
+            "expected #[fakeable] on a trait impl block to be rejected"
+        );
     }
 
     #[test]
@@ -146,7 +145,10 @@ mod tests {
 
         let result = extract_item_impl_info(&item_impl);
 
-        assert!(result.is_ok(), "expected #[fakeable] on an inherent impl block to be accepted");
+        assert!(
+            result.is_ok(),
+            "expected #[fakeable] on an inherent impl block to be accepted"
+        );
     }
 
     #[test]
@@ -159,6 +161,9 @@ mod tests {
 
         let result = extract_item_impl_info(&item_impl);
 
-        assert!(result.is_err(), "expected #[fakeable] on a const method to be rejected");
+        assert!(
+            result.is_err(),
+            "expected #[fakeable] on a const method to be rejected"
+        );
     }
 }

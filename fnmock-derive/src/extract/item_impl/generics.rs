@@ -1,7 +1,6 @@
 use crate::extract::{
     generics::{
-        key_array::build_generic_key_array,
-        params::extract_generic_type_and_const_params,
+        key_array::build_generic_key_array, params::extract_generic_type_and_const_params,
         types::extract_generic_itents_from_generic_params,
     },
     item_impl::info::ImplItemFnGenericInfo,
@@ -12,7 +11,7 @@ use crate::extract::{
 /// The generics of the struct and method are combined, in the order of struct generics followed by method generics.
 pub fn extract_generic_impl_info(
     item_impl: &syn::ItemImpl,
-    method: &syn::ImplItemFn
+    method: &syn::ImplItemFn,
 ) -> syn::Result<Option<ImplItemFnGenericInfo>> {
     let struct_generic_params = extract_generic_type_and_const_params(&item_impl.generics)?;
     let method_generic_params = extract_generic_type_and_const_params(&method.sig.generics)?;
@@ -30,23 +29,21 @@ pub fn extract_generic_impl_info(
     let method_generic_keys = build_generic_key_array(&method_generic_params)?;
     let generic_keys = build_generic_key_array(&type_params)?;
 
-    Ok(
-        Some(ImplItemFnGenericInfo {
-            count: type_params.len(),
+    Ok(Some(ImplItemFnGenericInfo {
+        count: type_params.len(),
 
-            generic_params: type_params.to_generic_params(),
-            _struct_generic_params: struct_generic_params.to_generic_params(),
-            method_generic_params: method_generic_params.to_generic_params(),
+        generic_params: type_params.to_generic_params(),
+        _struct_generic_params: struct_generic_params.to_generic_params(),
+        method_generic_params: method_generic_params.to_generic_params(),
 
-            idents: idents,
-            _struct_idents: struct_idents,
-            _method_idents: method_idents,
+        idents: idents,
+        _struct_idents: struct_idents,
+        _method_idents: method_idents,
 
-            generic_keys,
-            _struct_generic_keys: struct_generic_keys,
-            _method_generic_keys: method_generic_keys,
-        })
-    )
+        generic_keys,
+        _struct_generic_keys: struct_generic_keys,
+        _method_generic_keys: method_generic_keys,
+    }))
 }
 
 #[cfg(test)]
@@ -62,13 +59,12 @@ mod tests {
     }
 
     fn first_method(item_impl: &syn::ItemImpl) -> syn::ImplItemFn {
-        item_impl.items
+        item_impl
+            .items
             .iter()
-            .find_map(|item| {
-                match item {
-                    syn::ImplItem::Fn(f) => Some(f.clone()),
-                    _ => None,
-                }
+            .find_map(|item| match item {
+                syn::ImplItem::Fn(f) => Some(f.clone()),
+                _ => None,
             })
             .expect("impl should contain a method")
     }

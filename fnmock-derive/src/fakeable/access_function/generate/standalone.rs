@@ -3,7 +3,7 @@ use quote::quote;
 use crate::fakeable::access_function::info::AccessFunctionInfo;
 
 pub fn generate_access_function_for_standalone(
-    info: &AccessFunctionInfo
+    info: &AccessFunctionInfo,
 ) -> syn::Result<syn::ItemFn> {
     let access_function_name = &info.access_function_name;
     let module_name = &info.module_name;

@@ -1,4 +1,4 @@
-use std::{ future::Future, pin::Pin };
+use std::{future::Future, pin::Pin};
 
 #[fnmock::fakeable]
 fn futures(value: i32) -> Pin<Box<dyn Future<Output = String> + Send>> {

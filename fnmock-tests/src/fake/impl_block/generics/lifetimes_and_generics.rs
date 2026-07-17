@@ -15,9 +15,8 @@ fn test_lifetimes_and_generics() {
 
 #[test]
 fn test_lifetimes_and_generics_fake() {
-    LifetimesAndGenerics::describe_fake::<i32>().setup(|_, prefix, value| {
-        format!("Fake {}: {}", prefix, value)
-    });
+    LifetimesAndGenerics::describe_fake::<i32>()
+        .setup(|_, prefix, value| format!("Fake {}: {}", prefix, value));
 
     let s = LifetimesAndGenerics;
     assert_eq!(s.describe("Value", 42), "Fake Value: 42");

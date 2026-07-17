@@ -59,7 +59,10 @@ mod tests {
         let self_ty: syn::Type = syn::parse_quote!(MyStruct);
         let ty: syn::Type = syn::parse_quote!(Vec<Self>);
 
-        assert_eq!(replace(ty, &self_ty), quote::quote!(Vec<MyStruct>).to_string());
+        assert_eq!(
+            replace(ty, &self_ty),
+            quote::quote!(Vec<MyStruct>).to_string()
+        );
     }
 
     #[test]
@@ -73,7 +76,10 @@ mod tests {
         // `quote!` would emit from source text. Round-tripping the expected value through
         // `syn::parse_quote!` keeps both sides on the same normalization.
         let expected: syn::Type = syn::parse_quote!(Option<Box<MyStruct>>);
-        assert_eq!(replace(ty, &self_ty), expected.to_token_stream().to_string());
+        assert_eq!(
+            replace(ty, &self_ty),
+            expected.to_token_stream().to_string()
+        );
     }
 
     #[test]
@@ -81,7 +87,10 @@ mod tests {
         let self_ty: syn::Type = syn::parse_quote!(MyStruct);
         let ty: syn::Type = syn::parse_quote!((Self, i32));
 
-        assert_eq!(replace(ty, &self_ty), quote::quote!((MyStruct, i32)).to_string());
+        assert_eq!(
+            replace(ty, &self_ty),
+            quote::quote!((MyStruct, i32)).to_string()
+        );
     }
 
     #[test]
@@ -116,7 +125,10 @@ mod tests {
         // See the note in `test_deeply_nested_self_is_replaced`: the nested `>>` requires
         // comparing against a re-emitted `syn::Type` rather than a literal `quote!` stream.
         let expected: syn::Type = syn::parse_quote!(Vec<Foo<T>>);
-        assert_eq!(replace(ty, &self_ty), expected.to_token_stream().to_string());
+        assert_eq!(
+            replace(ty, &self_ty),
+            expected.to_token_stream().to_string()
+        );
     }
 
     /// Characterization test: the visitor recurses into the qself of a qualified path

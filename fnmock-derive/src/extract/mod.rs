@@ -1,7 +1,7 @@
-pub mod function;
-pub mod item_impl;
-mod params;
 mod fn_closure_trait;
+pub mod function;
 mod generics;
-mod replace_self;
+pub mod item_impl;
 mod lifetimes;
+mod params;
+mod replace_self;

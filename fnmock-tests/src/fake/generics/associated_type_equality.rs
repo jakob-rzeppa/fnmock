@@ -1,5 +1,8 @@
 #[fnmock::fakeable]
-fn associated_type_equality<I>(value: I) -> Vec<String> where I: Iterator<Item = String> + 'static {
+fn associated_type_equality<I>(value: I) -> Vec<String>
+where
+    I: Iterator<Item = String> + 'static,
+{
     value.collect()
 }
 
@@ -11,9 +14,8 @@ fn test_associated_type_equality() {
 
 #[test]
 fn test_associated_type_equality_fake() {
-    associated_type_equality_fake::<std::vec::IntoIter<String>>().setup(|_value| {
-        vec!["Fake".to_string()]
-    });
+    associated_type_equality_fake::<std::vec::IntoIter<String>>()
+        .setup(|_value| vec!["Fake".to_string()]);
 
     let result = associated_type_equality(vec!["Test".to_string()].into_iter());
     assert_eq!(result, vec!["Fake".to_string()]);

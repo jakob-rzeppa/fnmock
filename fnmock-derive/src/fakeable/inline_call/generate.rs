@@ -7,7 +7,7 @@ use crate::fakeable::inline_call::info::InlineCallInfo;
 /// If the fake is set, it will call the fake implementation and return its result. Otherwise, it will execute the original function block.
 pub fn insert_inline_call_into_fn_block(
     original_block: &syn::Block,
-    inline_call_info: &InlineCallInfo
+    inline_call_info: &InlineCallInfo,
 ) -> syn::Result<syn::Block> {
     let fake_call_values = &inline_call_info.fake_call_values;
     let module_name = &inline_call_info.module_name;
@@ -71,13 +71,11 @@ mod tests {
             }
         };
         let function_info = extract_function_info(&item_fn).expect("valid standalone function");
-        let inline_call_info = InlineCallInfo::try_from(&function_info).expect(
-            "conversion should succeed for a non-generic standalone function"
-        );
+        let inline_call_info = InlineCallInfo::try_from(&function_info)
+            .expect("conversion should succeed for a non-generic standalone function");
 
-        let block = insert_inline_call_into_fn_block(&item_fn.block, &inline_call_info).expect(
-            "inserting the inline call should succeed for a non-generic function"
-        );
+        let block = insert_inline_call_into_fn_block(&item_fn.block, &inline_call_info)
+            .expect("inserting the inline call should succeed for a non-generic function");
 
         let expected: syn::Block = parse_quote! {
             {
@@ -108,16 +106,13 @@ mod tests {
                 x
             }
         };
-        let function_info = extract_function_info(&item_fn).expect(
-            "valid generic standalone function"
-        );
-        let inline_call_info = InlineCallInfo::try_from(&function_info).expect(
-            "conversion should succeed for a generic standalone function"
-        );
+        let function_info =
+            extract_function_info(&item_fn).expect("valid generic standalone function");
+        let inline_call_info = InlineCallInfo::try_from(&function_info)
+            .expect("conversion should succeed for a generic standalone function");
 
-        let block = insert_inline_call_into_fn_block(&item_fn.block, &inline_call_info).expect(
-            "inserting the inline call should succeed for a generic function"
-        );
+        let block = insert_inline_call_into_fn_block(&item_fn.block, &inline_call_info)
+            .expect("inserting the inline call should succeed for a generic function");
 
         let expected: syn::Block = parse_quote! {
             {

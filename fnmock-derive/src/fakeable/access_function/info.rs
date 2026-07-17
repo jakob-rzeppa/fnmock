@@ -1,12 +1,8 @@
 use crate::{
-    extract::{ function::info::FunctionInfo, item_impl::info::ImplItemFnInfo },
+    extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
     names::{
-        NameType,
-        build_access_function_name,
-        build_impl_interface_struct_name,
-        build_impl_module_name,
-        build_interface_struct_name,
-        build_module_name,
+        build_access_function_name, build_impl_interface_struct_name, build_impl_module_name,
+        build_interface_struct_name, build_module_name, NameType,
     },
 };
 
@@ -44,18 +40,18 @@ impl TryFrom<&FunctionInfo> for AccessFunctionInfo {
     fn try_from(function_info: &FunctionInfo) -> Result<Self, Self::Error> {
         let access_function_name = build_access_function_name(&function_info.name, NameType::Fake);
         let module_name = build_module_name(&function_info.name, NameType::Fake);
-        let interface_struct_name = build_interface_struct_name(
-            &function_info.name,
-            NameType::Fake
-        );
+        let interface_struct_name =
+            build_interface_struct_name(&function_info.name, NameType::Fake);
 
         Ok(AccessFunctionInfo {
             access_function_name,
             module_name,
             interface_struct_name,
-            generic_info: function_info.generic_info.as_ref().map(|info| AccessFunctionGenericInfo {
-                generic_idents: info.idents.clone(),
-                generic_params: info.generic_params.clone(),
+            generic_info: function_info.generic_info.as_ref().map(|info| {
+                AccessFunctionGenericInfo {
+                    generic_idents: info.idents.clone(),
+                    generic_params: info.generic_params.clone(),
+                }
             }),
         })
     }
@@ -65,31 +61,29 @@ impl TryFrom<&ImplItemFnInfo> for AccessFunctionInfo {
     type Error = syn::Error;
 
     fn try_from(impl_item_fn_info: &ImplItemFnInfo) -> Result<Self, Self::Error> {
-        let access_function_name = build_access_function_name(
-            &impl_item_fn_info.method_name,
-            NameType::Fake
-        );
+        let access_function_name =
+            build_access_function_name(&impl_item_fn_info.method_name, NameType::Fake);
         let module_name = build_impl_module_name(
             &impl_item_fn_info.struct_name,
             &impl_item_fn_info.method_name,
-            NameType::Fake
+            NameType::Fake,
         );
         let interface_struct_name = build_impl_interface_struct_name(
             &impl_item_fn_info.struct_name,
             &impl_item_fn_info.method_name,
-            NameType::Fake
+            NameType::Fake,
         );
 
         Ok(AccessFunctionInfo {
             access_function_name,
             module_name,
             interface_struct_name,
-            generic_info: impl_item_fn_info.generic_info
-                .as_ref()
-                .map(|info| AccessFunctionGenericInfo {
+            generic_info: impl_item_fn_info.generic_info.as_ref().map(|info| {
+                AccessFunctionGenericInfo {
                     generic_idents: info.idents.clone(),
                     generic_params: info.method_generic_params.clone(),
-                }),
+                }
+            }),
         })
     }
 }
@@ -124,13 +118,15 @@ mod tests {
         };
         let function_info = extract_function_info(&item_fn).expect("valid standalone function");
 
-        let info = AccessFunctionInfo::try_from(&function_info).expect(
-            "conversion should succeed for a non-generic standalone function"
-        );
+        let info = AccessFunctionInfo::try_from(&function_info)
+            .expect("conversion should succeed for a non-generic standalone function");
 
         assert_eq!(info.access_function_name.to_string(), "get_user_fake");
         assert_eq!(info.module_name.to_string(), "get_user_fake_module");
-        assert_eq!(info.interface_struct_name.to_string(), "GetUserFakeInterface");
+        assert_eq!(
+            info.interface_struct_name.to_string(),
+            "GetUserFakeInterface"
+        );
         assert!(
             info.generic_info.is_none(),
             "expected no generic_info for a non-generic standalone function"
@@ -149,17 +145,23 @@ mod tests {
         let impl_infos = extract_item_impl_info(&item_impl).expect("valid inherent impl block");
         let impl_info = &impl_infos[0];
 
-        let info = AccessFunctionInfo::try_from(impl_info).expect(
-            "conversion should succeed for a non-generic impl method"
-        );
+        let info = AccessFunctionInfo::try_from(impl_info)
+            .expect("conversion should succeed for a non-generic impl method");
 
         assert_eq!(info.access_function_name.to_string(), "get_user_fake");
-        assert_eq!(info.module_name.to_string(), "user_service_struct_get_user_fake_module");
-        assert_eq!(info.interface_struct_name.to_string(), "UserServiceGetUserFakeInterface");
+        assert_eq!(
+            info.module_name.to_string(),
+            "user_service_struct_get_user_fake_module"
+        );
+        assert_eq!(
+            info.interface_struct_name.to_string(),
+            "UserServiceGetUserFakeInterface"
+        );
     }
 
     #[test]
-    fn test_try_from_impl_item_fn_info_generic_struct_and_method_combines_types_but_keeps_params_method_only() {
+    fn test_try_from_impl_item_fn_info_generic_struct_and_method_combines_types_but_keeps_params_method_only(
+    ) {
         let item_impl: syn::ItemImpl = syn::parse_quote! {
             impl<S> Foo<S> {
                 fn bar<M>(&self, x: M) -> S {
@@ -167,14 +169,12 @@ mod tests {
                 }
             }
         };
-        let impl_infos = extract_item_impl_info(&item_impl).expect(
-            "valid inherent impl block with struct and method generics"
-        );
+        let impl_infos = extract_item_impl_info(&item_impl)
+            .expect("valid inherent impl block with struct and method generics");
         let impl_info = &impl_infos[0];
 
-        let info = AccessFunctionInfo::try_from(impl_info).expect(
-            "conversion should succeed for a generic impl method"
-        );
+        let info = AccessFunctionInfo::try_from(impl_info)
+            .expect("conversion should succeed for a generic impl method");
 
         let Some(generic_info) = info.generic_info else {
             panic!("expected generic_info to be Some when the struct and method are generic");
@@ -186,7 +186,10 @@ mod tests {
         );
         // Only the method's own generic params should be re-declared by the access method; the
         // struct's params are already in scope from the enclosing `impl<...>` block.
-        assert_eq!(render_params(&generic_info.generic_params), vec!["M".to_string()]);
+        assert_eq!(
+            render_params(&generic_info.generic_params),
+            vec!["M".to_string()]
+        );
     }
 
     #[test]
@@ -196,17 +199,18 @@ mod tests {
                 x
             }
         };
-        let function_info = extract_function_info(&item_fn).expect(
-            "valid generic standalone function"
-        );
+        let function_info =
+            extract_function_info(&item_fn).expect("valid generic standalone function");
 
-        let info = AccessFunctionInfo::try_from(&function_info).expect(
-            "conversion should succeed for a generic standalone function"
-        );
+        let info = AccessFunctionInfo::try_from(&function_info)
+            .expect("conversion should succeed for a generic standalone function");
 
         let Some(generic_info) = info.generic_info else {
             panic!("expected generic_info to be Some for a generic standalone function");
         };
-        assert_eq!(render_params(&generic_info.generic_params), vec!["T".to_string()]);
+        assert_eq!(
+            render_params(&generic_info.generic_params),
+            vec!["T".to_string()]
+        );
     }
 }

@@ -21,7 +21,10 @@ fn test_bounds_lifetime_fake() {
 }
 
 #[fnmock::fakeable]
-fn bounds_lifetime_where<'a, 'b>(a: &'a str, _b: &'b str) -> &'b str where 'a: 'b {
+fn bounds_lifetime_where<'a, 'b>(a: &'a str, _b: &'b str) -> &'b str
+where
+    'a: 'b,
+{
     a
 }
 

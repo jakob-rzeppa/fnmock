@@ -1,4 +1,4 @@
-use quote::{ ToTokens, quote };
+use quote::{quote, ToTokens};
 
 #[derive(Clone)]
 pub enum FakeCallValue {
@@ -41,41 +41,33 @@ impl TryFrom<&syn::Pat> for FakeCallValue {
                 Ok(FakeCallValue::Ident(pat_ident.ident.clone()))
             }
             syn::Pat::Tuple(pat_tuple) => {
-                let elements = pat_tuple.elems
+                let elements = pat_tuple
+                    .elems
                     .iter()
                     .map(FakeCallValue::try_from)
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(FakeCallValue::Tuple(elements))
             }
-            syn::Pat::Struct(pat_struct) =>
-                Err(
-                    syn::Error::new_spanned(
-                        pat_struct,
-                        "Struct destructuring patterns are not supported for fake call values"
-                    )
-                ),
-            syn::Pat::TupleStruct(pat_tuple_struct) =>
-                Err(
-                    syn::Error::new_spanned(
-                        pat_tuple_struct,
-                        "Tuple struct destructuring patterns are not supported for fake call values"
-                    )
-                ),
-            syn::Pat::Macro(pat_macro) =>
-                Err(
-                    syn::Error::new_spanned(
-                        pat_macro,
-                        "Macro patterns are not supported for fake call values"
-                    )
-                ),
-            syn::Pat::Wild(pat_wild) =>
-                Err(
-                    syn::Error::new_spanned(
-                        pat_wild,
-                        "Wildcard patterns are not supported for fake call values"
-                    )
-                ),
-            _ => Err(syn::Error::new_spanned(pat, "Unsupported pattern type for fake call values")),
+            syn::Pat::Struct(pat_struct) => Err(syn::Error::new_spanned(
+                pat_struct,
+                "Struct destructuring patterns are not supported for fake call values",
+            )),
+            syn::Pat::TupleStruct(pat_tuple_struct) => Err(syn::Error::new_spanned(
+                pat_tuple_struct,
+                "Tuple struct destructuring patterns are not supported for fake call values",
+            )),
+            syn::Pat::Macro(pat_macro) => Err(syn::Error::new_spanned(
+                pat_macro,
+                "Macro patterns are not supported for fake call values",
+            )),
+            syn::Pat::Wild(pat_wild) => Err(syn::Error::new_spanned(
+                pat_wild,
+                "Wildcard patterns are not supported for fake call values",
+            )),
+            _ => Err(syn::Error::new_spanned(
+                pat,
+                "Unsupported pattern type for fake call values",
+            )),
         }
     }
 }
@@ -86,16 +78,17 @@ mod tests {
     use syn::parse::Parser;
 
     fn parse_pat(tokens: proc_macro2::TokenStream) -> syn::Pat {
-        syn::Pat::parse_single.parse2(tokens).expect("test input should be a valid syn::Pat")
+        syn::Pat::parse_single
+            .parse2(tokens)
+            .expect("test input should be a valid syn::Pat")
     }
 
     #[test]
     fn test_plain_ident_pattern_becomes_ident_value() {
         let pat = parse_pat(quote!(x));
 
-        let value = FakeCallValue::try_from(&pat).expect(
-            "a plain identifier pattern should be accepted"
-        );
+        let value =
+            FakeCallValue::try_from(&pat).expect("a plain identifier pattern should be accepted");
 
         match value {
             FakeCallValue::Ident(ident) => assert_eq!(ident, "x"),
@@ -107,9 +100,8 @@ mod tests {
     fn test_mut_ident_pattern_ignores_mutability() {
         let pat = parse_pat(quote!(mut x));
 
-        let value = FakeCallValue::try_from(&pat).expect(
-            "a `mut` identifier pattern should be accepted, ignoring mutability"
-        );
+        let value = FakeCallValue::try_from(&pat)
+            .expect("a `mut` identifier pattern should be accepted, ignoring mutability");
 
         match value {
             FakeCallValue::Ident(ident) => assert_eq!(ident, "x"),
@@ -121,9 +113,8 @@ mod tests {
     fn test_single_level_tuple_pattern_becomes_tuple_of_idents() {
         let pat = parse_pat(quote!((a, b)));
 
-        let value = FakeCallValue::try_from(&pat).expect(
-            "a single-level tuple pattern of identifiers should be accepted"
-        );
+        let value = FakeCallValue::try_from(&pat)
+            .expect("a single-level tuple pattern of identifiers should be accepted");
 
         match value {
             FakeCallValue::Tuple(elements) => {
@@ -145,9 +136,8 @@ mod tests {
     fn test_nested_tuple_pattern_recurses_into_inner_tuples() {
         let pat = parse_pat(quote!(((a, b), c)));
 
-        let value = FakeCallValue::try_from(&pat).expect(
-            "a nested tuple pattern should be accepted"
-        );
+        let value =
+            FakeCallValue::try_from(&pat).expect("a nested tuple pattern should be accepted");
 
         match value {
             FakeCallValue::Tuple(outer) => {
@@ -158,23 +148,27 @@ mod tests {
                         assert_eq!(inner.len(), 2);
                         match &inner[0] {
                             FakeCallValue::Ident(ident) => assert_eq!(ident, "a"),
-                            FakeCallValue::Tuple(_) =>
-                                panic!("expected inner element 0 to be Ident, got Tuple"),
+                            FakeCallValue::Tuple(_) => {
+                                panic!("expected inner element 0 to be Ident, got Tuple")
+                            }
                         }
                         match &inner[1] {
                             FakeCallValue::Ident(ident) => assert_eq!(ident, "b"),
-                            FakeCallValue::Tuple(_) =>
-                                panic!("expected inner element 1 to be Ident, got Tuple"),
+                            FakeCallValue::Tuple(_) => {
+                                panic!("expected inner element 1 to be Ident, got Tuple")
+                            }
                         }
                     }
-                    FakeCallValue::Ident(_) =>
-                        panic!("expected outer element 0 to be Tuple, got Ident"),
+                    FakeCallValue::Ident(_) => {
+                        panic!("expected outer element 0 to be Tuple, got Ident")
+                    }
                 }
 
                 match &outer[1] {
                     FakeCallValue::Ident(ident) => assert_eq!(ident, "c"),
-                    FakeCallValue::Tuple(_) =>
-                        panic!("expected outer element 1 to be Ident, got Tuple"),
+                    FakeCallValue::Tuple(_) => {
+                        panic!("expected outer element 1 to be Ident, got Tuple")
+                    }
                 }
             }
             FakeCallValue::Ident(_) => panic!("expected FakeCallValue::Tuple, got Ident"),
@@ -191,7 +185,10 @@ mod tests {
             panic!("a `ref` identifier pattern should be rejected");
         };
         let message = error.to_string().to_lowercase();
-        assert!(message.contains("ref"), "error message should mention `ref`, got: {message}");
+        assert!(
+            message.contains("ref"),
+            "error message should mention `ref`, got: {message}"
+        );
     }
 
     #[test]
@@ -200,7 +197,10 @@ mod tests {
 
         let result = FakeCallValue::try_from(&pat);
 
-        assert!(result.is_err(), "a struct destructuring pattern should be rejected");
+        assert!(
+            result.is_err(),
+            "a struct destructuring pattern should be rejected"
+        );
     }
 
     #[test]
@@ -209,7 +209,10 @@ mod tests {
 
         let result = FakeCallValue::try_from(&pat);
 
-        assert!(result.is_err(), "a tuple-struct destructuring pattern should be rejected");
+        assert!(
+            result.is_err(),
+            "a tuple-struct destructuring pattern should be rejected"
+        );
     }
 
     #[test]
@@ -243,7 +246,10 @@ mod tests {
         let pat = parse_pat(quote!((a, b)));
         let value = FakeCallValue::try_from(&pat).expect("tuple pattern should parse");
 
-        assert_eq!(value.to_token_stream().to_string(), quote!((a, b)).to_string());
+        assert_eq!(
+            value.to_token_stream().to_string(),
+            quote!((a, b)).to_string()
+        );
     }
 
     #[test]
@@ -251,6 +257,9 @@ mod tests {
         let pat = parse_pat(quote!(((a, b), c)));
         let value = FakeCallValue::try_from(&pat).expect("nested tuple pattern should parse");
 
-        assert_eq!(value.to_token_stream().to_string(), quote!(((a, b), c)).to_string());
+        assert_eq!(
+            value.to_token_stream().to_string(),
+            quote!(((a, b), c)).to_string()
+        );
     }
 }

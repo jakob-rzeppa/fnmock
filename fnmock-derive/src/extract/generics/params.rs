@@ -1,22 +1,20 @@
 use crate::extract::generics::{
-    merge::merge_where_bounds_into_type_params,
-    sanitized_params::SanitizedGenericParams,
+    merge::merge_where_bounds_into_type_params, sanitized_params::SanitizedGenericParams,
 };
 
 /// Extract the generic type parameters (e.g. `T: Display + 'static`, `U: 'static`) from a `Generics` object
 ///
 /// Returns a vector of `TypeParam` objects representing the generic type parameters
 pub fn extract_generic_type_and_const_params(
-    generics: &syn::Generics
+    generics: &syn::Generics,
 ) -> syn::Result<SanitizedGenericParams> {
-    let mut generic_params: Vec<syn::GenericParam> = generics.params
+    let mut generic_params: Vec<syn::GenericParam> = generics
+        .params
         .iter()
-        .filter_map(|param| {
-            match param {
-                syn::GenericParam::Type(_) => Some(param.clone()),
-                syn::GenericParam::Const(_) => Some(param.clone()),
-                _ => None,
-            }
+        .filter_map(|param| match param {
+            syn::GenericParam::Type(_) => Some(param.clone()),
+            syn::GenericParam::Const(_) => Some(param.clone()),
+            _ => None,
         })
         .collect();
 

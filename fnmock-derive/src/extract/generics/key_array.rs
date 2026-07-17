@@ -8,7 +8,7 @@ use crate::extract::generics::sanitized_params::SanitizedGenericParams;
 /// `fnmock::generic_fake_store::ConstValue::new`), not just the `TypeId` of their type — otherwise every
 /// value of e.g. `const C: usize` would collapse onto the single key `TypeId::of::<usize>()`.
 pub fn build_generic_key_array(
-    generic_idents: &SanitizedGenericParams
+    generic_idents: &SanitizedGenericParams,
 ) -> syn::Result<Vec<syn::Expr>> {
     generic_idents
         .get_generic_params()
@@ -66,53 +66,60 @@ mod tests {
     #[test]
     fn test_single_type_param_builds_type_key() {
         let keys = build_generic_key_array(
-            &SanitizedGenericParams::new(vec![syn::parse_quote!(T)]).unwrap()
-        ).expect("expected build to succeed");
+            &SanitizedGenericParams::new(vec![syn::parse_quote!(T)]).unwrap(),
+        )
+        .expect("expected build to succeed");
 
         assert_eq!(keys.len(), 1);
 
-        let expected =
-            quote! {
+        let expected = quote! {
             ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())
         };
 
-        assert_eq!(keys[0].to_token_stream().to_string(), expected.to_token_stream().to_string());
+        assert_eq!(
+            keys[0].to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
+        );
     }
 
     #[test]
     fn test_single_const_param_builds_const_key() {
         let keys = build_generic_key_array(
-            &SanitizedGenericParams::new(vec![syn::parse_quote!(const N: usize)]).unwrap()
-        ).expect("expected build to succeed");
+            &SanitizedGenericParams::new(vec![syn::parse_quote!(const N: usize)]).unwrap(),
+        )
+        .expect("expected build to succeed");
 
         assert_eq!(keys.len(), 1);
 
-        let expected =
-            quote! {
+        let expected = quote! {
             ::fnmock::generic_fake_store::key::GenericKeyPart::Const(
                 ::fnmock::generic_fake_store::key::ConstValue::new(N)
             )
         };
 
-        assert_eq!(keys[0].to_token_stream().to_string(), expected.to_token_stream().to_string());
+        assert_eq!(
+            keys[0].to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
+        );
     }
 
     #[test]
     fn test_mixed_type_and_const_params_builds_in_order() {
         let keys = build_generic_key_array(
-            &SanitizedGenericParams::new(
-                vec![syn::parse_quote!(T), syn::parse_quote!(const N: usize)]
-            ).unwrap()
-        ).expect("expected build to succeed");
+            &SanitizedGenericParams::new(vec![
+                syn::parse_quote!(T),
+                syn::parse_quote!(const N: usize),
+            ])
+            .unwrap(),
+        )
+        .expect("expected build to succeed");
 
         assert_eq!(keys.len(), 2);
 
-        let expected_type =
-            quote! {
+        let expected_type = quote! {
             ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())
         };
-        let expected_const =
-            quote! {
+        let expected_const = quote! {
             ::fnmock::generic_fake_store::key::GenericKeyPart::Const(
                 ::fnmock::generic_fake_store::key::ConstValue::new(N)
             )
@@ -130,22 +137,25 @@ mod tests {
 
     #[test]
     fn test_multiple_type_params_preserve_order() {
-        let params = SanitizedGenericParams::new(
-            vec![syn::parse_quote!(A), syn::parse_quote!(B)]
-        ).unwrap();
+        let params =
+            SanitizedGenericParams::new(vec![syn::parse_quote!(A), syn::parse_quote!(B)]).unwrap();
 
         let keys = build_generic_key_array(&params).expect("expected build to succeed");
 
         assert_eq!(keys.len(), 2);
-        let expected_a =
-            quote! {
+        let expected_a = quote! {
             ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<A>())
         };
-        let expected_b =
-            quote! {
+        let expected_b = quote! {
             ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<B>())
         };
-        assert_eq!(keys[0].to_token_stream().to_string(), expected_a.to_token_stream().to_string());
-        assert_eq!(keys[1].to_token_stream().to_string(), expected_b.to_token_stream().to_string());
+        assert_eq!(
+            keys[0].to_token_stream().to_string(),
+            expected_a.to_token_stream().to_string()
+        );
+        assert_eq!(
+            keys[1].to_token_stream().to_string(),
+            expected_b.to_token_stream().to_string()
+        );
     }
 }

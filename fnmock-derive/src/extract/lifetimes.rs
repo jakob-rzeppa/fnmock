@@ -1,5 +1,6 @@
 pub fn extract_lifetimes_from_generics(generics: &syn::Generics) -> Vec<syn::Lifetime> {
-    generics.params
+    generics
+        .params
         .iter()
         .filter_map(|param| {
             if let syn::GenericParam::Lifetime(lifetime_param) = param {
@@ -38,7 +39,10 @@ mod tests {
 
         let lifetimes = extract_lifetimes_from_generics(&generics);
 
-        assert_eq!(lifetime_names(&lifetimes), vec!["'a".to_string(), "'b".to_string()]);
+        assert_eq!(
+            lifetime_names(&lifetimes),
+            vec!["'a".to_string(), "'b".to_string()]
+        );
     }
 
     #[test]
@@ -56,6 +60,9 @@ mod tests {
 
         let lifetimes = extract_lifetimes_from_generics(&generics);
 
-        assert_eq!(lifetime_names(&lifetimes), vec!["'a".to_string(), "'b".to_string()]);
+        assert_eq!(
+            lifetime_names(&lifetimes),
+            vec!["'a".to_string(), "'b".to_string()]
+        );
     }
 }

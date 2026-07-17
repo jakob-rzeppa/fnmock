@@ -1,4 +1,4 @@
-use std::{ cell::RefCell, rc::Rc };
+use std::{cell::RefCell, rc::Rc};
 
 #[fnmock::fakeable]
 fn interior_mutability(a: Rc<RefCell<String>>) {

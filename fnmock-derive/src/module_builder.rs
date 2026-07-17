@@ -36,40 +36,41 @@ impl ModuleBuilder {
     }
 
     pub fn build_module(&self) -> syn::Result<syn::ItemMod> {
-        let internal_error = |field: &str|
+        let internal_error = |field: &str| {
             syn::Error::new(
                 proc_macro2::Span::call_site(),
                 format!(
                     "internal error: the fake module's {field} was not set before building the module. This is a bug in fnmock; please report it."
                 )
-            );
+            )
+        };
 
         let name = self.name.as_ref().ok_or_else(|| internal_error("name"))?;
         let store = self.store.as_ref().ok_or_else(|| internal_error("store"))?;
-        let interface_struct = self.interface_struct
+        let interface_struct = self
+            .interface_struct
             .as_ref()
             .ok_or_else(|| internal_error("interface struct"))?;
 
-        let code =
-            quote! {
-                #[cfg(test)]
-                pub(crate) mod #name {
-                    use super::*;
+        let code = quote! {
+            #[cfg(test)]
+            pub(crate) mod #name {
+                use super::*;
 
-                    thread_local! {
-                        #store
-                    }
-
-                    #interface_struct
+                thread_local! {
+                    #store
                 }
-            };
 
-        syn::parse2(code).map_err(|e|
+                #interface_struct
+            }
+        };
+
+        syn::parse2(code).map_err(|e| {
             syn::Error::new(
                 proc_macro2::Span::mixed_site(),
-                format!("Failed to parse generated module code: {}", e)
+                format!("Failed to parse generated module code: {}", e),
             )
-        )
+        })
     }
 }
 
@@ -92,7 +93,10 @@ mod tests {
     #[test]
     fn test_build_module_without_store_returns_error() {
         let mut builder = ModuleBuilder::new();
-        builder.set_name(syn::Ident::new("some_module", proc_macro2::Span::call_site()));
+        builder.set_name(syn::Ident::new(
+            "some_module",
+            proc_macro2::Span::call_site(),
+        ));
         builder.set_interface_struct(quote! {});
 
         assert!(
@@ -104,7 +108,10 @@ mod tests {
     #[test]
     fn test_build_module_without_interface_struct_returns_error() {
         let mut builder = ModuleBuilder::new();
-        builder.set_name(syn::Ident::new("some_module", proc_macro2::Span::call_site()));
+        builder.set_name(syn::Ident::new(
+            "some_module",
+            proc_macro2::Span::call_site(),
+        ));
         builder.set_store(quote! {});
 
         assert!(

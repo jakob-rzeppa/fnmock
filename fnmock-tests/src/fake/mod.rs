@@ -23,18 +23,18 @@ mod generics {
     mod bounds_generic;
     mod bounds_lifetime;
     mod bounds_mixed;
+    mod const_generics;
     mod higher_ranked_bounds;
     mod implicit_lifetime;
     mod multiple_generics;
     mod multiple_lifetimes;
     mod named_lifetime;
+    mod non_parameter_where;
     mod return_generic;
     mod single_generic;
     mod static_lifetime;
-    mod const_generics;
     mod unused_generic;
     mod unused_lifetime;
-    mod non_parameter_where;
 }
 mod patterns {
     mod ignored;
@@ -53,9 +53,9 @@ mod special {
 mod trait_based {
     mod auto_traits;
     mod boxed;
+    mod impl_traits;
     mod referenced;
     mod referenced_mut;
-    mod impl_traits;
 }
 
 mod impl_block {

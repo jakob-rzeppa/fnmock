@@ -1,4 +1,8 @@
-use std::{ any::{ Any, TypeId }, hash::{ Hash, Hasher }, rc::Rc };
+use std::{
+    any::{Any, TypeId},
+    hash::{Hash, Hasher},
+    rc::Rc,
+};
 
 /// Internal helper giving a type-erased value dynamic `Hash`/`Eq`, via `Any` downcasting.
 /// This is what lets `ConstValue` accept any `T: Hash + Eq + 'static` without `GenericFakeStore`
@@ -58,7 +62,9 @@ impl Hash for ConstValue {
 
 impl std::fmt::Debug for ConstValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("ConstValue").field(&self.0.as_any().type_id()).finish()
+        f.debug_tuple("ConstValue")
+            .field(&self.0.as_any().type_id())
+            .finish()
     }
 }
 

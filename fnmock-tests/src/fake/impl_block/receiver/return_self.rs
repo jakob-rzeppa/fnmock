@@ -6,7 +6,9 @@ struct ReturnSelf {
 #[fnmock::fakeable]
 impl ReturnSelf {
     fn doubled(&self) -> Self {
-        Self { value: self.value * 2 }
+        Self {
+            value: self.value * 2,
+        }
     }
 }
 

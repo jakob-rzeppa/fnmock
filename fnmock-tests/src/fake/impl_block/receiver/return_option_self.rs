@@ -6,7 +6,11 @@ struct ReturnOptionSelf {
 #[fnmock::fakeable]
 impl ReturnOptionSelf {
     fn checked(&self) -> Option<Self> {
-        if self.value > 0 { Some(Self { value: self.value }) } else { None }
+        if self.value > 0 {
+            Some(Self { value: self.value })
+        } else {
+            None
+        }
     }
 }
 

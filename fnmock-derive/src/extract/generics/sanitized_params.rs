@@ -14,7 +14,10 @@ impl SanitizedGenericParams {
     /// rather than a user error.
     pub fn new(generic_params: Vec<syn::GenericParam>) -> syn::Result<Self> {
         for param in &generic_params {
-            if !matches!(param, syn::GenericParam::Type(_) | syn::GenericParam::Const(_)) {
+            if !matches!(
+                param,
+                syn::GenericParam::Type(_) | syn::GenericParam::Const(_)
+            ) {
                 return Err(
                     syn::Error::new_spanned(
                         param,
@@ -36,7 +39,8 @@ impl SanitizedGenericParams {
     /// The method generics will be appended to the struct generics, in the order of struct generics followed by method generics.
     pub fn combine(&self, other: &SanitizedGenericParams) -> Self {
         Self {
-            generic_params: self.generic_params
+            generic_params: self
+                .generic_params
                 .iter()
                 .chain(other.generic_params.iter())
                 .cloned()
@@ -80,6 +84,9 @@ mod tests {
 
         let result = SanitizedGenericParams::new(vec![type_param, const_param]);
 
-        assert!(result.is_ok(), "expected type and const parameters to be accepted");
+        assert!(
+            result.is_ok(),
+            "expected type and const parameters to be accepted"
+        );
     }
 }

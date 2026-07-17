@@ -1,14 +1,14 @@
-use crate::{ fakeable::handle_fakeable };
+use crate::fakeable::handle_fakeable;
 
+mod extract;
 mod fakeable;
 mod module_builder;
 mod names;
-mod extract;
 
 #[proc_macro_attribute]
 pub fn fakeable(
     attr: proc_macro::TokenStream,
-    item: proc_macro::TokenStream
+    item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     // This is the only place proc_macro::TokenStream should appear: the actual proc-macro ABI
     // boundary requires it, but proc_macro::TokenStream cannot be constructed or parsed outside
