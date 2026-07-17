@@ -21,7 +21,7 @@ pub fn extract_function_info(item_fn: &syn::ItemFn) -> syn::Result<FunctionInfo>
 
     let name = item_fn.sig.ident.clone();
     let params = item_fn.sig.inputs.iter().cloned().collect::<Vec<_>>();
-    let param_types = extract_param_types(&params, None);
+    let param_types = extract_param_types(&params, None)?;
     let param_pats = extract_param_pats(&params);
     let generic_info = extract_generic_function_info(&item_fn.sig.generics)?;
     let lifetimes = extract_lifetimes_from_generics(&item_fn.sig.generics);
@@ -60,5 +60,21 @@ mod tests {
         let result = extract_function_info(&item_fn);
 
         assert!(result.is_ok(), "expected #[fakeable] on a non-const fn to be accepted");
+    }
+
+    #[test]
+    fn test_free_function_with_self_receiver_is_rejected() {
+        // syn parses `fn foo(self)` as a free `ItemFn` with a receiver even though rustc would
+        // reject it. fnmock must surface a spanned error rather than panicking during expansion.
+        let item_fn: syn::ItemFn = syn::parse_quote! {
+            fn foo(self) {}
+        };
+
+        let result = extract_function_info(&item_fn);
+
+        assert!(
+            result.is_err(),
+            "expected a free function with a `self` receiver to be rejected, not panic"
+        );
     }
 }

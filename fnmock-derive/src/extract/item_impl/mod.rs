@@ -63,7 +63,7 @@ fn extract_single_item_impl_info_for_method(
         .collect::<Vec<_>>();
 
     let params = method.sig.inputs.iter().cloned().collect::<Vec<_>>();
-    let param_types = extract_param_types(&params, Some(&item_impl.self_ty));
+    let param_types = extract_param_types(&params, Some(&item_impl.self_ty))?;
     let param_pats = extract_param_pats(&params);
 
     let return_type = extract_return_type(&method.sig.output, &item_impl.self_ty);
@@ -86,7 +86,12 @@ fn extract_struct_ident(self_ty: &syn::Type) -> syn::Result<syn::Ident> {
         syn::Type::Path(tp) => {
             // Usually the last segment is the concrete type.
             // Example: Foo<T> -> Path segments [..., Foo<T>]
-            let seg = tp.path.segments.last().expect("Expected at least one segment in path");
+            let seg = tp.path.segments.last().ok_or_else(||
+                syn::Error::new(
+                    self_ty.span(),
+                    "internal error: expected the impl type path to have at least one segment. This is a bug in fnmock; please report it."
+                )
+            )?;
             Ok(seg.ident.clone())
         }
         _ => {

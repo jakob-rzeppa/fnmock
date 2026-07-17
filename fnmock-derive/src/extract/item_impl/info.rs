@@ -17,12 +17,12 @@ pub struct ImplItemFnGenericInfo {
     /// The type and const params of the method.
     pub method_generic_params: Vec<syn::GenericParam>,
 
-    /// The generic types of the struct and method are combined, in the order of struct types followed by method types.
-    pub types: Vec<syn::Type>,
-    /// The generic types of the struct.
-    pub _struct_types: Vec<syn::Type>,
-    /// The generic types of the method.
-    pub _method_types: Vec<syn::Type>,
+    /// The generic idents of the struct and method are combined, in the order of struct idents followed by method idents.
+    pub idents: Vec<syn::Ident>,
+    /// The generic idents of the struct.
+    pub _struct_idents: Vec<syn::Ident>,
+    /// The generic idents of the method.
+    pub _method_idents: Vec<syn::Ident>,
 
     /// The generic keys of the struct and method are combined, in the order of struct generic keys followed by method generic keys.
     pub generic_keys: Vec<syn::Expr>,

@@ -80,7 +80,7 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
     {
         (
             generic_info.generic_count,
-            &generic_info.generic_types,
+            &generic_info.generic_idents,
             &generic_info.generic_params,
             &generic_info.generic_keys,
         )

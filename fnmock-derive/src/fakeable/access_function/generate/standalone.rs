@@ -10,12 +10,12 @@ pub fn generate_access_function_for_standalone(
     let interface_struct_name = &info.interface_struct_name;
 
     let access_function_code = if let Some(generic_info) = &info.generic_info {
-        let generic_types = generic_info.generic_types.as_slice();
+        let generic_idents = generic_info.generic_idents.as_slice();
         let generic_params = generic_info.generic_params.as_slice();
 
         quote! {
             #[cfg(test)]
-            pub(crate) fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_types),*> {
+            pub(crate) fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
                 self::#module_name::#interface_struct_name::new()
             }
         }

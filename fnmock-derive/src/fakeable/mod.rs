@@ -34,7 +34,7 @@ pub fn handle_fakeable(
             let modified_block = inline_call::generate::insert_inline_call_into_fn_block(
                 &item_fn.block,
                 &inline_call_info
-            );
+            )?;
             item_fn.block = Box::new(modified_block);
 
             // Generate the access function
@@ -91,13 +91,18 @@ pub fn handle_fakeable(
                 if let syn::ImplItem::Fn(ref mut method_fn) = *method {
                     let inline_call_info = inline_call_info_iter
                         .next()
-                        .expect("Mismatch between number of methods and extracted info");
+                        .ok_or_else(||
+                            syn::Error::new_spanned(
+                                &method_fn.sig.ident,
+                                "internal error: more impl-block methods than extracted fake infos while inserting fake lookups. This is a bug in fnmock; please report it."
+                            )
+                        )?;
 
                     // Insert the inline call into the method's block
                     method_fn.block = inline_call::generate::insert_inline_call_into_fn_block(
                         &method_fn.block,
                         inline_call_info
-                    );
+                    )?;
                 }
             }
 
