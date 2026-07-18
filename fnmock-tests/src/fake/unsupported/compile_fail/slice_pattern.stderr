@@ -1,0 +1,5 @@
+error: Unsupported pattern type for fake call values
+ --> src/fake/unsupported/compile_fail/slice_pattern.rs:5:18
+  |
+5 | fn slice_pattern([a, b]: [i32; 2]) -> i32 {
+  |                  ^^^^^^

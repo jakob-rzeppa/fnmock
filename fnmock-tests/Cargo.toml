@@ -10,5 +10,8 @@ repository.workspace = true
 "fnmock" = { path = "../fnmock" }
 "tokio" = { version = "1.49.0", features = ["full"]}
 
+[dev-dependencies]
+"trybuild" = "1"
+
 [lints.clippy]
 all = "allow"

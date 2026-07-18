@@ -35,17 +35,13 @@ mod generics {
     mod unused_lifetime;
 }
 mod patterns {
-    mod ignored;
     mod mutable_patterns;
     mod nested_tuple_destructuring;
-    mod reference_patterns;
-    mod struct_destructuring;
     mod tuple_destructuring;
 }
 mod special {
     mod async_function;
     mod async_generic_function;
-    mod const_function;
     mod extern_function;
     mod futures;
     mod unsafe_function;
@@ -53,7 +49,6 @@ mod special {
 mod trait_based {
     mod auto_traits;
     mod boxed;
-    mod impl_traits;
     mod referenced;
     mod referenced_mut;
 }
@@ -93,3 +88,5 @@ mod impl_block {
         mod lifetimes_combined;
     }
 }
+
+mod unsupported;

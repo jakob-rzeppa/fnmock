@@ -1,0 +1,5 @@
+error: Unsupported struct type. Only simple paths (+generics) are supported for impl blocks.
+ --> src/fake/unsupported/compile_fail/impl_on_non_path_type.rs:5:6
+  |
+5 | impl (i32, i32) {
+  |      ^^^^^^^^^^

@@ -1,0 +1,5 @@
+error: The `ref` keyword is not supported for fake call values. Please use the identifier directly without `ref` (e.g. `ident` instead of `ref ident`).
+ --> src/fake/unsupported/compile_fail/ref_pattern.rs:5:23
+  |
+5 | fn reference_pattern((ref left, right): (i32, i32)) -> i32 {
+  |                       ^^^^^^^^

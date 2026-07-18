@@ -1,0 +1,5 @@
+error: Wildcard patterns are not supported for fake call values
+ --> src/fake/unsupported/compile_fail/wildcard_param.rs:6:12
+  |
+6 | fn ignored(_: String, value: String) -> String {
+  |            ^
