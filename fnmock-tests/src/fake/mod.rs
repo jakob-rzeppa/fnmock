@@ -6,6 +6,7 @@ mod basic {
     mod raw_const_pointers;
     mod raw_mut_pointers;
     mod reference;
+    mod reference_in_container;
     mod return_option;
     mod return_result;
     mod return_unit;
@@ -18,7 +19,9 @@ mod generics {
     mod bounds_generic;
     mod bounds_lifetime;
     mod bounds_mixed;
+    mod clear_and_is_set;
     mod const_generics;
+    mod const_generics_clear_and_is_set;
     mod const_generics_mixed;
     mod const_generics_multiple;
     mod cross_type_isolation;
@@ -31,6 +34,7 @@ mod generics {
     mod return_generic;
     mod single_generic;
     mod static_lifetime;
+    mod thread_isolation;
     mod unused_generic;
     mod unused_lifetime;
 }
@@ -58,8 +62,10 @@ mod impl_block {
     mod associated_function;
     mod async_method;
     mod basic;
+    mod clear_and_is_set;
     mod multiple_methods;
     mod same_method_name_isolation;
+    mod thread_isolation;
 
     mod receiver {
         mod return_option_self;
@@ -78,6 +84,7 @@ mod impl_block {
     }
 
     mod generics {
+        mod clear_and_is_set;
         mod generic_combined;
         mod generic_combined_where;
         mod generic_method;
@@ -89,5 +96,7 @@ mod impl_block {
         mod lifetimes_combined;
     }
 }
+
+mod visibility;
 
 mod unsupported;

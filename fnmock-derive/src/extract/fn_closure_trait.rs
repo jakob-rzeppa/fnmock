@@ -56,7 +56,10 @@ fn check_if_type_is_supported_for_fn_closure(ty: &Type) -> Result<(), syn::Error
         )),
 
         // A macro in the type position.
-        syn::Type::Macro(_) => Ok(()),
+        syn::Type::Macro(_) => Err(syn::Error::new_spanned(
+            ty,
+            "The #[fakeable] attribute does not support macros in a function signature. Please use a concrete type or a generic type parameter instead.",
+        )),
 
         // The never type: `!`.
         syn::Type::Never(_) => Err(syn::Error::new_spanned(

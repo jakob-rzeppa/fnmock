@@ -78,6 +78,10 @@ impl TryFrom<&syn::Pat> for FakeCallValue {
                 pat_wild,
                 "Wildcard patterns are not supported for fake call values",
             )),
+            syn::Pat::Reference(pat_ref) => Err(syn::Error::new_spanned(
+                pat_ref,
+                "Reference patterns are not supported for fake call values",
+            )),
             _ => Err(syn::Error::new_spanned(
                 pat,
                 "Unsupported pattern type for fake call values",
@@ -263,6 +267,24 @@ mod tests {
         let result = FakeCallValue::try_from(&pat);
 
         assert!(result.is_err(), "a wildcard pattern should be rejected");
+    }
+
+    #[test]
+    fn test_reference_pattern_is_rejected() {
+        // A reference pattern (`&x`) is not one of the explicitly-matched arms, so it must
+        // fall through to the `_ =>` catch-all with the generic "Unsupported pattern type"
+        // message.
+        let pat = parse_pat(quote!(&x));
+
+        let result = FakeCallValue::try_from(&pat);
+
+        let Err(error) = result else {
+            panic!("a reference pattern should be rejected");
+        };
+        assert_eq!(
+            error.to_string(),
+            "Reference patterns are not supported for fake call values"
+        );
     }
 
     #[test]
