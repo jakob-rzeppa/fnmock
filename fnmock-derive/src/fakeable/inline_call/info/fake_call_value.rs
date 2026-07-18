@@ -1,9 +1,20 @@
+//! Turning a parameter pattern back into the expression that forwards it to the fake.
+
 use quote::{quote, ToTokens};
 
+/// One argument the injected lookup forwards to the fake, reconstructed from a parameter pattern.
+///
+/// A fake takes values, but a parameter may destructure one — `fn f((a, b): (i32, i32))` binds no
+/// name for the pair itself. Rebuilding `(a, b)` as an expression from the bindings the pattern
+/// introduced is what lets such parameters be passed on. Patterns that cannot be rebuilt this way
+/// (struct destructuring, wildcards, `ref`) are rejected with a spanned error instead.
 #[derive(Clone)]
 pub enum FakeCallValue {
+    /// A plain binding, forwarded by name.
     Ident(syn::Ident),
+    /// A tuple pattern, reassembled as `(a, b, ..)`.
     Tuple(Vec<FakeCallValue>),
+    /// A slice pattern, reassembled as `[a, b, ..]`.
     Slice(Vec<FakeCallValue>),
 }
 

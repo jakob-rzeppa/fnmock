@@ -1,3 +1,5 @@
+//! Extraction of the fake information for a free function.
+
 use crate::extract::{
     fn_closure_trait::build_fn_closure_trait,
     function::{generics::extract_generic_function_info, info::FunctionInfo},

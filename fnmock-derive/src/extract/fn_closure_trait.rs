@@ -1,3 +1,5 @@
+//! Construction of the `Fn(..) -> ..` trait bound that a fake for a given signature must satisfy.
+
 use quote::quote;
 use syn::Type;
 
@@ -9,7 +11,17 @@ use syn::Type;
 ///
 /// - `lifetime_params`: The lifetime parameters of the function / struct + method signature
 /// - `params`: The parameter types of the function
-/// - `output`: The return type of the function
+/// The lifetimes are bound higher-ranked (`for<'a> Fn(&'a str)`), because the fake is stored as a
+/// single `dyn Fn` value and so cannot be generic over lifetimes the way the faked function is.
+///
+/// This is also where a signature is checked for types fnmock cannot fake, so that the user gets a
+/// spanned error on their own code rather than a confusing one on generated code.
+///
+/// # Errors
+///
+/// Returns a spanned error if a parameter or the return type uses a type that cannot appear in a
+/// fake's closure trait: `impl Trait`, the inferred type `_`, a macro in type position, or the
+/// never type `!`.
 pub fn build_fn_closure_trait(
     lifetimes: &[syn::Lifetime],
     params: &[syn::Type],
@@ -31,6 +43,11 @@ pub fn build_fn_closure_trait(
     syn::parse2(fn_ptr_tokens)
 }
 
+/// Reject types that cannot appear in a fake's closure trait.
+///
+/// The match is written out over every `syn::Type` variant rather than falling back to a catch-all
+/// `Ok(())`, so that a variant syn adds later surfaces as a report-this-bug error instead of
+/// silently producing generated code that does not compile.
 fn check_if_type_is_supported_for_fn_closure(ty: &Type) -> Result<(), syn::Error> {
     match ty {
         // A fixed size array type: `[T; n]`.

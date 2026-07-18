@@ -1,4 +1,15 @@
+//! The naming scheme for generated items.
+//!
+//! Every generated name is derived here rather than at its use site, so that the pieces of a
+//! single fake — module, store, interface struct, accessor — are guaranteed to agree on what they
+//! call each other.
+
+/// Which kind of test double a name is being built for.
+///
+/// Only fakes exist today; spies and mocks are planned, and this is the seam they will slot into
+/// so that each kind gets its own set of generated names without colliding.
 pub enum NameType {
+    /// A fake: a user-supplied replacement implementation.
     Fake,
 }
 

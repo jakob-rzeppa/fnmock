@@ -1,13 +1,39 @@
+//! The information extracted from a free function's signature.
+
+/// Everything the generators need to know about a fakeable free function.
 pub struct FunctionInfo {
+    /// The function's own name, which every generated name is derived from.
     pub name: syn::Ident,
+
+    /// The parameter patterns, in declaration order. Used to forward the call's arguments to the
+    /// fake closure.
     pub param_pats: Vec<syn::Pat>,
+
+    /// The `Fn(..) -> ..` trait bound a fake for this function must satisfy, with any lifetimes
+    /// bound higher-ranked.
     pub fn_closure_trait: syn::TraitBound,
+
+    /// The function's generic parameters, or `None` if it has none (lifetimes don't count — they
+    /// are not part of the fake's key).
     pub generic_info: Option<FunctionGenericInfo>,
 }
 
+/// The generic parameters of a fakeable free function.
+///
+/// A generic function gets one fake per combination of generic arguments, so its parameters have
+/// to be carried through to the store as key expressions.
 pub struct FunctionGenericInfo {
+    /// How many type and const parameters there are. Becomes the `GENERIC_COUNT` const generic of
+    /// the generated `GenericFakeStore`.
     pub count: usize,
+
+    /// The parameters including their bounds (e.g. `T: Display + 'static`), for redeclaring them
+    /// on generated items.
     pub generic_params: Vec<syn::GenericParam>,
+
+    /// Just the parameters' identifiers (e.g. `T`), for instantiating generated items.
     pub idents: Vec<syn::Ident>,
+
+    /// The `GenericKeyPart` expressions that key this function's fake store, in parameter order.
     pub generic_keys: Vec<syn::Expr>,
 }

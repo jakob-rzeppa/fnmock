@@ -9,6 +9,12 @@ use crate::extract::{
 /// Extract the generic type parameters (e.g. `T: Display + 'static`, `U: 'static`) from a impl block method.
 ///
 /// The generics of the struct and method are combined, in the order of struct generics followed by method generics.
+///
+/// Returns `Ok(None)` when neither the struct nor the method has anything to key a fake by.
+///
+/// # Errors
+///
+/// Returns a spanned error if a generic parameter carries a non-`'static` lifetime bound.
 pub fn extract_generic_impl_info(
     item_impl: &syn::ItemImpl,
     method: &syn::ImplItemFn,

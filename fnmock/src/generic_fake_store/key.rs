@@ -1,3 +1,6 @@
+//! The key type a [`GenericFakeStore`](super::GenericFakeStore) uses to tell one combination of
+//! generic arguments from another.
+
 use std::{
     any::{Any, TypeId},
     hash::{Hash, Hasher},
@@ -41,6 +44,7 @@ impl<T: Hash + Eq + 'static> DynHashEq for T {
 pub struct ConstValue(Rc<dyn DynHashEq>);
 
 impl ConstValue {
+    /// Wrap a const generic argument's value so it can be used as part of a store key.
     pub fn new<T: Hash + Eq + 'static>(value: T) -> Self {
         ConstValue(Rc::new(value))
     }
@@ -74,7 +78,9 @@ impl std::fmt::Debug for ConstValue {
 /// value of e.g. `const C: usize` would collapse onto the single key `TypeId::of::<usize>()`.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum GenericKeyPart {
+    /// A type parameter, keyed by the `TypeId` of the type it was instantiated with.
     Type(TypeId),
+    /// A const parameter, keyed by the value it was instantiated with.
     Const(ConstValue),
 }
 

@@ -1,3 +1,13 @@
+//! Collection of the lifetime parameters that a fake's closure trait has to bind.
+
+/// Extract the lifetime parameters (e.g. `'a`) from a `Generics` object, in declaration order.
+///
+/// A fake is stored as a single `dyn Fn` value, so it cannot be generic over lifetimes the way the
+/// faked function is. The lifetimes collected here are instead bound higher-ranked on the closure
+/// trait (`for<'a> Fn(&'a str)`), which lets one stored closure serve calls at any lifetime.
+///
+/// Type and const parameters are ignored; they are handled by
+/// [`params`](crate::extract::generics::params) instead.
 pub fn extract_lifetimes_from_generics(generics: &syn::Generics) -> Vec<syn::Lifetime> {
     generics
         .params

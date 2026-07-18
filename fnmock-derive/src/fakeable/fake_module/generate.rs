@@ -1,8 +1,17 @@
+//! Code generation for a fake module.
+
 use quote::quote;
 
 use crate::{fakeable::fake_module::info::FakeModuleInfo, module_builder::ModuleBuilder};
 
 /// Generates the code for a fake module based on the provided FakeModuleInfo.
+///
+/// Dispatches on whether the faked function is generic: a non-generic function needs only one
+/// stored closure, while a generic one needs one per combination of generic arguments.
+///
+/// # Errors
+///
+/// Returns an error if the generated module fails to parse, which would be a bug in fnmock.
 pub fn generate_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::ItemMod> {
     if info.generic_info.is_some() {
         generate_generic_fake_module_code(info)

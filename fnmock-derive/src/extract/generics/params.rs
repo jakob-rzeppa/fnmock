@@ -1,3 +1,5 @@
+//! Reduction of a `syn::Generics` to the type and const parameters a fake is keyed by.
+
 use crate::extract::generics::{
     merge::merge_where_bounds_into_type_params, sanitized_params::SanitizedGenericParams,
 };
@@ -5,6 +7,14 @@ use crate::extract::generics::{
 /// Extract the generic type parameters (e.g. `T: Display + 'static`, `U: 'static`) from a `Generics` object
 ///
 /// Returns a vector of `TypeParam` objects representing the generic type parameters
+///
+/// Lifetime parameters are dropped: a fake is keyed by `TypeId`, which does not distinguish
+/// lifetimes, so they cannot contribute to the key.
+///
+/// # Errors
+///
+/// Returns a spanned error if a type parameter carries a non-`'static` lifetime bound. Such a
+/// bound cannot be honoured, because the store keys types by `TypeId`, which requires `'static`.
 pub fn extract_generic_type_and_const_params(
     generics: &syn::Generics,
 ) -> syn::Result<SanitizedGenericParams> {

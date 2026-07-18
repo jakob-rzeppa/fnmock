@@ -1,3 +1,5 @@
+//! Code generation for the injected fake lookup.
+
 use quote::quote;
 
 use crate::fakeable::inline_call::info::InlineCallInfo;
@@ -5,6 +7,10 @@ use crate::fakeable::inline_call::info::InlineCallInfo;
 /// Inserts an inline call to the fake implementation at the beginning of the original function block.
 ///
 /// If the fake is set, it will call the fake implementation and return its result. Otherwise, it will execute the original function block.
+///
+/// # Errors
+///
+/// Returns an error if the generated block fails to parse, which would be a bug in fnmock.
 pub fn insert_inline_call_into_fn_block(
     original_block: &syn::Block,
     inline_call_info: &InlineCallInfo,

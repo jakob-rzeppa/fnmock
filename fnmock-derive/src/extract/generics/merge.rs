@@ -1,7 +1,15 @@
+//! Folding of a where clause back into the generic parameters it constrains.
+
 use quote::ToTokens;
 
 /// Merge the where bounds into the type parameters.
 /// This is necessary because the where bounds are not included in the generic parameters, but we need them to generate the fakeable function.
+///
+/// Generated items redeclare the parameters inline (`<T: Display>`) rather than reproducing the
+/// where clause, so `fn f<T>(..) where T: Display` and `fn f<T: Display>(..)` have to arrive at
+/// the generators in the same shape. Bounds that are already present are not duplicated, and
+/// predicates that constrain something other than a parameter (e.g. `where Vec<T>: Clone`) have
+/// nowhere to go and are dropped — they don't affect the parameters themselves.
 pub fn merge_where_bounds_into_type_params(
     generics: &syn::Generics,
     type_params: &mut [syn::GenericParam],

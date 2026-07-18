@@ -1,3 +1,5 @@
+//! The information needed to generate the injected fake lookup.
+
 use crate::{
     extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
     fakeable::inline_call::info::fake_call_value::FakeCallValue,
@@ -9,11 +11,21 @@ use crate::{
 
 mod fake_call_value;
 
+/// Everything the injected fake lookup needs to name the fake and forward the call to it.
 #[derive(Clone)]
 pub struct InlineCallInfo {
+    /// The name of the fake module the lookup reaches into.
     pub module_name: syn::Ident,
+
+    /// The name of the interface struct the lookup asks for the fake.
     pub interface_struct_name: syn::Ident,
+
+    /// The expressions forwarded as arguments to the fake, derived from the function's parameter
+    /// patterns and in the same order.
     pub fake_call_values: Vec<FakeCallValue>,
+
+    /// The generic parameters to instantiate the interface struct with, or `None` for a
+    /// non-generic function.
     pub generic_idents: Option<Vec<syn::Ident>>,
 }
 
@@ -31,7 +43,10 @@ impl TryFrom<&FunctionInfo> for InlineCallInfo {
             .map(FakeCallValue::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
-        let generic_idents = function_info.generic_info.as_ref().map(|generic_info| generic_info.idents.clone());
+        let generic_idents = function_info
+            .generic_info
+            .as_ref()
+            .map(|generic_info| generic_info.idents.clone());
 
         Ok(InlineCallInfo {
             module_name,
@@ -63,7 +78,10 @@ impl TryFrom<&ImplItemFnInfo> for InlineCallInfo {
             .map(FakeCallValue::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
-        let generic_idents = impl_item_fn_info.generic_info.as_ref().map(|generic_info| generic_info.idents.clone());
+        let generic_idents = impl_item_fn_info
+            .generic_info
+            .as_ref()
+            .map(|generic_info| generic_info.idents.clone());
 
         Ok(InlineCallInfo {
             module_name,

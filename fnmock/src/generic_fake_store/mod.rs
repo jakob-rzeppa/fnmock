@@ -1,3 +1,5 @@
+//! Storage backing the fake of a generic function, keyed by the generic arguments it was called with.
+
 use std::{any::Any, collections::HashMap, rc::Rc};
 
 use crate::generic_fake_store::key::GenericKeyPart;
@@ -23,6 +25,9 @@ pub struct GenericFakeStore<const GENERIC_COUNT: usize> {
 }
 
 impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
+    /// Create an empty store for the function named `name`.
+    ///
+    /// The name is only used to identify the function in panic messages.
     pub fn new(name: &'static str) -> Self {
         Self {
             name,
@@ -45,17 +50,22 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
         self.impls.insert(generic_keys, Rc::new(f));
     }
 
-    /// Clear all fake implementations.
+    /// Clear the fake implementations for every combination of generic types.
     pub fn clear_all(&mut self) {
         self.impls.clear();
     }
 
     /// Clear the fake implementation for a specific combination of generic types.
+    ///
+    /// Fakes registered for other combinations are left untouched.
     pub fn clear_for(&mut self, generic_keys: [GenericKeyPart; GENERIC_COUNT]) {
         self.impls.remove(&generic_keys);
     }
 
     /// Check if a fake implementation is set for a specific combination of generic types.
+    ///
+    /// The inline call the macro injects checks this before calling [`GenericFakeStore::get_for`],
+    /// so that a call with generic arguments that were never faked falls through to the real body.
     pub fn is_set_for(&self, generic_keys: [GenericKeyPart; GENERIC_COUNT]) -> bool {
         self.impls.contains_key(&generic_keys)
     }
@@ -64,6 +74,8 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     ///
     /// The `Function` type parameter should be a boxed closure that matches the signature of the faked function for the given combination of generic types.
     /// It needs to match the generic that was passed to `setup_for` for the same combination of generic types exactly.
+    ///
+    /// # Panics
     ///
     /// Panics if no implementation is set for the given types or if the stored implementation cannot be downcast to the expected function type.
     pub fn get_for<WrappedClosure: 'static>(

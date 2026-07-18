@@ -2,11 +2,19 @@ use quote::quote;
 
 use crate::extract::generics::sanitized_params::SanitizedGenericParams;
 
-/// Build a `GenericKeyPart` array: [GenericKeyPart::Type(TypeId::of::<T>()), GenericKeyPart::Const(ConstValue::new(C)), ...]
+/// Build a `GenericKeyPart` array: `[GenericKeyPart::Type(TypeId::of::<T>()), GenericKeyPart::Const(ConstValue::new(C)), ...]`
 ///
 /// Type parameters are keyed by their `TypeId`. Const parameters are keyed by their actual value (via
 /// `fnmock::generic_fake_store::ConstValue::new`), not just the `TypeId` of their type — otherwise every
 /// value of e.g. `const C: usize` would collapse onto the single key `TypeId::of::<usize>()`.
+///
+/// The expressions are emitted into the generated code, where they are evaluated at the call site
+/// with the generic parameters bound to the arguments the call was made with.
+///
+/// # Errors
+///
+/// Returns a spanned error if a lifetime parameter is encountered, which would mean the params
+/// were not sanitized first. That is a bug in fnmock rather than a user error.
 pub fn build_generic_key_array(
     generic_idents: &SanitizedGenericParams,
 ) -> syn::Result<Vec<syn::Expr>> {

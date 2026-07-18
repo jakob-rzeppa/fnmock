@@ -1,3 +1,7 @@
+//! Storage backing the fake of a non-generic function.
+//!
+//! This is a fnmock internal. You should not interact with it directly.
+
 /// A store for a single fake function implementation.
 ///
 /// This is used for non-generic functions, or for generic functions where we ignore the generic parameters and therefore only have one implementation.
@@ -13,6 +17,9 @@ pub struct FakeStore<WrappedClosure: Clone> {
 }
 
 impl<WrappedClosure: Clone> FakeStore<WrappedClosure> {
+    /// Create an empty store for the function named `function_name`.
+    ///
+    /// The name is only used to identify the function in panic messages.
     pub fn new(function_name: &'static str) -> Self {
         Self {
             name: function_name,
@@ -20,24 +27,29 @@ impl<WrappedClosure: Clone> FakeStore<WrappedClosure> {
         }
     }
 
-    /// Set a fake implementation for the function.
+    /// Set a fake implementation for the function, replacing any previously set one.
     ///
     /// The `WrappedClosure` type parameter should be a `Rc`-wrapped closure trait that matches the signature of the function being faked.
     pub fn setup(&mut self, new_f: WrappedClosure) {
         self.implementation = Some(new_f);
     }
 
-    /// Clear the fake implementation.
+    /// Clear the fake implementation, so calls run the real function body again.
     pub fn clear(&mut self) {
         self.implementation = None;
     }
 
     /// Check if a fake implementation is set.
+    ///
+    /// The inline call the macro injects checks this before calling [`FakeStore::get`], so that a
+    /// function without a fake falls through to its real body.
     pub fn is_set(&self) -> bool {
         self.implementation.is_some()
     }
 
     /// Get the fake implementation.
+    ///
+    /// # Panics
     ///
     /// Panics if no implementation is set. When using the macro API, the macro ensures that get is only called when is_set is true, so this should never happen if the API is used correctly.
     pub fn get(&self) -> WrappedClosure {

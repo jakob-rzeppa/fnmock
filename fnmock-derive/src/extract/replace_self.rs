@@ -1,9 +1,18 @@
+//! Substitution of `Self` for the impl block's concrete type.
+
 /// Helper struct to replace `Self` types in a return type with the actual type of `Self` from the impl block.
+///
+/// A fake's closure trait is written into a generated module where `Self` no longer refers to the
+/// impl block's type, so every `Self` in a method signature — including nested ones like
+/// `Option<Self>` — has to be substituted before the trait bound is built.
 pub struct ReplaceSelf<'a> {
     self_ty: &'a syn::Type,
 }
 
 impl<'a> ReplaceSelf<'a> {
+    /// # This is a fnmock internal. You should not interact with it directly.
+    ///
+    /// Create a replacer that substitutes `Self` with `self_ty`, the impl block's own type.
     pub fn new(self_ty: &'a syn::Type) -> Self {
         ReplaceSelf { self_ty }
     }

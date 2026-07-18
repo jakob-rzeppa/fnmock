@@ -1,3 +1,5 @@
+//! Extraction of the fake information for the methods of an inherent impl block.
+
 use syn::{spanned::Spanned, visit_mut::VisitMut};
 
 use crate::extract::{
@@ -12,6 +14,9 @@ mod generics;
 pub mod info;
 
 /// Extract the ImplItemFnInfo for each method in an impl block.
+///
+/// Non-method items (associated consts, types) are skipped; the returned infos are in the order
+/// the methods appear in the block, which callers rely on to pair them back up with those methods.
 pub fn extract_item_impl_info(item_impl: &syn::ItemImpl) -> syn::Result<Vec<ImplItemFnInfo>> {
     if let Some((_, trait_path, _)) = &item_impl.trait_ {
         return Err(

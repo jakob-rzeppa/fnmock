@@ -1,3 +1,5 @@
+//! Reduction of generic parameters to their bare identifiers.
+
 use syn::parse_quote;
 
 use crate::extract::generics::sanitized_params::SanitizedGenericParams;
@@ -5,6 +7,14 @@ use crate::extract::generics::sanitized_params::SanitizedGenericParams;
 /// Extract the generic idents (e.g. `T`, `U`) from a list of generic parameters (e.g. `T: Display + 'static`, `U: 'static`)
 ///
 /// For `const C: usize` this will extract `C`
+///
+/// Generated items need the bounded form (`T: Display + 'static`) where they declare the
+/// parameters and the bare form (`T`) where they instantiate them; this produces the latter.
+///
+/// # Errors
+///
+/// Returns a spanned error if a lifetime parameter is encountered, which would mean the params
+/// were not sanitized first. That is a bug in fnmock rather than a user error.
 pub fn extract_generic_itents_from_generic_params(
     generic_params: &SanitizedGenericParams,
 ) -> syn::Result<Vec<syn::Ident>> {

@@ -1,3 +1,5 @@
+//! The information needed to generate an accessor.
+
 use crate::{
     extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
     names::{
@@ -18,6 +20,7 @@ pub struct AccessFunctionInfo {
     /// The name of the struct that provides the API for setting up and accessing the fake implementation.
     pub interface_struct_name: syn::Ident,
 
+    /// The generic parameters the accessor itself has to declare, or `None` if it needs none.
     pub generic_info: Option<AccessFunctionGenericInfo>,
 }
 
@@ -30,7 +33,12 @@ pub struct AccessFunctionInfo {
 /// method, where applicable) needed to instantiate the fake module's interface struct.
 #[derive(Clone)]
 pub struct AccessFunctionGenericInfo {
+    /// The bare identifiers of every generic parameter in scope, used to instantiate the interface
+    /// struct.
     pub generic_idents: Vec<syn::Ident>,
+
+    /// The parameters, with bounds, that the accessor declares itself — see the note above on why
+    /// this is narrower than `generic_idents` for impl block methods.
     pub generic_params: Vec<syn::GenericParam>,
 }
 

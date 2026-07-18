@@ -1,3 +1,5 @@
+//! The information needed to generate a fake module.
+
 use crate::{
     extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
     names::{
@@ -9,11 +11,24 @@ use crate::{
 /// Information needed to generate a fake module (the `thread_local` store + interface struct).
 #[derive(Clone)]
 pub struct FakeModuleInfo {
+    /// The name of the generated module itself.
     pub module_name: syn::Ident,
+
+    /// The name of the `thread_local` static holding the store.
     pub store_name: syn::Ident,
+
+    /// How the faked function is referred to in panic messages, e.g. `"UserService get_user"`.
     pub display_name: String,
+
+    /// The name of the interface struct carrying `setup`/`clear`/`is_set`/`get`.
     pub interface_struct_name: syn::Ident,
+
+    /// The `Fn(..) -> ..` bound a fake must satisfy. Used both as the stored closure's type and as
+    /// the bound on `setup`'s argument.
     pub fn_closure_trait: syn::TraitBound,
+
+    /// The generic parameters to key the store by. `None` selects a plain `FakeStore`; `Some`
+    /// selects a `GenericFakeStore`.
     pub generic_info: Option<FakeModuleGenericInfo>,
 }
 
@@ -22,6 +37,8 @@ pub struct FakeModuleInfo {
 /// If it is a struct method fake, the generic parameters from the struct come first, followed by the generic parameters from the method.
 #[derive(Clone)]
 pub struct FakeModuleGenericInfo {
+    /// The number of generic parameters, which becomes the `GENERIC_COUNT` const generic of the
+    /// generated `GenericFakeStore`.
     pub generic_count: usize,
 
     /// The identifiers of the generic parameters.

@@ -1,8 +1,20 @@
+//! Extraction of a function's parameter types and patterns.
+
 use syn::{spanned::Spanned, visit_mut::VisitMut};
 
 use crate::extract::replace_self::ReplaceSelf;
 
 /// Extracts the parameter types from a list of function parameters, replacing any `Self` types with the provided `self_ty`.
+///
+/// Pass `Some(self_ty)` for impl block methods and `None` for free functions. A `self` receiver
+/// contributes its own type as the first parameter, so a fake for a method takes the receiver as
+/// its first argument.
+///
+/// # Errors
+///
+/// Returns a spanned error if a `self` receiver appears while `self_ty` is `None`. syn parses
+/// `fn foo(self)` as a free function even though rustc would reject it, so this has to be caught
+/// rather than assumed away.
 pub fn extract_param_types(
     params: &[syn::FnArg],
     self_ty: Option<&syn::Type>,
@@ -48,6 +60,13 @@ pub fn extract_param_types(
 }
 
 /// Extracts the parameter patterns / identifiers from a list of function parameters.
+///
+/// These become the arguments the injected inline call forwards to the fake, so a `self` receiver
+/// is represented as a plain `self` identifier and mutability in a pattern (`mut x`) is kept as
+/// written — it is part of the binding, not of the value being passed on.
+///
+/// Patterns that cannot be forwarded are rejected later, when the patterns are turned into call
+/// arguments; see `FakeCallValue`.
 pub fn extract_param_pats(params: &[syn::FnArg]) -> Vec<syn::Pat> {
     params
         .iter()

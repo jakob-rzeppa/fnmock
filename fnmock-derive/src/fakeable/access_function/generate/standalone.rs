@@ -1,7 +1,17 @@
+//! Code generation for a free function's accessor.
+
 use quote::quote;
 
 use crate::fakeable::access_function::info::AccessFunctionInfo;
 
+/// Generates the accessor for a free function, e.g. `fetch_user_fake()` next to `fetch_user`.
+///
+/// For a generic function the accessor is generic too, so that `fetch_user_fake::<i32>()` reaches
+/// the fake keyed by exactly those generic arguments.
+///
+/// # Errors
+///
+/// Returns an error if the generated code fails to parse, which would be a bug in fnmock.
 pub fn generate_access_function_for_standalone(
     info: &AccessFunctionInfo,
 ) -> syn::Result<syn::ItemFn> {

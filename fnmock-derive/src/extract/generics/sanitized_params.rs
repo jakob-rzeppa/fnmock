@@ -1,7 +1,13 @@
+//! A generic parameter list narrowed to what a fake can be keyed by.
+
 /// A struct that holds the sanitized generic parameters of a function.
 ///
 /// This means that the generic parameters have been filtered to only include type and const parameters,
 /// and any where bounds have been merged into the type parameters.
+///
+/// Downstream code takes this type rather than a bare `Vec<syn::GenericParam>` so that "lifetimes
+/// have already been stripped" is a property of the type instead of a convention every caller has
+/// to remember.
 pub struct SanitizedGenericParams {
     generic_params: Vec<syn::GenericParam>,
 }
@@ -30,6 +36,7 @@ impl SanitizedGenericParams {
         Ok(Self { generic_params })
     }
 
+    /// Borrow the parameters, in declaration order.
     pub fn get_generic_params(&self) -> &Vec<syn::GenericParam> {
         &self.generic_params
     }
@@ -48,14 +55,17 @@ impl SanitizedGenericParams {
         }
     }
 
+    /// Whether there is nothing left to key a fake by, meaning a plain `FakeStore` will do.
     pub fn is_empty(&self) -> bool {
         self.generic_params.is_empty()
     }
 
+    /// The number of parameters, which becomes the `GENERIC_COUNT` of the generated store.
     pub fn len(&self) -> usize {
         self.generic_params.len()
     }
 
+    /// Consume the wrapper and hand back the parameters, for embedding in generated code.
     pub fn into_generic_params(self) -> Vec<syn::GenericParam> {
         self.generic_params
     }

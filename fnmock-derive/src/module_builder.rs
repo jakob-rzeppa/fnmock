@@ -1,5 +1,13 @@
+//! Assembly of the generated fake module from its parts.
+
 use quote::quote;
 
+/// Collects the pieces of a fake module and stitches them into a `syn::ItemMod`.
+///
+/// The pieces are set separately because the generic and non-generic cases build the store and
+/// interface struct differently but wrap them identically; keeping the wrapper here means the
+/// `#[cfg(test)]` gate, the `pub(crate)` visibility and the `thread_local!` block are written once
+/// rather than once per case.
 pub struct ModuleBuilder {
     /// The name of the generated module.
     name: Option<syn::Ident>,
@@ -15,6 +23,7 @@ pub struct ModuleBuilder {
 }
 
 impl ModuleBuilder {
+    /// Create a builder with no parts set yet.
     pub fn new() -> Self {
         Self {
             name: None,
@@ -23,18 +32,31 @@ impl ModuleBuilder {
         }
     }
 
+    /// Set the name of the generated module.
     pub fn set_name(&mut self, name: syn::Ident) {
         self.name = Some(name);
     }
 
+    /// Set the store declaration. It is placed inside the module's `thread_local!` block, so it
+    /// should be a bare `static` declaration rather than a wrapped one.
     pub fn set_store(&mut self, store: proc_macro2::TokenStream) {
         self.store = Some(store);
     }
 
+    /// Set the interface struct, including its impl block — see the field's own note.
     pub fn set_interface_struct(&mut self, interface_struct: proc_macro2::TokenStream) {
         self.interface_struct = Some(interface_struct);
     }
 
+    /// Assemble the parts into the generated module.
+    ///
+    /// The module is `#[cfg(test)]`-gated and `use super::*`s its parent, so the closure trait it
+    /// names can refer to types that were in scope at the faked function.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a part was not set, or if the assembled module fails to parse. Both
+    /// would be bugs in fnmock, so they are reported as such rather than as user errors.
     pub fn build_module(&self) -> syn::Result<syn::ItemMod> {
         let internal_error = |field: &str| {
             syn::Error::new(

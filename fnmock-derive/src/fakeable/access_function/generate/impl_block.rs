@@ -1,9 +1,19 @@
+//! Code generation for the accessors of an impl block's methods.
+
 use quote::quote;
 use syn::parse_quote;
 
 use crate::fakeable::access_function::info::AccessFunctionInfo;
 
 /// Generates access methods for an impl block.
+///
+/// The accessors go into a second impl block that mirrors the original's generics and self type,
+/// rather than into the original itself, which keeps the user's block untouched apart from the
+/// inline call injected into each method body.
+///
+/// # Errors
+///
+/// Returns an error if the generated code fails to parse, which would be a bug in fnmock.
 ///
 /// # Arguments
 ///

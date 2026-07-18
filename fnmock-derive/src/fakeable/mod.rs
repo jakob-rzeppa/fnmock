@@ -1,3 +1,14 @@
+//! Expansion of the `#[fakeable]` attribute.
+//!
+//! The attribute expands into three pieces per faked function, one per submodule here:
+//!
+//! - `fake_module` — a `#[cfg(test)]` module holding the thread-local store and the interface
+//!   struct with `setup`/`clear`/`is_set`.
+//! - `inline_call` — the lookup injected at the top of the original body, which runs the fake
+//!   instead of the body when one is installed.
+//! - `access_function` — the accessor tests call to reach the interface struct, e.g.
+//!   `fetch_user_fake()`.
+
 use quote::quote;
 
 use crate::{
@@ -12,6 +23,15 @@ mod access_function;
 mod fake_module;
 mod inline_call;
 
+/// Expand the `#[fakeable]` attribute over the item it was applied to.
+///
+/// Takes `proc_macro2::TokenStream`s rather than `proc_macro::TokenStream`s so that expansion can
+/// be exercised by ordinary unit tests; see the note at the ABI boundary in `lib.rs`.
+///
+/// # Errors
+///
+/// Returns a spanned error if the item is neither a function nor an inherent impl block, if it
+/// fails to parse, or if any signature involved cannot be faked.
 pub fn handle_fakeable(
     _attr: proc_macro2::TokenStream,
     item: proc_macro2::TokenStream,

@@ -9,6 +9,13 @@ use crate::extract::{
 /// Extracts the generic information from a `Generics` object, including the count of generic parameters, the generic type parameters themselves, their identifiers, and their corresponding `GenericKeyPart` expressions.
 ///
 /// This is used for free functions and not impl blocks, as impl blocks require special handling to combine the generic parameters from both the struct and the method.
+///
+/// Returns `Ok(None)` when there is nothing to key a fake by — no generics at all, or lifetimes
+/// only.
+///
+/// # Errors
+///
+/// Returns a spanned error if a generic parameter carries a non-`'static` lifetime bound.
 pub fn extract_generic_function_info(
     generics: &syn::Generics,
 ) -> syn::Result<Option<FunctionGenericInfo>> {
