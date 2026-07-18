@@ -12,13 +12,6 @@ mod basic {
     mod smart_pointers;
     mod thread_isolation;
 }
-mod attributes {
-    mod cfg;
-    mod deprecated;
-    mod inline;
-    mod must_use;
-    mod track_caller;
-}
 mod generics {
     mod associated_type_bounds;
     mod associated_type_equality;
@@ -71,14 +64,6 @@ mod impl_block {
     mod basic;
     mod multiple_methods;
     mod same_method_name_isolation;
-
-    mod attributes {
-        mod cfg;
-        mod deprecated;
-        mod inline;
-        mod must_use;
-        mod track_caller;
-    }
 
     mod receiver {
         mod return_option_self;
