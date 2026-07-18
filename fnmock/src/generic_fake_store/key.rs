@@ -77,3 +77,120 @@ pub enum GenericKeyPart {
     Type(TypeId),
     Const(ConstValue),
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+    use std::hash::{DefaultHasher, Hash, Hasher};
+
+    use super::*;
+
+    fn hash_of<T: Hash>(value: &T) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        value.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    #[test]
+    fn const_values_with_equal_value_and_type_are_equal() {
+        assert_eq!(ConstValue::new(5u32), ConstValue::new(5u32));
+    }
+
+    #[test]
+    fn const_values_with_different_value_are_not_equal() {
+        assert_ne!(ConstValue::new(5u32), ConstValue::new(7u32));
+    }
+
+    #[test]
+    fn const_values_with_same_value_but_different_type_are_not_equal() {
+        // 5u8 and 5u32 must not collide just because they look equal as numbers.
+        assert_ne!(ConstValue::new(5u8), ConstValue::new(5u32));
+    }
+
+    #[test]
+    fn const_values_support_arbitrary_hash_eq_types() {
+        #[derive(Hash, PartialEq, Eq)]
+        struct CustomKey(u8, bool);
+
+        assert_eq!(
+            ConstValue::new(CustomKey(1, true)),
+            ConstValue::new(CustomKey(1, true))
+        );
+        assert_ne!(
+            ConstValue::new(CustomKey(1, true)),
+            ConstValue::new(CustomKey(2, true))
+        );
+    }
+
+    #[test]
+    fn equal_const_values_have_equal_hashes() {
+        assert_eq!(
+            hash_of(&ConstValue::new(42usize)),
+            hash_of(&ConstValue::new(42usize))
+        );
+    }
+
+    #[test]
+    fn const_values_with_same_value_but_different_type_have_different_hashes() {
+        // The type is mixed into the hash so 5u8 and 5u32 don't share a bucket.
+        assert_ne!(
+            hash_of(&ConstValue::new(5u8)),
+            hash_of(&ConstValue::new(5u32))
+        );
+    }
+
+    #[test]
+    fn cloned_const_value_is_equal_to_original() {
+        let value = ConstValue::new(String::from("hello"));
+
+        assert_eq!(value.clone(), value);
+    }
+
+    #[test]
+    fn type_key_parts_with_same_type_id_are_equal() {
+        assert_eq!(
+            GenericKeyPart::Type(TypeId::of::<i32>()),
+            GenericKeyPart::Type(TypeId::of::<i32>())
+        );
+    }
+
+    #[test]
+    fn type_key_parts_with_different_type_id_are_not_equal() {
+        assert_ne!(
+            GenericKeyPart::Type(TypeId::of::<i32>()),
+            GenericKeyPart::Type(TypeId::of::<u32>())
+        );
+    }
+
+    #[test]
+    fn const_key_parts_defer_to_const_value_equality() {
+        assert_eq!(
+            GenericKeyPart::Const(ConstValue::new(5u32)),
+            GenericKeyPart::Const(ConstValue::new(5u32))
+        );
+        assert_ne!(
+            GenericKeyPart::Const(ConstValue::new(5u32)),
+            GenericKeyPart::Const(ConstValue::new(7u32))
+        );
+    }
+
+    #[test]
+    fn type_and_const_key_parts_are_never_equal() {
+        assert_ne!(
+            GenericKeyPart::Type(TypeId::of::<u32>()),
+            GenericKeyPart::Const(ConstValue::new(5u32))
+        );
+    }
+
+    #[test]
+    fn key_parts_can_be_used_as_hash_set_members() {
+        let mut set = HashSet::new();
+        set.insert(GenericKeyPart::Type(TypeId::of::<i32>()));
+        set.insert(GenericKeyPart::Const(ConstValue::new(5u32)));
+
+        assert!(set.contains(&GenericKeyPart::Type(TypeId::of::<i32>())));
+        assert!(set.contains(&GenericKeyPart::Const(ConstValue::new(5u32))));
+        assert!(!set.contains(&GenericKeyPart::Type(TypeId::of::<u32>())));
+        assert!(!set.contains(&GenericKeyPart::Const(ConstValue::new(7u32))));
+    }
+}
