@@ -4,6 +4,7 @@ use quote::{quote, ToTokens};
 pub enum FakeCallValue {
     Ident(syn::Ident),
     Tuple(Vec<FakeCallValue>),
+    Slice(Vec<FakeCallValue>),
 }
 
 impl ToTokens for FakeCallValue {
@@ -16,6 +17,11 @@ impl ToTokens for FakeCallValue {
                 let element_tokens = elements.iter().map(|e| e.to_token_stream());
                 let tuple_tokens = quote! { (#(#element_tokens),*) };
                 tuple_tokens.to_tokens(tokens);
+            }
+            FakeCallValue::Slice(elements) => {
+                let element_tokens = elements.iter().map(|e| e.to_token_stream());
+                let slice_tokens = quote! { [#(#element_tokens),*] };
+                slice_tokens.to_tokens(tokens);
             }
         }
     }
@@ -47,6 +53,14 @@ impl TryFrom<&syn::Pat> for FakeCallValue {
                     .map(FakeCallValue::try_from)
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(FakeCallValue::Tuple(elements))
+            }
+            syn::Pat::Slice(slice) => {
+                let elements = slice
+                    .elems
+                    .iter()
+                    .map(FakeCallValue::try_from)
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(FakeCallValue::Slice(elements))
             }
             syn::Pat::Struct(pat_struct) => Err(syn::Error::new_spanned(
                 pat_struct,
@@ -93,6 +107,7 @@ mod tests {
         match value {
             FakeCallValue::Ident(ident) => assert_eq!(ident, "x"),
             FakeCallValue::Tuple(_) => panic!("expected FakeCallValue::Ident, got Tuple"),
+            FakeCallValue::Slice(_) => panic!("expected FakeCallValue::Ident, got Slice"),
         }
     }
 
@@ -106,6 +121,7 @@ mod tests {
         match value {
             FakeCallValue::Ident(ident) => assert_eq!(ident, "x"),
             FakeCallValue::Tuple(_) => panic!("expected FakeCallValue::Ident, got Tuple"),
+            FakeCallValue::Slice(_) => panic!("expected FakeCallValue::Ident, got Slice"),
         }
     }
 
@@ -122,13 +138,16 @@ mod tests {
                 match &elements[0] {
                     FakeCallValue::Ident(ident) => assert_eq!(ident, "a"),
                     FakeCallValue::Tuple(_) => panic!("expected element 0 to be Ident, got Tuple"),
+                    FakeCallValue::Slice(_) => panic!("expected element 0 to be Ident, got Slice"),
                 }
                 match &elements[1] {
                     FakeCallValue::Ident(ident) => assert_eq!(ident, "b"),
                     FakeCallValue::Tuple(_) => panic!("expected element 1 to be Ident, got Tuple"),
+                    FakeCallValue::Slice(_) => panic!("expected element 1 to be Ident, got Slice"),
                 }
             }
             FakeCallValue::Ident(_) => panic!("expected FakeCallValue::Tuple, got Ident"),
+            FakeCallValue::Slice(_) => panic!("expected FakeCallValue::Tuple, got Slice"),
         }
     }
 
@@ -151,16 +170,25 @@ mod tests {
                             FakeCallValue::Tuple(_) => {
                                 panic!("expected inner element 0 to be Ident, got Tuple")
                             }
+                            FakeCallValue::Slice(_) => {
+                                panic!("expected inner element 0 to be Ident, got Slice")
+                            }
                         }
                         match &inner[1] {
                             FakeCallValue::Ident(ident) => assert_eq!(ident, "b"),
                             FakeCallValue::Tuple(_) => {
                                 panic!("expected inner element 1 to be Ident, got Tuple")
                             }
+                            FakeCallValue::Slice(_) => {
+                                panic!("expected inner element 1 to be Ident, got Slice")
+                            }
                         }
                     }
                     FakeCallValue::Ident(_) => {
                         panic!("expected outer element 0 to be Tuple, got Ident")
+                    }
+                    FakeCallValue::Slice(_) => {
+                        panic!("expected outer element 0 to be Tuple, got Slice")
                     }
                 }
 
@@ -169,9 +197,13 @@ mod tests {
                     FakeCallValue::Tuple(_) => {
                         panic!("expected outer element 1 to be Ident, got Tuple")
                     }
+                    FakeCallValue::Slice(_) => {
+                        panic!("expected outer element 1 to be Ident, got Slice")
+                    }
                 }
             }
             FakeCallValue::Ident(_) => panic!("expected FakeCallValue::Tuple, got Ident"),
+            FakeCallValue::Slice(_) => panic!("expected FakeCallValue::Tuple, got Slice"),
         }
     }
 
