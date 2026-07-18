@@ -50,3 +50,64 @@ impl<WrappedClosure: Clone> FakeStore<WrappedClosure> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::rc::Rc;
+
+    use super::*;
+
+    #[test]
+    fn new_store_has_no_implementation_set() {
+        let store: FakeStore<Rc<dyn Fn() -> i32>> = FakeStore::new("test_fn");
+
+        assert!(!store.is_set());
+    }
+
+    #[test]
+    fn setup_marks_implementation_as_set() {
+        let mut store: FakeStore<Rc<dyn Fn() -> i32>> = FakeStore::new("test_fn");
+
+        store.setup(Rc::new(|| 42));
+
+        assert!(store.is_set());
+    }
+
+    #[test]
+    fn get_returns_the_implementation_passed_to_setup() {
+        let mut store: FakeStore<Rc<dyn Fn(i32) -> i32>> = FakeStore::new("test_fn");
+
+        store.setup(Rc::new(|x: i32| x + 1));
+
+        let f = store.get();
+        assert_eq!(f(41), 42);
+    }
+
+    #[test]
+    fn setup_overwrites_previous_implementation() {
+        let mut store: FakeStore<Rc<dyn Fn() -> i32>> = FakeStore::new("test_fn");
+
+        store.setup(Rc::new(|| 1));
+        store.setup(Rc::new(|| 2));
+
+        assert_eq!(store.get()(), 2);
+    }
+
+    #[test]
+    fn clear_removes_the_implementation() {
+        let mut store: FakeStore<Rc<dyn Fn() -> i32>> = FakeStore::new("test_fn");
+        store.setup(Rc::new(|| 42));
+
+        store.clear();
+
+        assert!(!store.is_set());
+    }
+
+    #[test]
+    #[should_panic(expected = "test_fn")]
+    fn get_panics_when_no_implementation_is_set() {
+        let store: FakeStore<Rc<dyn Fn() -> i32>> = FakeStore::new("test_fn");
+
+        store.get();
+    }
+}
