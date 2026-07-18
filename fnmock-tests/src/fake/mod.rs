@@ -1,5 +1,6 @@
 mod basic {
     mod by_value;
+    mod clear_and_is_set;
     mod interior_mutability;
     mod mut_reference;
     mod raw_const_pointers;
@@ -9,6 +10,7 @@ mod basic {
     mod return_result;
     mod return_unit;
     mod smart_pointers;
+    mod thread_isolation;
 }
 mod attributes {
     mod cfg;
@@ -24,6 +26,9 @@ mod generics {
     mod bounds_lifetime;
     mod bounds_mixed;
     mod const_generics;
+    mod const_generics_mixed;
+    mod const_generics_multiple;
+    mod cross_type_isolation;
     mod higher_ranked_bounds;
     mod implicit_lifetime;
     mod multiple_generics;
@@ -39,12 +44,14 @@ mod generics {
 mod patterns {
     mod ignored;
     mod mutable_patterns;
+    mod nested_tuple_destructuring;
     mod reference_patterns;
     mod struct_destructuring;
     mod tuple_destructuring;
 }
 mod special {
     mod async_function;
+    mod async_generic_function;
     mod const_function;
     mod extern_function;
     mod futures;
@@ -60,12 +67,17 @@ mod trait_based {
 
 mod impl_block {
     mod associated_function;
+    mod async_method;
     mod basic;
     mod multiple_methods;
     mod same_method_name_isolation;
 
     mod attributes {
         mod cfg;
+        mod deprecated;
+        mod inline;
+        mod must_use;
+        mod track_caller;
     }
 
     mod receiver {
@@ -88,6 +100,7 @@ mod impl_block {
         mod generic_combined;
         mod generic_combined_where;
         mod generic_method;
+        mod generic_method_async;
         mod generic_method_where;
         mod generic_struct;
         mod generic_struct_where;
