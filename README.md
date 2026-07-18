@@ -46,6 +46,7 @@ compile no fake machinery at all.
   and how test isolation works.
 - **[FEATURES.md](FEATURES.md)** — the full supported surface (types, patterns, `async`/`unsafe`/
   `extern`, generics, impl blocks) and the cases that are explicitly rejected at compile time.
+- **fnmock-tests** - fnmock's test cases can be useful for examples on how to use this project.
 
 ## Overview
 

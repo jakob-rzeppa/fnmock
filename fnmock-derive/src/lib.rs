@@ -2,6 +2,9 @@
 //!
 //! Everything here except the [`macro@fakeable`] attribute is a fnmock internal. Depend on the
 //! `fnmock` crate rather than on this one; it re-exports the attribute as `fnmock::fakeable`.
+//!
+//! See the [README](https://github.com/jakob-rzeppa/fnmock/blob/master/README.md) for installation,
+//! a walkthrough and the current limitations.
 
 use crate::fakeable::handle_fakeable;
 

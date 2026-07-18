@@ -23,6 +23,9 @@
 //! [`fakeable`] is the entire public API for fakes. The [`fake_store`] and [`generic_fake_store`] modules
 //! only exist because the code the macro expands to has to name them; they are fnmock internals
 //! and you should not interact with them directly.
+//!
+//! See the [README](https://github.com/jakob-rzeppa/fnmock/blob/master/README.md) for installation,
+//! a walkthrough and the current limitations.
 
 pub mod fake_store;
 pub mod generic_fake_store;
