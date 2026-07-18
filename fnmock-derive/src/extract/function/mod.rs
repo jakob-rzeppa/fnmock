@@ -29,7 +29,6 @@ pub fn extract_function_info(item_fn: &syn::ItemFn) -> syn::Result<FunctionInfo>
 
     Ok(FunctionInfo {
         name,
-        _param_types: param_types,
         param_pats,
         fn_closure_trait,
         generic_info,

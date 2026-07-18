@@ -17,6 +17,7 @@ pub fn extract_param_types(
             match param {
                 syn::FnArg::Typed(pat_type) => {
                     let mut ty = pat_type.ty.as_ref().clone();
+
                     if let Some(replacer) = &mut self_replacer {
                         replacer.visit_type_mut(&mut ty);
                     }

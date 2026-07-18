@@ -73,7 +73,6 @@ fn extract_single_item_impl_info_for_method(
     Ok(ImplItemFnInfo {
         struct_name,
         method_name,
-        _param_types: param_types,
         param_pats,
         fn_closure_trait,
         generic_info,

@@ -1,0 +1,5 @@
+error: The #[fakeable] attribute does not support `impl Trait` in a function signature. Please use a concrete type or a generic type parameter instead.
+ --> src/fake/unsupported/compile_fail/impl_trait_param.rs:6:28
+  |
+6 | fn takes_impl_trait(value: impl std::fmt::Display) -> String {
+  |                            ^^^^^^^^^^^^^^^^^^^^^^
