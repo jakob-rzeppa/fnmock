@@ -5,7 +5,68 @@ A Rust mocking framework for standalone functions and methods in a impl block.
 [![Crates.io](https://img.shields.io/crates/v/fnmock.svg)](https://crates.io/crates/fnmock)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-## Planned
+fnmock lets you replace a function's behaviour in tests without introducing a trait / dependency injection wiring. You annotate the function where it already
+lives, and the test controls what it returns.
+
+```rust
+#[fnmock::fakeable]
+fn fetch_user(id: u32) -> User {
+    // real database call
+}
+
+fn greet(id: u32) -> String {
+    format!("Hello, {}", fetch_user(id).name)
+}
+
+#[test]
+fn test_greeting() {
+    fetch_user_fake().setup(|id| User { id, name: "Test".into() });
+
+    assert_eq!(greet(1), "Hello, Test");
+}
+```
+
+`greet` keeps calling `fetch_user` directly — no signature changes, no indirection.
+
+## Installation
+
+The attribute is applied to production code, so fnmock is a regular dependency:
+
+```toml
+[dependencies]
+fnmock = "0.1.0"
+```
+
+The fake lookup is `#[cfg(test)]`-gated, so release builds keep the original function body and
+compile no fake machinery at all.
+
+## Documentation
+
+- **[USAGE.md](USAGE.md)** — how to use fakes: the accessor API, methods and receivers, generics,
+  and how test isolation works.
+- **[FEATURES.md](FEATURES.md)** — the full supported surface (types, patterns, `async`/`unsafe`/
+  `extern`, generics, impl blocks) and the cases that are explicitly rejected at compile time.
+
+## Overview
+
+Applying `#[fnmock::fakeable]` to a function or an inherent impl block generates an accessor named
+after it:
+
+| Method | Behaviour |
+| --- | --- |
+| `setup(closure)` | Install a fake, replacing any previous one. |
+| `clear()` | Remove the fake; calls run the real body again. |
+| `is_set()` | Whether a fake is currently installed. |
+
+In a impl block every method is faked and accessors are generated as associated functions.
+
+Fakes are stored per thread, and the test harness gives each `#[test]` its own thread, so tests
+cannot leak into one another and no reset step is needed. The flip side is that a fake is only
+visible on the thread that installed it — see
+[test isolation](USAGE.md#test-isolation) for what that means around `tokio::spawn` and
+`std::thread::spawn`.
+
+## Work in Progress
 
 - Spies
 - Mocks
