@@ -4,7 +4,7 @@ use crate::{fakeable::fake_module::info::FakeModuleInfo, module_builder::ModuleB
 
 /// Generates the code for a fake module based on the provided FakeModuleInfo.
 pub fn generate_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::ItemMod> {
-    if let Some(_) = &info.generic_info {
+    if info.generic_info.is_some() {
         generate_generic_fake_module_code(info)
     } else {
         generate_regular_fake_module_code(info)

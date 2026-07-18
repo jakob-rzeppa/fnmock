@@ -23,7 +23,7 @@ pub fn extract_generic_function_info(
 
     Ok(Some(FunctionGenericInfo {
         count: generic_params.len(),
-        generic_params: generic_params.to_generic_params(),
+        generic_params: generic_params.into_generic_params(),
         idents,
         generic_keys,
     }))

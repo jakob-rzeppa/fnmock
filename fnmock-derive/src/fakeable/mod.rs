@@ -34,7 +34,7 @@ pub fn handle_fakeable(
                 &item_fn.block,
                 &inline_call_info,
             )?;
-            item_fn.block = Box::new(modified_block);
+            *item_fn.block = modified_block;
 
             // Generate the access function
             let access_function =

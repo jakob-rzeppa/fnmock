@@ -9,7 +9,7 @@ pub fn extract_param_types(
 ) -> syn::Result<Vec<syn::Type>> {
     // If a `self_ty` is provided, we will replace any `Self` types in the parameter types with the provided `self_ty`.
     // If no `self_ty` is provided, we don't need to replace `Self` in the parameter types, since we are in a standalone function context.
-    let mut self_replacer = self_ty.map(|ty| ReplaceSelf::new(ty));
+    let mut self_replacer = self_ty.map(ReplaceSelf::new);
 
     params
         .iter()
@@ -50,9 +50,9 @@ pub fn extract_param_types(
 pub fn extract_param_pats(params: &[syn::FnArg]) -> Vec<syn::Pat> {
     params
         .iter()
-        .filter_map(|param| match param {
-            syn::FnArg::Typed(pat_type) => Some(pat_type.pat.as_ref().clone()),
-            syn::FnArg::Receiver(_) => Some(syn::Pat::Ident(syn::PatIdent {
+        .map(|param| match param {
+            syn::FnArg::Typed(pat_type) => pat_type.pat.as_ref().clone(),
+            syn::FnArg::Receiver(_) => syn::Pat::Ident(syn::PatIdent {
                 attrs: Vec::new(),
                 by_ref: None,
                 mutability: None,
@@ -64,7 +64,7 @@ pub fn extract_param_pats(params: &[syn::FnArg]) -> Vec<syn::Pat> {
                         .unwrap_or_else(proc_macro2::Span::call_site),
                 ),
                 subpat: None,
-            })),
+            }),
         })
         .collect()
 }

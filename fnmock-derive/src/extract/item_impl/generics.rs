@@ -32,11 +32,11 @@ pub fn extract_generic_impl_info(
     Ok(Some(ImplItemFnGenericInfo {
         count: type_params.len(),
 
-        generic_params: type_params.to_generic_params(),
-        _struct_generic_params: struct_generic_params.to_generic_params(),
-        method_generic_params: method_generic_params.to_generic_params(),
+        generic_params: type_params.into_generic_params(),
+        _struct_generic_params: struct_generic_params.into_generic_params(),
+        method_generic_params: method_generic_params.into_generic_params(),
 
-        idents: idents,
+        idents,
         _struct_idents: struct_idents,
         _method_idents: method_idents,
 

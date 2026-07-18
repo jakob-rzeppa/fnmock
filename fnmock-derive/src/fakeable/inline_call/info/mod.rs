@@ -31,11 +31,7 @@ impl TryFrom<&FunctionInfo> for InlineCallInfo {
             .map(FakeCallValue::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
-        let generic_idents = if let Some(generic_info) = &function_info.generic_info {
-            Some(generic_info.idents.clone())
-        } else {
-            None
-        };
+        let generic_idents = function_info.generic_info.as_ref().map(|generic_info| generic_info.idents.clone());
 
         Ok(InlineCallInfo {
             module_name,
@@ -67,11 +63,7 @@ impl TryFrom<&ImplItemFnInfo> for InlineCallInfo {
             .map(FakeCallValue::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
-        let generic_idents = if let Some(generic_info) = &impl_item_fn_info.generic_info {
-            Some(generic_info.idents.clone())
-        } else {
-            None
-        };
+        let generic_idents = impl_item_fn_info.generic_info.as_ref().map(|generic_info| generic_info.idents.clone());
 
         Ok(InlineCallInfo {
             module_name,

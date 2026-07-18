@@ -4,7 +4,7 @@ use quote::ToTokens;
 /// This is necessary because the where bounds are not included in the generic parameters, but we need them to generate the fakeable function.
 pub fn merge_where_bounds_into_type_params(
     generics: &syn::Generics,
-    type_params: &mut Vec<syn::GenericParam>,
+    type_params: &mut [syn::GenericParam],
 ) {
     let Some(where_clause) = &generics.where_clause else {
         return;

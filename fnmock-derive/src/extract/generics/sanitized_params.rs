@@ -56,7 +56,7 @@ impl SanitizedGenericParams {
         self.generic_params.len()
     }
 
-    pub fn to_generic_params(self) -> Vec<syn::GenericParam> {
+    pub fn into_generic_params(self) -> Vec<syn::GenericParam> {
         self.generic_params
     }
 }

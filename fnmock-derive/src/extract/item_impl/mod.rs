@@ -59,7 +59,7 @@ fn extract_single_item_impl_info_for_method(
     let lifetimes = struct_lifetimes
         .clone()
         .into_iter()
-        .chain(method_lifetimes.clone().into_iter())
+        .chain(method_lifetimes.clone())
         .collect::<Vec<_>>();
 
     let params = method.sig.inputs.iter().cloned().collect::<Vec<_>>();

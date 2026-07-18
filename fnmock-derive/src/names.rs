@@ -127,7 +127,7 @@ pub fn build_impl_interface_struct_name(
     syn::Ident::new(
         &format!(
             "{}{}{}",
-            struct_name.to_string(),
+            struct_name,
             snake_to_pascal_case(&method_name.to_string()),
             name_type.suffix_interface_struct()
         ),
