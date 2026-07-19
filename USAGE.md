@@ -25,9 +25,8 @@ fn fetch_user(id: u32) -> User {
     // real database call
 }
 
-fn greet(id: u32) {
-    let user = fetch_user(id);
-    println!("Hello, {}", user.name);
+fn greet(id: u32) -> String {
+    format!("Hello, {}", fetch_user(id).name)
 }
 
 #[test]
