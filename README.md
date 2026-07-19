@@ -38,7 +38,9 @@ fnmock = "0.1.0"
 ```
 
 The fake lookup is `#[cfg(test)]`-gated, so release builds keep the original function body and
-compile no fake machinery at all.
+compile no fake machinery at all. The flip side: fakes can only be installed from a `#[cfg(test)]`
+unit test inside the crate that defines the fakeable item — not from an integration test under
+`tests/`, a doctest, or another crate. See [test scope](USAGE.md#test-scope) in USAGE.md.
 
 ## Documentation
 

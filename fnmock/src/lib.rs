@@ -4,10 +4,14 @@
 //! dependency injection wiring. You annotate the function where it already lives with
 //! [`fakeable`], and the test controls what it returns:
 //!
-//! ```ignore
+//! ```
 //! #[fnmock::fakeable]
 //! fn fetch_user(id: u32) -> User {
 //!     // real database call
+//! }
+//!
+//! fn greet(id: u32) -> String {
+//!     format!("Hello, {}", fetch_user(id).name)
 //! }
 //!
 //! #[test]
