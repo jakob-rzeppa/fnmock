@@ -1,0 +1,11 @@
+error: use of deprecated method `Widget::old_method`
+  --> src/fake/attributes/compile_fail/deprecated_impl_method.rs:19:12
+   |
+19 |     widget.old_method(1);
+   |            ^^^^^^^^^^
+   |
+note: the lint level is defined here
+  --> src/fake/attributes/compile_fail/deprecated_impl_method.rs:5:9
+   |
+ 5 | #![deny(deprecated)]
+   |         ^^^^^^^^^^

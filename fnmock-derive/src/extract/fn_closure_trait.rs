@@ -11,6 +11,7 @@ use syn::Type;
 ///
 /// - `lifetime_params`: The lifetime parameters of the function / struct + method signature
 /// - `params`: The parameter types of the function
+///
 /// The lifetimes are bound higher-ranked (`for<'a> Fn(&'a str)`), because the fake is stored as a
 /// single `dyn Fn` value and so cannot be generic over lifetimes the way the faked function is.
 ///

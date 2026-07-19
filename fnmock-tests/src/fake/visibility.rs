@@ -24,5 +24,8 @@ fn test_pub_crate_fake_accessor_usable_from_another_module() {
 #[test]
 fn test_pub_fake_accessor_usable_from_another_module() {
     definitions::publicly_visible_fake().setup(|a| format!("Fake {}", a));
-    assert_eq!(definitions::publicly_visible("Test".to_string()), "Fake Test");
+    assert_eq!(
+        definitions::publicly_visible("Test".to_string()),
+        "Fake Test"
+    );
 }

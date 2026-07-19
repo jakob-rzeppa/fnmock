@@ -99,4 +99,6 @@ mod impl_block {
 
 mod visibility;
 
+mod attributes;
+
 mod unsupported;
