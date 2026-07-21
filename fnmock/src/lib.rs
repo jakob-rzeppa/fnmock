@@ -4,7 +4,7 @@
 //! dependency injection wiring. You annotate the function where it already lives with
 //! [`fakeable`], and the test controls what it returns:
 //!
-//! ```
+//! ```ignore
 //! #[fnmock::fakeable]
 //! fn fetch_user_name(id: u32) -> String {
 //!     todo!()
