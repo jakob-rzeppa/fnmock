@@ -2,9 +2,15 @@
 name = "fnmock"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme.workspace = true
+documentation = "https://docs.rs/fnmock"
 
 [dependencies]
-fnmock-derive = { path = "../fnmock-derive" }
+fnmock-derive = { path = "../fnmock-derive", version = "0.1.0" }

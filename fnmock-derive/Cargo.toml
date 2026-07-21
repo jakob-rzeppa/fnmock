@@ -2,9 +2,15 @@
 name = "fnmock-derive"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Procedural macro implementation for the fnmock mocking framework."
+keywords.workspace = true
+categories.workspace = true
+readme.workspace = true
+documentation = "https://docs.rs/fnmock-derive"
 
 [lib]
 proc-macro = true
