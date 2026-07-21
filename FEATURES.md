@@ -44,6 +44,11 @@ The closure mirrors the function signature: same parameters, same return type. F
 receiver is passed as the **first** closure argument (`|_, a, b|`). For `async` functions the
 closure is a plain synchronous closure returning the output type — not a future.
 
+`setup`/`clear` consume and return `Self`, so calls can be chained
+(`foo_fake().setup(...).clear()`) — see [accessor_chaining.rs](fnmock-tests/src/fake/basic/accessor_chaining.rs).
+Calling `is_set()`, `setup()`, or `clear()` on the same fake from *inside* its own fake closure is
+also safe — see [reentrant_fake.rs](fnmock-tests/src/fake/basic/reentrant_fake.rs).
+
 ## Free functions
 
 ### Parameter and return types
@@ -51,6 +56,7 @@ closure is a plain synchronous closure returning the output type — not a futur
 | Supported | Test |
 | --- | --- |
 | By-value parameters | [by_value.rs](fnmock-tests/src/fake/basic/by_value.rs) |
+| Zero-argument functions (`fn f() -> T`) | [zero_args.rs](fnmock-tests/src/fake/basic/zero_args.rs) |
 | Shared references (`&str`) | [reference.rs](fnmock-tests/src/fake/basic/reference.rs) |
 | Mutable references (`&mut String`) | [mut_reference.rs](fnmock-tests/src/fake/basic/mut_reference.rs) |
 | References nested in containers (`Option<&T>`, `Vec<&T>`, `&[T]`, tuples of refs) | [reference_in_container.rs](fnmock-tests/src/fake/basic/reference_in_container.rs) |
@@ -148,6 +154,10 @@ GenericCombined::<String>::combine_fake::<i32>().setup(|_, other| ("Fake".to_str
   in parallel therefore do not interfere ([thread_isolation.rs](fnmock-tests/src/fake/basic/thread_isolation.rs)).
 - **Per-instantiation isolation.** For generics, setting or clearing one instantiation leaves the
   others untouched ([cross_type_isolation.rs](fnmock-tests/src/fake/generics/cross_type_isolation.rs)).
+- **Same-name isolation.** Two fakeable functions with the same name are independent as long as
+  they're in different scopes — different modules for free functions
+  ([same_name_isolation.rs](fnmock-tests/src/fake/basic/same_name_isolation.rs)), different types for
+  methods ([same_method_name_isolation.rs](fnmock-tests/src/fake/impl_block/same_method_name_isolation.rs)).
 - **No automatic reset.** A fake stays installed for the rest of the thread's life unless you call
   `clear()`.
 

@@ -7,37 +7,34 @@ For the exhaustive list of what is and isn't supported, see [FEATURES.md](FEATUR
 ## What fnmock is for
 
 Rust code written in a functional style — modules of plain functions calling other plain
-functions — is awkward to unit-test in isolation. The conventional fix is to introduce a seam:
-define a trait, implement it, pass it around as `Box<dyn Trait>` or a generic parameter, and wire
-dependencies in through constructors.
+functions — is awkward to unit-test in isolation.
 
-That seam exists purely so a mocking library can substitute behaviour. It changes your function
-signatures, adds indirection, and pushes an object-oriented shape onto the code.
+The convential way to fix this is using object-oriented design with traits and structs. 
+Theese can be mocked via `mockall` or similar crates. But if you like a functional
+programming style and don't want to add all this overhead, `fnmock` can give you the 
+possability use the functions by themselves.
 
-I do not want to start a debate wether one or the other code style is better. This should be kept to the person
-maintaining the code. This project only exists to give you the opportunity to choose what is right for you.
-
-If you decide to use fnmock: annotate the function where it already lives and replace it directly in tests:
+Just annotate the function where it already lives and replace it directly in tests:
 
 ```rust
 #[fnmock::fakeable]
-fn fetch_user(id: u32) -> User {
-    // real database call
+fn fetch_user_name(id: u32) -> String {
+    todo!()
 }
 
 fn greet(id: u32) -> String {
-    format!("Hello, {}", fetch_user(id).name)
+    format!("Hello, {}", fetch_user_name(id))
 }
 
 #[test]
 fn test_greeting() {
-    fetch_user_fake().setup(|id| User { id, name: "Test".into() });
+    fetch_user_name_fake().setup(|_| "Test".into());
 
     assert_eq!(greet(1), "Hello, Test");
 }
 ```
 
-No trait, no dependency injection, no signature change. `greet` keeps calling `fetch_user`
+No trait, no dependency injection, no signature change. `greet` keeps calling `fetch_user_name`
 directly, and the test controls what it returns.
 
 ## Setup
@@ -47,7 +44,7 @@ dev-dependency:
 
 ```toml
 [dependencies]
-fnmock = "0.1.0"
+fnmock = "<version>"
 ```
 
 This costs nothing in release builds. The fake lookup the macro injects is `#[cfg(test)]`-gated,

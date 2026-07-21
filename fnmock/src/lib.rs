@@ -6,17 +6,17 @@
 //!
 //! ```
 //! #[fnmock::fakeable]
-//! fn fetch_user(id: u32) -> User {
-//!     // real database call
+//! fn fetch_user_name(id: u32) -> String {
+//!     todo!()
 //! }
 //!
 //! fn greet(id: u32) -> String {
-//!     format!("Hello, {}", fetch_user(id).name)
+//!     format!("Hello, {}", fetch_user_name(id))
 //! }
 //!
 //! #[test]
 //! fn test_greeting() {
-//!     fetch_user_fake().setup(|id| User { id, name: "Test".into() });
+//!     fetch_user_name_fake().setup(|_| "Test".into());
 //!
 //!     assert_eq!(greet(1), "Hello, Test");
 //! }
