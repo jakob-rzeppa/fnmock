@@ -76,7 +76,11 @@ visible on the thread that installed it — see
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the  file for details.
+
+This project is licensed under the terms of both the MIT license and the Apache License (Version 2.0).
+
+See [LICENSE-APACHE](LICENSE-APACHE), and [LICENSE-MIT](LICENSE-MIT) for details
 
 ## Author
 
