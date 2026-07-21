@@ -63,7 +63,10 @@ pub fn build_access_function_name(fn_name: &syn::Ident, name_type: NameType) -> 
 
 /// Builds the module name for a impl block fake, spy etc.
 ///
-/// For a struct named `UserService` and a method named `get_user`, this will generate `user_service_struct_get_user_fake_module`.
+/// For a struct named `UserService` and a method named `get_user`, this will generate `user_service__struct__get_user__fake_module`.
+///
+/// The doubled `__` delimiters keep this name from colliding with other module names, since the `__`
+/// is generally not used in the middle of a function name.
 pub fn build_impl_module_name(
     struct_name: &syn::Ident,
     method_name: &syn::Ident,
@@ -71,7 +74,7 @@ pub fn build_impl_module_name(
 ) -> syn::Ident {
     syn::Ident::new(
         &format!(
-            "{}_struct_{}_{}",
+            "{}__{}_{}",
             pascal_to_snake_case(&struct_name.to_string()),
             &method_name.to_string(),
             name_type.suffix_module()
@@ -193,7 +196,7 @@ mod tests {
         let module_name = build_impl_module_name(&struct_name, &method_name, NameType::Fake);
         assert_eq!(
             module_name.to_string(),
-            "user_service_struct_get_user_fake_module"
+            "user_service__get_user_fake_module"
         );
     }
 

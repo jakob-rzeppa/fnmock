@@ -159,7 +159,7 @@ mod tests {
         assert_eq!(info.access_function_name.to_string(), "get_user_fake");
         assert_eq!(
             info.module_name.to_string(),
-            "user_service_struct_get_user_fake_module"
+            "user_service__get_user_fake_module"
         );
         assert_eq!(
             info.interface_struct_name.to_string(),
