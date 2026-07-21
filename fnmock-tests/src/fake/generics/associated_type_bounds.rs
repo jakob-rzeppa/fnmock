@@ -4,7 +4,7 @@
 //! You can setup a fake for a type that does not satisfy the associated type bounds, but calling the function with a type that does not satisfy the bounds will not be possible.
 //!
 //! Here you need to be extra careful, with the type the setup is called for, since you need to enforce the bound yourself,
-//! otherwise you will have a unnecessary setup that can never be called.
+//! otherwise you will have an unnecessary setup that can never be called.
 
 use std::fmt::Display;
 

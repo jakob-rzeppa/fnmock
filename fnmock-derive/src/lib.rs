@@ -52,7 +52,7 @@ mod names;
 ///
 /// # Errors
 ///
-/// The macro can return a compile error if something went wrong or a unsupported construct was used.
+/// The macro can return a compile error if something went wrong or an unsupported construct was used.
 /// See `FEATURES.md` for the full list of unsupported constructs.
 #[proc_macro_attribute]
 pub fn fakeable(

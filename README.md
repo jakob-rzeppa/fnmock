@@ -1,6 +1,6 @@
 # fnmock
 
-A Rust mocking framework for standalone functions and methods in a impl block.
+A Rust mocking framework for standalone functions and methods in an impl block.
 
 [![Crates.io](https://img.shields.io/crates/v/fnmock.svg)](https://crates.io/crates/fnmock)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -61,7 +61,7 @@ after it:
 | `clear()` | Remove the fake; calls run the real body again. |
 | `is_set()` | Whether a fake is currently installed. |
 
-In a impl block every method is faked and accessors are generated as associated functions.
+In an impl block every method is faked and accessors are generated as associated functions.
 
 Fakes are stored per thread, and the test harness gives each `#[test]` its own thread, so tests
 cannot leak into one another and no reset step is needed. The flip side is that a fake is only

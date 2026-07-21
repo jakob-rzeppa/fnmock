@@ -10,6 +10,6 @@ fn compute(a: i32) -> i32 {
 }
 
 fn main() {
-    // We do not use the return value of `compute`, so this doesnt compile because of the `#![deny(unused_must_use)]`.
+    // We do not use the return value of `compute`, so this doesn't compile because of the `#![deny(unused_must_use)]`.
     compute(1);
 }

@@ -6,7 +6,7 @@ use crate::extract::{
     item_impl::info::ImplItemFnGenericInfo,
 };
 
-/// Extract the generic type parameters (e.g. `T: Display + 'static`, `U: 'static`) from a impl block method.
+/// Extract the generic type parameters (e.g. `T: Display + 'static`, `U: 'static`) from an impl block method.
 ///
 /// The generics of the struct and method are combined, in the order of struct generics followed by method generics.
 ///

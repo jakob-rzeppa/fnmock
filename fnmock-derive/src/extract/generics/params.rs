@@ -30,7 +30,7 @@ pub fn extract_generic_type_and_const_params(
 
     merge_where_bounds_into_type_params(generics, &mut generic_params);
 
-    // Check if any of the type parameters have a lifetime bound. If so, we check if it is static. If not we return a error, because we don't support non-static lifetimes in generic parameters for fakeable functions.
+    // Check if any of the type parameters have a lifetime bound. If so, we check if it is static. If not we return an error, because we don't support non-static lifetimes in generic parameters for fakeable functions.
     for generic_param in &generic_params {
         if let syn::GenericParam::Type(type_param) = generic_param {
             for bound in &type_param.bounds {

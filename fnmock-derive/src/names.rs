@@ -61,9 +61,9 @@ pub fn build_access_function_name(fn_name: &syn::Ident, name_type: NameType) -> 
     )
 }
 
-/// Builds the module name for a impl block fake, spy etc.
+/// Builds the module name for an impl block fake, spy etc.
 ///
-/// For a struct named `UserService` and a method named `get_user`, this will generate `user_service__struct__get_user__fake_module`.
+/// For a struct named `UserService` and a method named `get_user`, this will generate `user_service__get_user_fake_module`.
 ///
 /// The doubled `__` delimiters keep this name from colliding with other module names, since the `__`
 /// is generally not used in the middle of a function name.
@@ -97,7 +97,7 @@ pub fn build_store_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident
     )
 }
 
-/// Build the store name for a impl block fake, spy etc.
+/// Build the store name for an impl block fake, spy etc.
 ///
 /// For a struct named `UserService` and a method named `get_user`, this will generate `USER_SERVICE_GET_USER_FAKE_STORE`.
 pub fn build_impl_store_name(
@@ -130,7 +130,7 @@ pub fn build_interface_struct_name(fn_name: &syn::Ident, name_type: NameType) ->
     )
 }
 
-/// Build the interface struct name for a impl block fake, spy etc.
+/// Build the interface struct name for an impl block fake, spy etc.
 ///
 /// For a struct named `UserService` and a method named `get_user`, this will generate `UserServiceGetUserFakeInterface`.
 pub fn build_impl_interface_struct_name(

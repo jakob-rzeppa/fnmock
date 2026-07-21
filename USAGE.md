@@ -9,10 +9,10 @@ For the exhaustive list of what is and isn't supported, see [FEATURES.md](FEATUR
 Rust code written in a functional style — modules of plain functions calling other plain
 functions — is awkward to unit-test in isolation.
 
-The convential way to fix this is using object-oriented design with traits and structs. 
-Theese can be mocked via `mockall` or similar crates. But if you like a functional
-programming style and don't want to add all this overhead, `fnmock` can give you the 
-possability use the functions by themselves.
+The conventional way to fix this is using object-oriented design with traits and structs.
+These can be mocked via `mockall` or similar crates. But if you like a functional
+programming style and don't want to add all this overhead, `fnmock` can give you the
+possibility to use the functions by themselves.
 
 Just annotate the function where it already lives and replace it directly in tests:
 
