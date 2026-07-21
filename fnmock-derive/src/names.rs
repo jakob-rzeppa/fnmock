@@ -76,7 +76,7 @@ pub fn build_impl_module_name(
         &format!(
             "{}__{}_{}",
             pascal_to_snake_case(&struct_name.to_string()),
-            &method_name.to_string(),
+            method_name,
             name_type.suffix_module()
         ),
         proc_macro2::Span::mixed_site(),
