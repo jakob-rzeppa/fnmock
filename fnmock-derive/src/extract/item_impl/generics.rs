@@ -1,7 +1,7 @@
 use crate::extract::{
     generics::{
         key_array::build_generic_key_array, params::extract_generic_type_and_const_params,
-        types::extract_generic_itents_from_generic_params,
+        types::extract_generic_idents_from_generic_params,
     },
     item_impl::info::ImplItemFnGenericInfo,
 };
@@ -27,9 +27,9 @@ pub fn extract_generic_impl_info(
         return Ok(None);
     }
 
-    let struct_idents = extract_generic_itents_from_generic_params(&struct_generic_params)?;
-    let method_idents = extract_generic_itents_from_generic_params(&method_generic_params)?;
-    let idents = extract_generic_itents_from_generic_params(&type_params)?;
+    let struct_idents = extract_generic_idents_from_generic_params(&struct_generic_params)?;
+    let method_idents = extract_generic_idents_from_generic_params(&method_generic_params)?;
+    let idents = extract_generic_idents_from_generic_params(&type_params)?;
 
     let struct_generic_keys = build_generic_key_array(&struct_generic_params)?;
     let method_generic_keys = build_generic_key_array(&method_generic_params)?;

@@ -2,7 +2,7 @@ use crate::extract::{
     function::info::FunctionGenericInfo,
     generics::{
         key_array::build_generic_key_array, params::extract_generic_type_and_const_params,
-        types::extract_generic_itents_from_generic_params,
+        types::extract_generic_idents_from_generic_params,
     },
 };
 
@@ -25,7 +25,7 @@ pub fn extract_generic_function_info(
         return Ok(None);
     }
 
-    let idents = extract_generic_itents_from_generic_params(&generic_params)?;
+    let idents = extract_generic_idents_from_generic_params(&generic_params)?;
     let generic_keys = build_generic_key_array(&generic_params)?;
 
     Ok(Some(FunctionGenericInfo {
