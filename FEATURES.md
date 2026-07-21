@@ -112,6 +112,10 @@ Type parameters must be `'static` — fakes are keyed by `TypeId`. Const paramet
 value, so `foo_fake::<5>()` does not affect a call to `foo::<7>()`. The const value is not
 accessible inside the fake closure; since the fake only applies to that one value, hardcode it.
 
+Lifetime bounds (`'a: 'b`, inline or in a `where` clause) are accepted but not reproduced in the
+fake closure's signature — see [bounds_lifetime.rs](fnmock-tests/src/fake/generics/bounds_lifetime.rs).
+This is fine because the generated code only ever calls the fake closure with concrete lifetimes.
+
 Because the fake is selected by generic arguments, **always specify them explicitly** on both
 `setup` and the call site. If the compiler infers different arguments than you expected, the fake
 silently will not apply and the real implementation runs. See [USAGE.md](USAGE.md).
