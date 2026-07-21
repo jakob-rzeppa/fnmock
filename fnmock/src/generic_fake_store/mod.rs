@@ -50,11 +50,6 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
         self.impls.insert(generic_keys, Rc::new(f));
     }
 
-    /// Clear the fake implementations for every combination of generic types.
-    pub fn clear_all(&mut self) {
-        self.impls.clear();
-    }
-
     /// Clear the fake implementation for a specific combination of generic types.
     ///
     /// Fakes registered for other combinations are left untouched.
@@ -149,7 +144,8 @@ mod tests {
         println!("Calling f2:");
         println!("{}", f2(42, "Bob".into()));
 
-        store.clear_all();
+        store.clear_for(i32_string_key.clone());
+        store.clear_for(u32_string_key.clone());
 
         assert!(!store.is_set_for(i32_string_key));
         assert!(!store.is_set_for(u32_string_key));
