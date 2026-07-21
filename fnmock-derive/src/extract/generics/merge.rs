@@ -48,10 +48,9 @@ pub fn merge_where_bounds_into_type_params(
             continue;
         };
 
-        let Some(syn::GenericParam::Type(type_param)) = type_params
-            .iter_mut()
-            .find(|param| matches!(param, syn::GenericParam::Type(tp) if tp.ident == *target_ident))
-        else {
+        let Some(syn::GenericParam::Type(type_param)) = type_params.iter_mut().find(
+            |param| matches!(param, syn::GenericParam::Type(tp) if tp.ident == *target_ident),
+        ) else {
             continue;
         };
 

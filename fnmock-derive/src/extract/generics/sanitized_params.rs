@@ -24,12 +24,10 @@ impl SanitizedGenericParams {
                 param,
                 syn::GenericParam::Type(_) | syn::GenericParam::Const(_)
             ) {
-                return Err(
-                    syn::Error::new_spanned(
-                        param,
-                        "internal error: SanitizedGenericParams may only contain type and const parameters, but a lifetime parameter was found. This is a bug in fnmock; please report it."
-                    )
-                );
+                return Err(syn::Error::new_spanned(
+                    param,
+                    "internal error: SanitizedGenericParams may only contain type and const parameters, but a lifetime parameter was found. This is a bug in fnmock; please report it.",
+                ));
             }
         }
 

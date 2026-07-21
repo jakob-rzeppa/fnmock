@@ -17,9 +17,11 @@ fn test_setup_then_clear_can_be_chained() {
 
 #[test]
 fn test_is_set_can_be_called_on_the_result_of_setup() {
-    assert!(accessor_chaining_fake()
-        .setup(|a| format!("Fake {}", a))
-        .is_set());
+    assert!(
+        accessor_chaining_fake()
+            .setup(|a| format!("Fake {}", a))
+            .is_set()
+    );
 
     let res = accessor_chaining("Test".to_string());
     assert_eq!(res, "Fake Test");

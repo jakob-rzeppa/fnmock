@@ -19,12 +19,10 @@ pub mod info;
 /// the methods appear in the block, which callers rely on to pair them back up with those methods.
 pub fn extract_item_impl_info(item_impl: &syn::ItemImpl) -> syn::Result<Vec<ImplItemFnInfo>> {
     if let Some((_, trait_path, _)) = &item_impl.trait_ {
-        return Err(
-            syn::Error::new_spanned(
-                trait_path,
-                "The #[fakeable] attribute does not support trait impl blocks (`impl Trait for Type`). Only inherent impl blocks (`impl Type { ... }`) are supported."
-            )
-        );
+        return Err(syn::Error::new_spanned(
+            trait_path,
+            "The #[fakeable] attribute does not support trait impl blocks (`impl Trait for Type`). Only inherent impl blocks (`impl Type { ... }`) are supported.",
+        ));
     }
 
     let mut method_infos = Vec::new();
@@ -45,12 +43,10 @@ fn extract_single_item_impl_info_for_method(
     method: &syn::ImplItemFn,
 ) -> syn::Result<ImplItemFnInfo> {
     if let Some(const_token) = &method.sig.constness {
-        return Err(
-            syn::Error::new_spanned(
-                const_token,
-                "The #[fakeable] attribute does not support const fn. The fake lookup fnmock injects cannot run in a const context."
-            )
-        );
+        return Err(syn::Error::new_spanned(
+            const_token,
+            "The #[fakeable] attribute does not support const fn. The fake lookup fnmock injects cannot run in a const context.",
+        ));
     }
 
     let struct_name = extract_struct_ident(&item_impl.self_ty)?;

@@ -3,8 +3,8 @@
 use crate::{
     extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
     names::{
-        build_access_function_name, build_impl_interface_struct_name, build_impl_module_name,
-        build_interface_struct_name, build_module_name, NameType,
+        NameType, build_access_function_name, build_impl_interface_struct_name,
+        build_impl_module_name, build_interface_struct_name, build_module_name,
     },
 };
 
@@ -168,8 +168,8 @@ mod tests {
     }
 
     #[test]
-    fn test_try_from_impl_item_fn_info_generic_struct_and_method_combines_types_but_keeps_params_method_only(
-    ) {
+    fn test_try_from_impl_item_fn_info_generic_struct_and_method_combines_types_but_keeps_params_method_only()
+     {
         let item_impl: syn::ItemImpl = syn::parse_quote! {
             impl<S> Foo<S> {
                 fn bar<M>(&self, x: M) -> S {

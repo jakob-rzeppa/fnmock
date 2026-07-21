@@ -13,12 +13,10 @@ pub mod info;
 /// Extracts the function information from a `syn::ItemFn`, including the function name, parameter types, parameter identifiers, function pointer type, and generic information if present.
 pub fn extract_function_info(item_fn: &syn::ItemFn) -> syn::Result<FunctionInfo> {
     if let Some(const_token) = &item_fn.sig.constness {
-        return Err(
-            syn::Error::new_spanned(
-                const_token,
-                "The #[fakeable] attribute does not support const fn. The fake lookup fnmock injects cannot run in a const context."
-            )
-        );
+        return Err(syn::Error::new_spanned(
+            const_token,
+            "The #[fakeable] attribute does not support const fn. The fake lookup fnmock injects cannot run in a const context.",
+        ));
     }
 
     let name = item_fn.sig.ident.clone();

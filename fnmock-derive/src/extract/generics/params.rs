@@ -36,16 +36,13 @@ pub fn extract_generic_type_and_const_params(
             for bound in &type_param.bounds {
                 if let syn::TypeParamBound::Lifetime(lifetime) = bound {
                     if lifetime.ident != "static" {
-                        return Err(
-                            syn::Error::new_spanned(
-                                lifetime,
-                                format!(
-                                    "Non-static lifetime '{}' found in generic parameter '{}'. Only 'static lifetimes are supported in generic parameters for fakeable functions.",
-                                    lifetime.ident,
-                                    type_param.ident
-                                )
-                            )
-                        );
+                        return Err(syn::Error::new_spanned(
+                            lifetime,
+                            format!(
+                                "Non-static lifetime '{}' found in generic parameter '{}'. Only 'static lifetimes are supported in generic parameters for fakeable functions.",
+                                lifetime.ident, type_param.ident
+                            ),
+                        ));
                     }
                 }
             }

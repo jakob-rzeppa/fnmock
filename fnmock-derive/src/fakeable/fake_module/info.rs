@@ -3,8 +3,8 @@
 use crate::{
     extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
     names::{
-        build_impl_interface_struct_name, build_impl_module_name, build_impl_store_name,
-        build_interface_struct_name, build_module_name, build_store_name, NameType,
+        NameType, build_impl_interface_struct_name, build_impl_module_name, build_impl_store_name,
+        build_interface_struct_name, build_module_name, build_store_name,
     },
 };
 

@@ -1,6 +1,6 @@
 //! Turning a parameter pattern back into the expression that forwards it to the fake.
 
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 
 /// One argument the injected lookup forwards to the fake, reconstructed from a parameter pattern.
 ///
@@ -46,12 +46,10 @@ impl TryFrom<&syn::Pat> for FakeCallValue {
             syn::Pat::Ident(pat_ident) => {
                 // If the pattern uses `ref ident`, we cannot use it in the fakes, since the signature of the fake function will need a value, not a reference and we cannot obtain a value from a reference in the general case.
                 if pat_ident.by_ref.is_some() {
-                    return Err(
-                        syn::Error::new_spanned(
-                            pat_ident,
-                            "The `ref` keyword is not supported for fake call values. Please use the identifier directly without `ref` (e.g. `ident` instead of `ref ident`)."
-                        )
-                    );
+                    return Err(syn::Error::new_spanned(
+                        pat_ident,
+                        "The `ref` keyword is not supported for fake call values. Please use the identifier directly without `ref` (e.g. `ident` instead of `ref ident`).",
+                    ));
                 }
 
                 // We need to ignore the mutability in the pattern and just get the identifier name for the fake call value.

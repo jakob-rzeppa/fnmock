@@ -4,8 +4,8 @@ use crate::{
     extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
     fakeable::inline_call::info::fake_call_value::FakeCallValue,
     names::{
-        build_impl_interface_struct_name, build_impl_module_name, build_interface_struct_name,
-        build_module_name, NameType,
+        NameType, build_impl_interface_struct_name, build_impl_module_name,
+        build_interface_struct_name, build_module_name,
     },
 };
 

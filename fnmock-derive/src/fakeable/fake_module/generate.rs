@@ -82,19 +82,20 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
     let interface_struct_name = &info.interface_struct_name;
     let fn_closure_trait = &info.fn_closure_trait;
 
-    let (generic_count, generic_types, generic_params, generic_keys) =
-        if let Some(generic_info) = &info.generic_info {
-            (
-                generic_info.generic_count,
-                &generic_info.generic_idents,
-                &generic_info.generic_params,
-                &generic_info.generic_keys,
-            )
-        } else {
-            unreachable!(
+    let (generic_count, generic_types, generic_params, generic_keys) = if let Some(generic_info) =
+        &info.generic_info
+    {
+        (
+            generic_info.generic_count,
+            &generic_info.generic_idents,
+            &generic_info.generic_params,
+            &generic_info.generic_keys,
+        )
+    } else {
+        unreachable!(
             "generate_generic_fake_module_code should only be called when info.generic_info is Some"
         );
-        };
+    };
 
     let generic_types_without_const_generics =
         generic_params.iter().filter_map(|param| match param {

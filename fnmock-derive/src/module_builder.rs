@@ -63,7 +63,7 @@ impl ModuleBuilder {
                 proc_macro2::Span::call_site(),
                 format!(
                     "internal error: the fake module's {field} was not set before building the module. This is a bug in fnmock; please report it."
-                )
+                ),
             )
         };
 
