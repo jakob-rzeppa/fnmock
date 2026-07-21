@@ -1,5 +1,5 @@
 #[fnmock::fakeable]
-fn return_unit(a: &mut String) -> () {
+fn return_unit(a: &mut String) {
     a.push_str(" modified");
 }
 

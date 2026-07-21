@@ -1,17 +1,21 @@
 mod basic {
+    mod accessor_chaining;
     mod by_value;
     mod clear_and_is_set;
     mod interior_mutability;
     mod mut_reference;
     mod raw_const_pointers;
     mod raw_mut_pointers;
+    mod reentrant_fake;
     mod reference;
     mod reference_in_container;
     mod return_option;
     mod return_result;
     mod return_unit;
+    mod same_name_isolation;
     mod smart_pointers;
     mod thread_isolation;
+    mod zero_args;
 }
 mod generics {
     mod associated_type_bounds;
