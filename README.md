@@ -4,6 +4,7 @@ A Rust mocking framework for standalone functions and methods in an impl block.
 
 [![Crates.io](https://img.shields.io/crates/v/fnmock.svg)](https://crates.io/crates/fnmock)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 fnmock lets you replace a function's behaviour in tests without introducing a trait / dependency injection wiring. You annotate the function where it already
 lives, and the test controls what it returns.
