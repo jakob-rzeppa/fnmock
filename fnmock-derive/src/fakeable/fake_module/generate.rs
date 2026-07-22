@@ -35,7 +35,7 @@ fn generate_regular_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
     module_builder.set_store(
         quote! {
             static #store_name: ::std::cell::RefCell<::fnmock::fake_store::FakeStore<::std::rc::Rc<dyn #fn_closure_trait>>> =
-                ::std::cell::RefCell::new(::fnmock::fake_store::FakeStore::new(stringify!(#display_name)));
+                ::std::cell::RefCell::new(::fnmock::fake_store::FakeStore::new(#display_name));
         }
     );
 
@@ -111,7 +111,7 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
         quote! {
             static #store_name: ::std::cell::RefCell<::fnmock::generic_fake_store::GenericFakeStore<#generic_count>> =
                 ::std::cell::RefCell::new(
-                    ::fnmock::generic_fake_store::GenericFakeStore::new(stringify!(#display_name))
+                    ::fnmock::generic_fake_store::GenericFakeStore::new(#display_name)
                 );
         }
     );
