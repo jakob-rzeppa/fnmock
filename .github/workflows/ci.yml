@@ -63,6 +63,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.85.0
       - uses: Swatinem/rust-cache@v2
       - run: cargo check -p fnmock -p fnmock-derive --locked
+      - run: cargo test --workspace --locked -- --skip compile_fail
 
   docs:
     name: Docs
