@@ -16,7 +16,7 @@ together.
 
 - Initial release of `fnmock`, a mocking framework for standalone functions and
   methods in an `impl` block.
-- `fnmock-derive` procedural macro crate powering the framework.
+- Initial release of `fnmock-derive` - a procedural macro crate powering `fnmock`.
 
 [Unreleased]: https://github.com/jakob-rzeppa/fnmock/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/jakob-rzeppa/fnmock/releases/tag/v0.1.0
