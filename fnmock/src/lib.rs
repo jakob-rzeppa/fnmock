@@ -31,7 +31,9 @@
 //! See the [README](https://github.com/jakob-rzeppa/fnmock/blob/master/README.md) for installation,
 //! a walkthrough and the current limitations.
 
+#[doc(hidden)]
 pub mod fake_store;
+#[doc(hidden)]
 pub mod generic_fake_store;
 
 /// Re-export the derive macro so that users of the library can just use `fnmock::fakeable` instead of having to depend on `fnmock-derive` directly.
