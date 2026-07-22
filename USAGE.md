@@ -2,7 +2,9 @@
 
 How to use fnmock's fakes, and when reaching for them is the right call.
 
-For the exhaustive list of what is and isn't supported, see [FEATURES.md](FEATURES.md).
+For the exhaustive list of what is and isn't supported, see [CONSTRAINTS.md](CONSTRAINTS.md). For
+the user-facing API — the attribute, accessor, and `setup`/`clear`/`is_set` — see
+[FEATURES.md](FEATURES.md).
 
 ## What fnmock is for
 

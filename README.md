@@ -35,7 +35,7 @@ The attribute is applied to production code, so fnmock is a regular dependency:
 
 ```toml
 [dependencies]
-fnmock = "0.1.0"
+fnmock = "<version>"
 ```
 
 The fake lookup is `#[cfg(test)]`-gated, so release builds keep the original function body and
@@ -47,8 +47,11 @@ unit test inside the crate that defines the fakeable item — not from an integr
 
 - **[USAGE.md](USAGE.md)** — how to use fakes: the accessor API, methods and receivers, generics,
   and how test isolation works.
-- **[FEATURES.md](FEATURES.md)** — the full supported surface (types, patterns, `async`/`unsafe`/
-  `extern`, generics, impl blocks) and the cases that are explicitly rejected at compile time.
+- **[FEATURES.md](FEATURES.md)** — the user-facing API: the `#[fnmock::fakeable]` attribute, the
+  `_fake()` accessor and its call shapes, and the `setup`/`clear`/`is_set` methods.
+- **[CONSTRAINTS.md](CONSTRAINTS.md)** — the full supported surface (types, patterns, `async`/
+  `unsafe`/`extern`, generics, impl blocks), the isolation/keying rules, and the cases that are
+  explicitly rejected at compile time.
 - **fnmock-tests** - fnmock's test cases can be useful for examples on how to use this project.
 
 ## Overview
@@ -76,8 +79,6 @@ visible on the thread that installed it — see
 - Mocks
 
 ## License
-
-This project is licensed under the Apache License 2.0 - see the  file for details.
 
 This project is licensed under the terms of both the MIT license and the Apache License (Version 2.0).
 
