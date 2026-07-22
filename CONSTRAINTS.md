@@ -77,7 +77,7 @@ This is fine because the generated code only ever calls the fake closure with co
 
 Because the fake is selected by generic arguments, **always specify them explicitly** on both
 `setup` and the call site. If the compiler infers different arguments than you expected, the fake
-silently will not apply and the real implementation runs. See [USAGE.md](USAGE.md).
+silently does not apply and the real implementation runs. See [USAGE.md](USAGE.md).
 
 ## Impl blocks
 
@@ -130,7 +130,7 @@ Each of these fails at compile time with a dedicated error message.
 | Wildcard parameter patterns (`_: i32`) | Fake call values need a name to forward. |
 | Reference patterns (`&x: &i32`) | Use a plain binding (`x: &i32`) instead. |
 | `ref` bindings (`ref x`) | Use the identifier directly without `ref`. |
-| Struct and tuple-struct destructuring patterns | Struct desturcturen requires reassembling the struct for the fake. That is not possible in many cases. |
+| Struct and tuple-struct destructuring patterns | Struct destructuring would require reassembling the struct to pass it to the fake, which is not always possible. |
 | Macro-generated parameter patterns | Passing the params to the fake may be impossible to infer in some cases. |
 
 Note the distinction between reference *types* and reference *patterns*: `x: &i32` is supported,
