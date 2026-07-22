@@ -39,7 +39,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     ///
     /// The `Function` type parameter should be a boxed closure that matches the signature of the faked function for the given combination of generic types.
     /// For example, if the function being faked is `fn foo<T, U>(x: T, y: U) -> String`, and you want to set a
-    /// fake implementation for `T = i32` and `U = String`, then the `Function` type parameter should be `Box<dyn Fn(i32, String) -> String>`.
+    /// fake implementation for `T = i32` and `U = String`, then the `WrappedClosure` type parameter should be `Box<dyn Fn(i32, String) -> String>`.
     ///
     /// You **NEED** to specify the type of the closure in the generic parameter of the `setup_for` function, otherwise the compiler might infer the wrong type and you will get a runtime panic when trying to retrieve the fake implementation.
     pub fn setup_for<WrappedClosure: 'static>(
@@ -67,7 +67,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
 
     /// Get the fake implementation for a specific combination of generic types.
     ///
-    /// The `Function` type parameter should be a boxed closure that matches the signature of the faked function for the given combination of generic types.
+    /// The `WrappedClosure` type parameter should be a boxed closure that matches the signature of the faked function for the given combination of generic types.
     /// It needs to match the generic that was passed to `setup_for` for the same combination of generic types exactly.
     ///
     /// # Panics
