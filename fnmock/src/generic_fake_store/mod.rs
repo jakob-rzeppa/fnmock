@@ -37,7 +37,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
 
     /// Set a fake implementation for a specific combination of generic types.
     ///
-    /// The `Function` type parameter should be a boxed closure that matches the signature of the faked function for the given combination of generic types.
+    /// The `WrappedClosure` type parameter should be a boxed closure that matches the signature of the faked function for the given combination of generic types.
     /// For example, if the function being faked is `fn foo<T, U>(x: T, y: U) -> String`, and you want to set a
     /// fake implementation for `T = i32` and `U = String`, then the `WrappedClosure` type parameter should be `Box<dyn Fn(i32, String) -> String>`.
     ///
