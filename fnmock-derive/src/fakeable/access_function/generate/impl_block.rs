@@ -50,12 +50,32 @@ fn generate_access_method_for_impl_block(
         let generic_params = generic_info.generic_params.as_slice();
 
         quote! {
+            /// Access the fake for this method, keyed by the given generic arguments.
+            ///
+            /// Each combination of generic arguments is faked independently, so always specify
+            /// the generics explicitly both here and at the call site — if they don't match, the
+            /// call silently falls through to the real implementation instead of erroring.
+            ///
+            /// If the method has a receiver (`&self`, `&mut self`, `self`, `Box<Self>`, `Rc<Self>`,
+            /// or `Pin<&mut Self>`), it is passed as the first argument to the closure given to
+            /// `setup`.
+            ///
+            /// Only available under `#[cfg(test)]`, and only reachable from tests within this
+            /// crate: not from integration tests, doctests, or other crates.
             pub(crate) fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
                 self::#module_name::#interface_struct_name::new()
             }
         }
     } else {
         quote! {
+            /// Access the fake for this method.
+            ///
+            /// If the method has a receiver (`&self`, `&mut self`, `self`, `Box<Self>`, `Rc<Self>`,
+            /// or `Pin<&mut Self>`), it is passed as the first argument to the closure given to
+            /// `setup`.
+            ///
+            /// Only available under `#[cfg(test)]`, and only reachable from tests within this
+            /// crate: not from integration tests, doctests, or other crates.
             pub(crate) fn #access_function_name() -> self::#module_name::#interface_struct_name {
                 self::#module_name::#interface_struct_name::new()
             }

@@ -43,10 +43,16 @@ fn generate_regular_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
         pub(crate) struct #interface_struct_name;
 
         impl #interface_struct_name {
+            /// Only called by the generated accessor function. Users should not call this directly.
             pub(crate) fn new() -> Self {
                 Self
             }
 
+            /// Install a fake implementation, replacing any previously set one.
+            ///
+            /// The closure mirrors the faked function's signature: same parameters (including
+            /// destructuring patterns) and same return type. For an `async fn`, the closure is a
+            /// plain synchronous closure returning the output type directly, not a future.
             pub(crate) fn setup(self, function: impl #fn_closure_trait + 'static) -> Self {
                 #store_name.with(|store| {
                     store.borrow_mut().setup(::std::rc::Rc::new(function));
@@ -54,6 +60,10 @@ fn generate_regular_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
                 self
             }
 
+            /// Remove the fake implementation, so the real function body runs again.
+            ///
+            /// Fakes are thread-local and each `#[test]` runs on its own thread, so tests never
+            /// leak fakes into each other — you don't need to call this between tests.
             pub(crate) fn clear(self) -> Self {
                 #store_name.with(|store| {
                     store.borrow_mut().clear();
@@ -61,10 +71,19 @@ fn generate_regular_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
                 self
             }
 
+            /// Check whether a fake implementation is currently set.
+            ///
+            /// Fakes are thread-local, so this only reports the state on the calling thread. This
+            /// is useful for confirming a fake reached code that may have crossed a thread
+            /// boundary (e.g. via `tokio::spawn` or `std::thread::spawn`), since an unset fake
+            /// falls through to the real implementation silently rather than erroring.
             pub(crate) fn is_set(&self) -> bool {
                 #store_name.with(|store| store.borrow().is_set())
             }
 
+            /// DO NOT USE THIS DIRECTLY.
+            /// Only called by the macro-injected fake lookup in the faked function's body.
+            /// Returns the fake implementation for the function.
             pub(crate) fn get(&self) -> ::std::rc::Rc<dyn #fn_closure_trait> {
                 #store_name.with(|store| store.borrow().get())
             }
@@ -123,12 +142,22 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
             }
 
             impl<#(#generic_params),*> #interface_struct_name<#(#generic_types),*> {
+                /// Only called by the generated accessor function. Users should not call this directly.
                 pub(crate) fn new() -> Self {
                     Self {
                         _marker: ::std::marker::PhantomData,
                     }
                 }
 
+                /// Install a fake implementation for this combination of generic arguments,
+                /// replacing any previously set one.
+                ///
+                /// The closure mirrors the faked function's signature: same parameters (including
+                /// destructuring patterns) and same return type. For an `async fn`, the closure is
+                /// a plain synchronous closure returning the output type directly, not a future.
+                /// Type parameters are keyed by `TypeId` and must be `'static`; const parameters
+                /// are keyed by value, so e.g. a fake for `foo::<5>()` leaves `foo::<7>()` running
+                /// the real body, and the const value isn't accessible inside the closure.
                 pub(crate) fn setup(self, function: impl #fn_closure_trait + 'static) -> Self {
                     #store_name.with_borrow_mut(|fake| {
                         fake.setup_for::<Box<dyn #fn_closure_trait>>([#(#generic_keys),*], Box::new(function));
@@ -136,6 +165,11 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
                     self
                 }
 
+                /// Remove the fake implementation for this combination of generic arguments, so
+                /// the real function body runs again.
+                ///
+                /// Fakes are thread-local and each `#[test]` runs on its own thread, so tests never
+                /// leak fakes into each other — you don't need to call this between tests.
                 pub(crate) fn clear(self) -> Self {
                     #store_name.with_borrow_mut(|fake| {
                         fake.clear_for([#(#generic_keys),*]);
@@ -143,12 +177,23 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
                     self
                 }
 
+                /// Check whether a fake implementation is currently set for this combination of
+                /// generic arguments.
+                ///
+                /// Fakes are thread-local, so this only reports the state on the calling thread.
+                /// This is useful for confirming a fake reached code that may have crossed a
+                /// thread boundary (e.g. via `tokio::spawn` or `std::thread::spawn`), since an
+                /// unset fake falls through to the real implementation silently rather than
+                /// erroring.
                 pub(crate) fn is_set(&self) -> bool {
                     #store_name.with_borrow(|fake| {
                         fake.is_set_for([#(#generic_keys),*])
                     })
                 }
 
+                /// DO NOT USE THIS DIRECTLY.
+                /// Only called by the macro-injected fake lookup in the faked function's body.
+                /// Returns the fake implementation for the function.
                 pub(crate) fn get(&self) -> ::std::rc::Rc<Box<dyn #fn_closure_trait>> {
                     #store_name.with_borrow(|fake| {
                         fake.get_for::<Box<dyn #fn_closure_trait>>([#(#generic_keys),*])

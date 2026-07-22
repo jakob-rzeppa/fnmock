@@ -24,6 +24,14 @@ pub fn generate_access_function_for_standalone(
         let generic_params = generic_info.generic_params.as_slice();
 
         quote! {
+            /// Access the fake for this function, keyed by the given generic arguments.
+            ///
+            /// Each combination of generic arguments is faked independently, so always specify
+            /// the generics explicitly both here and at the call site — if they don't match, the
+            /// call silently falls through to the real implementation instead of erroring.
+            ///
+            /// Only available under `#[cfg(test)]`, and only reachable from tests within this
+            /// crate: not from integration tests, doctests, or other crates.
             #[cfg(test)]
             pub(crate) fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
                 self::#module_name::#interface_struct_name::new()
@@ -31,6 +39,10 @@ pub fn generate_access_function_for_standalone(
         }
     } else {
         quote! {
+            /// Access the fake for this function.
+            ///
+            /// Only available under `#[cfg(test)]`, and only reachable from tests within this
+            /// crate: not from integration tests, doctests, or other crates.
             #[cfg(test)]
             pub(crate) fn #access_function_name() -> self::#module_name::#interface_struct_name {
                 self::#module_name::#interface_struct_name::new()
