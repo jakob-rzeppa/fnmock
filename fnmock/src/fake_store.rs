@@ -1,6 +1,4 @@
 //! Storage backing the fake of a non-generic function.
-//!
-//! This is a fnmock internal. You should not interact with it directly.
 
 /// A store for a single fake function implementation.
 ///
