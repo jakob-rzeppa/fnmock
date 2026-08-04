@@ -124,8 +124,8 @@ impl Sequence {
                     .map(|&idx| {
                         let step = &state.steps[idx];
                         format!(
-                            "step {}: got {} calls, expected {}",
-                            idx,
+                            "{} ({} of {} calls)",
+                            step.describe(),
                             step.call_count(),
                             step.call_range()
                         )
@@ -133,12 +133,12 @@ impl Sequence {
                     .collect::<Vec<_>>()
                     .join("; ");
                 panic!(
-                    "Call out of sequence: matched step {}, but {} blocking ({})",
-                    matched_step,
+                    "Call out of sequence: the call matched {}, but {} not reached its minimum yet: {}",
+                    state.steps[matched_step].describe(),
                     if blocked_steps.len() == 1 {
-                        "step is".to_string()
+                        "an earlier step has"
                     } else {
-                        format!("{} steps are", blocked_steps.len())
+                        "earlier steps have"
                     },
                     details
                 );
@@ -153,7 +153,9 @@ impl Sequence {
     }
 
     /// Every step belonging to matcher type `M` that has not reached its call range, as
-    /// `(display_str, call_count, call_range)`.
+    /// `(description, call_count, call_range)`. `description` names both the expectation and
+    /// the spied function it belongs to (see [`Expectation::describe`]), so a failure built
+    /// from it never depends on surrounding context to say which function it is about.
     ///
     /// Steps of other functions taking part in this sequence are silently skipped, the same
     /// way [`Sequence::record_call`] only ever matches its own function's steps.
@@ -166,7 +168,7 @@ impl Sequence {
             .filter(|expectation| !expectation.is_fulfilled())
             .map(|expectation| {
                 (
-                    expectation.to_string(),
+                    expectation.describe(),
                     expectation.call_count(),
                     expectation.call_range(),
                 )

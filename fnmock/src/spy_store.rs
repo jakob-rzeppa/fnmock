@@ -5,7 +5,7 @@
 use crate::{Sequence, call_range::CallRange, expectation::Expectation, matcher::Matcher};
 
 pub struct SpyStore<M: Matcher> {
-    display_str: &'static str,
+    name: &'static str,
 
     /// Holds all standalone expectations.
     expectations: Vec<Expectation<M>>,
@@ -19,9 +19,9 @@ pub struct SpyStore<M: Matcher> {
 
 impl<M: Matcher + 'static> SpyStore<M> {
     /// Create a store with no expectations set.
-    pub fn new(display_str: &'static str) -> Self {
+    pub fn new(name: &'static str) -> Self {
         Self {
-            display_str,
+            name,
             expectations: Vec::new(),
             sequences: Vec::new(),
             total_calls: 0,
@@ -54,7 +54,7 @@ impl<M: Matcher + 'static> SpyStore<M> {
             assert!(
                 !call_range.max_exceeded(&self.total_calls),
                 "Too many calls of the spied function '{}': got {}, expected at most {}.",
-                self.display_str,
+                self.name,
                 self.total_calls,
                 call_range
             );
@@ -83,7 +83,7 @@ impl<M: Matcher + 'static> SpyStore<M> {
             if !call_range.contains(&self.total_calls) {
                 failures.push(format!(
                     "the spied function '{}' was called {} time(s), expected {}",
-                    self.display_str, self.total_calls, call_range
+                    self.name, self.total_calls, call_range
                 ));
             }
         }
@@ -91,7 +91,7 @@ impl<M: Matcher + 'static> SpyStore<M> {
         for expectation in &self.expectations {
             if !expectation.is_fulfilled() {
                 failures.push(format!(
-                    "expectation '{}' got {} matching call(s), expected {}",
+                    "{} got {} matching call(s), expected {}",
                     expectation,
                     expectation.call_count(),
                     expectation.call_range()
@@ -100,10 +100,10 @@ impl<M: Matcher + 'static> SpyStore<M> {
         }
 
         for sequence in &self.sequences {
-            for (display_name, call_count, call_range) in sequence.unfulfilled_steps::<M>() {
+            for (description, call_count, call_range) in sequence.unfulfilled_steps::<M>() {
                 failures.push(format!(
-                    "sequenced expectation '{}' got {} matching call(s), expected {}",
-                    display_name, call_count, call_range
+                    "sequenced {} got {} matching call(s), expected {}",
+                    description, call_count, call_range
                 ));
             }
         }
@@ -111,7 +111,7 @@ impl<M: Matcher + 'static> SpyStore<M> {
         assert!(
             failures.is_empty(),
             "Expectation(s) of the spied function '{}' failed:\n{}",
-            self.display_str,
+            self.name,
             failures.join("\n")
         );
     }

@@ -11,8 +11,13 @@ use crate::{call_range::CallRange, matcher::Matcher};
 /// same function.
 #[derive(Clone)]
 pub struct Expectation<M: Matcher> {
-    /// The name is used to display which expectation failed.
-    display_name: Option<String>,
+    /// The name is used to display the expectation in case it wasn't fulfilled.
+    name: Option<String>,
+
+    /// The spied function this expectation belongs to, so panics can name it even when the
+    /// caller (e.g. a [`Sequence`](crate::sequence::Sequence) spanning several functions) has
+    /// no other way to know.
+    function_name: &'static str,
 
     matcher: M,
 
@@ -21,10 +26,12 @@ pub struct Expectation<M: Matcher> {
 }
 
 impl<M: Matcher> Expectation<M> {
-    /// Create an expectation matching `matcher`, expecting at least one call.
-    pub fn new(matcher: M) -> Self {
+    /// Create an expectation matching `matcher` on the spied function `function_name`,
+    /// expecting at least one call.
+    pub fn new(matcher: M, function_name: &'static str) -> Self {
         Self {
-            display_name: None,
+            name: None,
+            function_name,
             matcher,
             call_range: (1..).into(),
             call_count: 0,
@@ -57,7 +64,11 @@ impl<M: Matcher> Expectation<M> {
 
         assert!(
             !self.call_range.max_exceeded(&self.call_count),
-            "Too many calls."
+            "Too many calls of the spied function '{}': expectation '{}' got {}, expected {}.",
+            self.function_name,
+            self,
+            self.call_count,
+            self.call_range
         );
     }
 
@@ -83,18 +94,28 @@ impl<M: Matcher> Expectation<M> {
         self.call_range = call_range;
     }
 
-    pub fn set_display_name(&mut self, display_name: String) {
-        self.display_name = Some(display_name);
+    pub fn set_name(&mut self, name: String) {
+        self.name = Some(name);
+    }
+
+    /// Name this expectation together with the spied function it belongs to, so a failure
+    /// naming it never depends on surrounding context (a header, a log line above it, ...) to
+    /// say which function it is about.
+    pub fn describe(&self) -> String {
+        format!(
+            "expectation '{}' of the spied function '{}'",
+            self, self.function_name
+        )
     }
 }
 
 impl<M: Matcher> Display for Expectation<M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(ref display_name) = self.display_name {
-            write!(f, "{}", display_name);
+        if let Some(ref name) = self.name {
+            write!(f, "{}", name)?;
         } else {
             // Fallback to matcher
-            write!(f, "{}", &self.matcher);
+            write!(f, "{}", &self.matcher)?;
         }
         Ok(())
     }
@@ -116,6 +137,10 @@ pub trait DynExpectation: Any {
     fn record_match(&mut self);
     /// Borrow this expectation as [`Any`], to attempt a downcast to a concrete `Expectation<M>`.
     fn as_any(&self) -> &dyn Any;
+    /// Name this expectation together with the spied function it belongs to, for panics raised
+    /// by a caller (e.g. [`Sequence`](crate::sequence::Sequence)) that only sees the dyn-safe
+    /// view and so has no other way to name the function.
+    fn describe(&self) -> String;
 }
 
 impl<M: Matcher> DynExpectation for Expectation<M> {
@@ -137,5 +162,9 @@ impl<M: Matcher> DynExpectation for Expectation<M> {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn describe(&self) -> String {
+        Expectation::describe(self)
     }
 }

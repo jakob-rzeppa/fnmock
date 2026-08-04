@@ -18,13 +18,18 @@ pub struct ExpectationHandle<M: Matcher + 'static> {
 impl<M: Matcher> ExpectationHandle<M> {
     /// Wrap the expectation the store just registered, together with the spy's set of
     /// sequences, so [`ExpectationHandle::in_sequence`] can add one the spy does not know yet.
+    ///
+    /// `function_name` is the spied function this expectation belongs to, so panics raised on
+    /// it (directly, or through a [`Sequence`] spanning several functions) can always say which
+    /// function they came from.
     pub fn new(
         matcher: M,
+        function_name: &'static str,
         expectation_callback: impl Fn(Expectation<M>) + 'static,
         sequence_callback: impl Fn(Vec<Sequence>) + 'static,
     ) -> Self {
         Self {
-            expectation: Some(Expectation::new(matcher)),
+            expectation: Some(Expectation::new(matcher, function_name)),
             sequences: Some(Vec::new()),
             expectation_callback: Box::new(expectation_callback),
             sequence_callback: Box::new(sequence_callback),
@@ -54,9 +59,9 @@ impl<M: Matcher> ExpectationHandle<M> {
     }
 
     /// Set the display name of the expectation displayed in error messages.
-    pub fn display(mut self, display_name: String) -> Self {
+    pub fn describe(mut self, display_name: String) -> Self {
         if let Some(ref mut expectation) = self.expectation {
-            expectation.set_display_name(display_name);
+            expectation.set_name(display_name);
         } else {
             unreachable!(
                 "The expectation of ExpectationHandle is None in display. This cannot happen because the only place the expectation in taken is in drop and display cannot be called after drop."
