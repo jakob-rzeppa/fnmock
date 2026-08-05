@@ -6,12 +6,13 @@
 //! See the [README](https://github.com/jakob-rzeppa/fnmock/blob/master/README.md) for installation,
 //! a walkthrough and the current limitations.
 
-use crate::fakeable::handle_fakeable;
+use crate::{fakeable::handle_fakeable, spyable::handle_spyable};
 
 mod extract;
 mod fakeable;
 mod module_builder;
 mod names;
+mod spyable;
 
 /// Make a function or an inherent impl block fakeable in tests.
 ///
@@ -64,6 +65,19 @@ pub fn fakeable(
     // a live macro expansion (it panics), which makes anything using it untestable. Converting to
     // proc_macro2::TokenStream here lets the rest of the crate be tested with ordinary unit tests.
     let res = handle_fakeable(attr.into(), item.into());
+
+    match res {
+        Ok(expanded) => expanded.into(),
+        Err(e) => e.to_compile_error().into(),
+    }
+}
+
+#[proc_macro_attribute]
+pub fn spyable(
+    attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let res = handle_spyable(attr.into(), item.into());
 
     match res {
         Ok(expanded) => expanded.into(),
