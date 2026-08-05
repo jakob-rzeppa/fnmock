@@ -13,7 +13,7 @@ mod fake_call_value;
 
 /// Everything the injected fake lookup needs to name the fake and forward the call to it.
 #[derive(Clone)]
-pub struct InlineCallInfo {
+pub struct FakeInlineCallInfo {
     /// The name of the fake module the lookup reaches into.
     pub module_name: syn::Ident,
 
@@ -29,7 +29,7 @@ pub struct InlineCallInfo {
     pub generic_idents: Option<Vec<syn::Ident>>,
 }
 
-impl TryFrom<&FunctionInfo> for InlineCallInfo {
+impl TryFrom<&FunctionInfo> for FakeInlineCallInfo {
     type Error = syn::Error;
 
     fn try_from(function_info: &FunctionInfo) -> Result<Self, Self::Error> {
@@ -48,7 +48,7 @@ impl TryFrom<&FunctionInfo> for InlineCallInfo {
             .as_ref()
             .map(|generic_info| generic_info.idents.clone());
 
-        Ok(InlineCallInfo {
+        Ok(FakeInlineCallInfo {
             module_name,
             interface_struct_name,
             fake_call_values,
@@ -57,7 +57,7 @@ impl TryFrom<&FunctionInfo> for InlineCallInfo {
     }
 }
 
-impl TryFrom<&ImplItemFnInfo> for InlineCallInfo {
+impl TryFrom<&ImplItemFnInfo> for FakeInlineCallInfo {
     type Error = syn::Error;
 
     fn try_from(impl_item_fn_info: &ImplItemFnInfo) -> Result<Self, Self::Error> {
@@ -83,7 +83,7 @@ impl TryFrom<&ImplItemFnInfo> for InlineCallInfo {
             .as_ref()
             .map(|generic_info| generic_info.idents.clone());
 
-        Ok(InlineCallInfo {
+        Ok(FakeInlineCallInfo {
             module_name,
             interface_struct_name,
             fake_call_values,
@@ -122,7 +122,7 @@ mod tests {
         };
         let function_info = extract_function_info(&item_fn).expect("valid standalone function");
 
-        let info = InlineCallInfo::try_from(&function_info)
+        let info = FakeInlineCallInfo::try_from(&function_info)
             .expect("conversion should succeed for a non-generic standalone function");
 
         assert_eq!(info.module_name.to_string(), "get_user_fake_module");
@@ -149,7 +149,7 @@ mod tests {
         };
         let function_info = extract_function_info(&item_fn).expect("valid standalone function");
 
-        let info = InlineCallInfo::try_from(&function_info).expect("conversion should succeed");
+        let info = FakeInlineCallInfo::try_from(&function_info).expect("conversion should succeed");
 
         assert_eq!(
             render_fake_call_values(&info.fake_call_values),
@@ -164,7 +164,7 @@ mod tests {
         };
         let function_info = extract_function_info(&item_fn).expect("valid standalone function");
 
-        let info = InlineCallInfo::try_from(&function_info).expect("conversion should succeed");
+        let info = FakeInlineCallInfo::try_from(&function_info).expect("conversion should succeed");
 
         assert_eq!(info.fake_call_values.len(), 1);
         assert_eq!(
@@ -183,7 +183,7 @@ mod tests {
         let function_info =
             extract_function_info(&item_fn).expect("valid generic standalone function");
 
-        let info = InlineCallInfo::try_from(&function_info)
+        let info = FakeInlineCallInfo::try_from(&function_info)
             .expect("conversion should succeed for a generic standalone function");
 
         let Some(generic_idents) = info.generic_idents else {
@@ -199,7 +199,7 @@ mod tests {
         };
         let function_info = extract_function_info(&item_fn).expect("valid standalone function");
 
-        let result = InlineCallInfo::try_from(&function_info);
+        let result = FakeInlineCallInfo::try_from(&function_info);
 
         let Err(error) = result else {
             panic!("a `ref` parameter pattern should be rejected during conversion");
@@ -223,7 +223,7 @@ mod tests {
         let impl_infos = extract_item_impl_info(&item_impl).expect("valid inherent impl block");
         let impl_info = &impl_infos[0];
 
-        let info = InlineCallInfo::try_from(impl_info)
+        let info = FakeInlineCallInfo::try_from(impl_info)
             .expect("conversion should succeed for a non-generic impl method");
 
         assert_eq!(
@@ -257,7 +257,7 @@ mod tests {
             .expect("valid inherent impl block with struct and method generics");
         let impl_info = &impl_infos[0];
 
-        let info = InlineCallInfo::try_from(impl_info)
+        let info = FakeInlineCallInfo::try_from(impl_info)
             .expect("conversion should succeed for a generic impl method");
 
         let Some(generic_idents) = info.generic_idents else {
@@ -279,7 +279,7 @@ mod tests {
         let impl_infos = extract_item_impl_info(&item_impl).expect("valid inherent impl block");
         let impl_info = &impl_infos[0];
 
-        let result = InlineCallInfo::try_from(impl_info);
+        let result = FakeInlineCallInfo::try_from(impl_info);
 
         let Err(error) = result else {
             panic!("a `ref` parameter pattern should be rejected during conversion");

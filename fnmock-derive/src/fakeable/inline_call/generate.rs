@@ -2,7 +2,7 @@
 
 use quote::quote;
 
-use crate::fakeable::inline_call::info::InlineCallInfo;
+use crate::fakeable::inline_call::info::FakeInlineCallInfo;
 
 /// Inserts an inline call to the fake implementation at the beginning of the original function block.
 ///
@@ -13,7 +13,7 @@ use crate::fakeable::inline_call::info::InlineCallInfo;
 /// Returns an error if the generated block fails to parse, which would be a bug in fnmock.
 pub fn insert_inline_call_into_fn_block(
     original_block: &syn::Block,
-    inline_call_info: &InlineCallInfo,
+    inline_call_info: &FakeInlineCallInfo,
 ) -> syn::Result<syn::Block> {
     let fake_call_values = &inline_call_info.fake_call_values;
     let module_name = &inline_call_info.module_name;
@@ -65,7 +65,7 @@ pub fn insert_inline_call_into_fn_block(
 mod tests {
     use super::*;
     use crate::extract::function::extract_function_info;
-    use crate::fakeable::inline_call::info::InlineCallInfo;
+    use crate::fakeable::inline_call::info::FakeInlineCallInfo;
     use quote::ToTokens;
     use syn::parse_quote;
 
@@ -77,7 +77,7 @@ mod tests {
             }
         };
         let function_info = extract_function_info(&item_fn).expect("valid standalone function");
-        let inline_call_info = InlineCallInfo::try_from(&function_info)
+        let inline_call_info = FakeInlineCallInfo::try_from(&function_info)
             .expect("conversion should succeed for a non-generic standalone function");
 
         let block = insert_inline_call_into_fn_block(&item_fn.block, &inline_call_info)
@@ -114,7 +114,7 @@ mod tests {
         };
         let function_info =
             extract_function_info(&item_fn).expect("valid generic standalone function");
-        let inline_call_info = InlineCallInfo::try_from(&function_info)
+        let inline_call_info = FakeInlineCallInfo::try_from(&function_info)
             .expect("conversion should succeed for a generic standalone function");
 
         let block = insert_inline_call_into_fn_block(&item_fn.block, &inline_call_info)

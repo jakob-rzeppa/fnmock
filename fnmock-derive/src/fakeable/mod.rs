@@ -14,8 +14,8 @@ use quote::quote;
 use crate::{
     extract::{function::extract_function_info, item_impl::extract_item_impl_info},
     fakeable::{
-        access_function::info::AccessFunctionInfo, fake_module::info::FakeModuleInfo,
-        inline_call::info::InlineCallInfo,
+        access_function::info::FakeAccessFunctionInfo, fake_module::info::FakeModuleInfo,
+        inline_call::info::FakeInlineCallInfo,
     },
 };
 
@@ -42,8 +42,8 @@ pub fn handle_fakeable(
         Ok(syn::Item::Fn(mut item_fn)) => {
             // If it's a function, extract the fake info for that function
             let function_info = extract_function_info(&item_fn)?;
-            let inline_call_info = InlineCallInfo::try_from(&function_info)?;
-            let access_function_info = AccessFunctionInfo::try_from(&function_info)?;
+            let inline_call_info = FakeInlineCallInfo::try_from(&function_info)?;
+            let access_function_info = FakeAccessFunctionInfo::try_from(&function_info)?;
             let fake_module_info = FakeModuleInfo::try_from(&function_info)?;
 
             // Create the fake module code based on the extracted information
@@ -76,11 +76,11 @@ pub fn handle_fakeable(
 
             let inline_call_infos = item_impl_info
                 .iter()
-                .map(InlineCallInfo::try_from)
+                .map(FakeInlineCallInfo::try_from)
                 .collect::<syn::Result<Vec<_>>>()?;
             let access_function_infos = item_impl_info
                 .iter()
-                .map(AccessFunctionInfo::try_from)
+                .map(FakeAccessFunctionInfo::try_from)
                 .collect::<syn::Result<Vec<_>>>()?;
             let fake_module_infos = item_impl_info
                 .iter()

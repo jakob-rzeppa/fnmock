@@ -2,7 +2,7 @@
 
 use quote::quote;
 
-use crate::fakeable::access_function::info::AccessFunctionInfo;
+use crate::fakeable::access_function::info::FakeAccessFunctionInfo;
 
 /// Generates the accessor for a free function, e.g. `fetch_user_fake()` next to `fetch_user`.
 ///
@@ -13,7 +13,7 @@ use crate::fakeable::access_function::info::AccessFunctionInfo;
 ///
 /// Returns an error if the generated code fails to parse, which would be a bug in fnmock.
 pub fn generate_access_function_for_standalone(
-    info: &AccessFunctionInfo,
+    info: &FakeAccessFunctionInfo,
 ) -> syn::Result<syn::ItemFn> {
     let access_function_name = &info.access_function_name;
     let module_name = &info.module_name;

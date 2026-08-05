@@ -10,7 +10,7 @@ use crate::{
 
 /// Information needed to generate an access function/method for a fake (e.g. `get_user_fake()`).
 #[derive(Clone)]
-pub struct AccessFunctionInfo {
+pub struct FakeAccessFunctionInfo {
     /// Access function name for the fake interface (e.g. "get_user_fake").
     pub access_function_name: syn::Ident,
 
@@ -44,7 +44,7 @@ pub struct AccessFunctionGenericInfo {
     pub generic_params: Vec<syn::GenericParam>,
 }
 
-impl TryFrom<&FunctionInfo> for AccessFunctionInfo {
+impl TryFrom<&FunctionInfo> for FakeAccessFunctionInfo {
     type Error = syn::Error;
 
     fn try_from(function_info: &FunctionInfo) -> Result<Self, Self::Error> {
@@ -53,7 +53,7 @@ impl TryFrom<&FunctionInfo> for AccessFunctionInfo {
         let interface_struct_name =
             build_interface_struct_name(&function_info.name, NameType::Fake);
 
-        Ok(AccessFunctionInfo {
+        Ok(FakeAccessFunctionInfo {
             access_function_name,
             module_name,
             interface_struct_name,
@@ -68,7 +68,7 @@ impl TryFrom<&FunctionInfo> for AccessFunctionInfo {
     }
 }
 
-impl TryFrom<&ImplItemFnInfo> for AccessFunctionInfo {
+impl TryFrom<&ImplItemFnInfo> for FakeAccessFunctionInfo {
     type Error = syn::Error;
 
     fn try_from(impl_item_fn_info: &ImplItemFnInfo) -> Result<Self, Self::Error> {
@@ -85,7 +85,7 @@ impl TryFrom<&ImplItemFnInfo> for AccessFunctionInfo {
             NameType::Fake,
         );
 
-        Ok(AccessFunctionInfo {
+        Ok(FakeAccessFunctionInfo {
             access_function_name,
             module_name,
             interface_struct_name,
@@ -130,7 +130,7 @@ mod tests {
         };
         let function_info = extract_function_info(&item_fn).expect("valid standalone function");
 
-        let info = AccessFunctionInfo::try_from(&function_info)
+        let info = FakeAccessFunctionInfo::try_from(&function_info)
             .expect("conversion should succeed for a non-generic standalone function");
 
         assert_eq!(info.access_function_name.to_string(), "get_user_fake");
@@ -157,7 +157,7 @@ mod tests {
         let impl_infos = extract_item_impl_info(&item_impl).expect("valid inherent impl block");
         let impl_info = &impl_infos[0];
 
-        let info = AccessFunctionInfo::try_from(impl_info)
+        let info = FakeAccessFunctionInfo::try_from(impl_info)
             .expect("conversion should succeed for a non-generic impl method");
 
         assert_eq!(info.access_function_name.to_string(), "get_user_fake");
@@ -185,7 +185,7 @@ mod tests {
             .expect("valid inherent impl block with struct and method generics");
         let impl_info = &impl_infos[0];
 
-        let info = AccessFunctionInfo::try_from(impl_info)
+        let info = FakeAccessFunctionInfo::try_from(impl_info)
             .expect("conversion should succeed for a generic impl method");
 
         let Some(generic_info) = info.generic_info else {
@@ -214,7 +214,7 @@ mod tests {
         let function_info =
             extract_function_info(&item_fn).expect("valid generic standalone function");
 
-        let info = AccessFunctionInfo::try_from(&function_info)
+        let info = FakeAccessFunctionInfo::try_from(&function_info)
             .expect("conversion should succeed for a generic standalone function");
 
         let Some(generic_info) = info.generic_info else {

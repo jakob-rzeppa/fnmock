@@ -1,3 +1,4 @@
+mod access_function;
 mod spy_module;
 
 pub fn handle_spyable(
