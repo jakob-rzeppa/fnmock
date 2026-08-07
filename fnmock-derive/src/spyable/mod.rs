@@ -1,4 +1,5 @@
 mod access_function;
+mod inline_call;
 mod spy_module;
 
 pub fn handle_spyable(
