@@ -1,7 +1,8 @@
 //! Proc-macro implementation behind [`fnmock`](https://docs.rs/fnmock).
 //!
-//! Everything here except the [`macro@fakeable`] attribute is a fnmock internal. Depend on the
-//! `fnmock` crate rather than on this one; it re-exports the attribute as `fnmock::fakeable`.
+//! Everything here except the [`macro@fakeable`] and [`macro@spyable`] attributes is a fnmock
+//! internal. Depend on the `fnmock` crate rather than on this one; it re-exports the attributes as
+//! `fnmock::fakeable` and `fnmock::spyable`.
 //!
 //! See the [README](https://github.com/jakob-rzeppa/fnmock/blob/master/README.md) for installation,
 //! a walkthrough and the current limitations.
@@ -72,6 +73,55 @@ pub fn fakeable(
     }
 }
 
+/// Record a free function's calls in tests, and assert on them.
+///
+/// Where [`macro@fakeable`] replaces a function's body, a spy leaves it alone: the attribute
+/// injects a `#[cfg(test)]`-gated statement at the top of the body that hands the call's arguments
+/// to the spy on the way past, and then the real implementation runs. It also generates an
+/// accessor named after the function — `get_user` gets `get_user_spy()` — which tests set
+/// expectations on:
+///
+/// | Method | Behaviour |
+/// | --- | --- |
+/// | `expect(pred, ..)` | Expect calls whose arguments satisfy one predicate per parameter. |
+/// | `expectf(closure)` | Expect calls whose arguments satisfy one closure over all of them. |
+/// | `expect_times(n)` / `expect_once()` / `expect_never()` | Expect this many calls, whatever their arguments. |
+/// | `assert()` | Assert every expectation set on this spy is fulfilled. |
+///
+/// `expect` and `expectf` hand back a handle that refines the expectation by chaining —
+/// `times(2)`, `once()`, `never()`, `in_sequence(&mut seq)`. See
+/// [EXPECTATIONS.md](https://github.com/jakob-rzeppa/fnmock/blob/master/docs/EXPECTATIONS.md).
+///
+/// ```ignore
+/// #[fnmock::spyable]
+/// fn get_user(id: String, uuid: &str) -> String {
+///     // real database call
+/// }
+///
+/// #[test]
+/// fn asks_for_the_user_once() {
+///     let spy = get_user_spy();
+///     spy.expect(predicate::eq("a".to_string()), predicate::always()).once();
+///
+///     get_user("a".to_string(), "uuid");
+///
+///     spy.assert();
+/// }
+/// ```
+///
+/// Arguments are matched by shared reference, so a `String` parameter is matched by a
+/// `Predicate<String>` and a `&str` one by a `Predicate<str>`; nothing is cloned or moved out of
+/// the call.
+///
+/// Spies are stored per thread, and the test harness gives each `#[test]` its own thread, so tests
+/// cannot leak into one another. Because the injected statement is `#[cfg(test)]`-gated, release
+/// builds keep the original function body and compile no spy machinery at all.
+///
+/// # Errors
+///
+/// Only free functions can be spied on so far: impl blocks, generic type and const parameters, and
+/// parameters that are not plain identifiers are all rejected with a compile error. See
+/// `CONSTRAINTS.md` for the full list.
 #[proc_macro_attribute]
 pub fn spyable(
     attr: proc_macro::TokenStream,

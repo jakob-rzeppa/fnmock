@@ -3,6 +3,8 @@
 use quote::quote;
 use syn::Type;
 
+use crate::names::NameType;
+
 /// Builds a function closure trait (e.g. `Fn(i32, &str) -> bool`) from a list of parameter types and a return type.
 ///
 /// Make sure to replace any `Self` types in the parameter types and return type with the actual type of `Self` before calling this function, as it does not handle `Self` replacement itself.
@@ -27,13 +29,14 @@ pub fn build_fn_closure_trait(
     lifetimes: &[syn::Lifetime],
     params: &[syn::Type],
     output: &syn::ReturnType,
+    name_type: NameType,
 ) -> syn::Result<syn::TraitBound> {
     // Check if the types are supported.
     for param in params {
-        check_if_type_is_supported_for_fn_closure(param)?;
+        check_if_type_is_supported_for_fn_closure(param, name_type)?;
     }
     if let syn::ReturnType::Type(_, ty) = output {
-        check_if_type_is_supported_for_fn_closure(ty)?;
+        check_if_type_is_supported_for_fn_closure(ty, name_type)?;
     }
 
     let fn_ptr_tokens: proc_macro2::TokenStream = if lifetimes.is_empty() {
@@ -49,7 +52,12 @@ pub fn build_fn_closure_trait(
 /// The match is written out over every `syn::Type` variant rather than falling back to a catch-all
 /// `Ok(())`, so that a variant syn adds later surfaces as a report-this-bug error instead of
 /// silently producing generated code that does not compile.
-fn check_if_type_is_supported_for_fn_closure(ty: &Type) -> Result<(), syn::Error> {
+fn check_if_type_is_supported_for_fn_closure(
+    ty: &Type,
+    name_type: NameType,
+) -> Result<(), syn::Error> {
+    let attribute = name_type.attribute_name();
+
     match ty {
         // A fixed size array type: `[T; n]`.
         syn::Type::Array(_) => Ok(()),
@@ -64,25 +72,33 @@ fn check_if_type_is_supported_for_fn_closure(ty: &Type) -> Result<(), syn::Error
         // a lifetime.
         syn::Type::ImplTrait(_) => Err(syn::Error::new_spanned(
             ty,
-            "The #[fakeable] attribute does not support `impl Trait` in a function signature. Please use a concrete type or a generic type parameter instead.",
+            format!(
+                "The {attribute} attribute does not support `impl Trait` in a function signature. Please use a concrete type or a generic type parameter instead."
+            ),
         )),
 
         // Indication that a type should be inferred by the compiler: `_`.
         syn::Type::Infer(_) => Err(syn::Error::new_spanned(
             ty,
-            "The #[fakeable] attribute does not support the inferred type `_` in a function signature. Please specify the type explicitly.",
+            format!(
+                "The {attribute} attribute does not support the inferred type `_` in a function signature. Please specify the type explicitly."
+            ),
         )),
 
         // A macro in the type position.
         syn::Type::Macro(_) => Err(syn::Error::new_spanned(
             ty,
-            "The #[fakeable] attribute does not support macros in a function signature. Please use a concrete type or a generic type parameter instead.",
+            format!(
+                "The {attribute} attribute does not support macros in a function signature. Please use a concrete type or a generic type parameter instead."
+            ),
         )),
 
         // The never type: `!`.
         syn::Type::Never(_) => Err(syn::Error::new_spanned(
             ty,
-            "The #[fakeable] attribute does not support the never type `!` in a function signature.",
+            format!(
+                "The {attribute} attribute does not support the never type `!` in a function signature."
+            ),
         )),
 
         // A parenthesized type equivalent to the inner type.
@@ -110,7 +126,9 @@ fn check_if_type_is_supported_for_fn_closure(ty: &Type) -> Result<(), syn::Error
 
         _ => Err(syn::Error::new_spanned(
             ty,
-            "The #[fakeable] attribute does not support this type in a function signature. This is probably a type added to syn after the last check for supported types was implemented. Please report this as a bug to the fnmock project.",
+            format!(
+                "The {attribute} attribute does not support this type in a function signature. This is probably a type added to syn after the last check for supported types was implemented. Please report this as a bug to the fnmock project."
+            ),
         )),
     }
 }
@@ -136,7 +154,7 @@ mod tests {
         let params: Vec<syn::Type> = vec![syn::parse_quote!(i32), syn::parse_quote!(&str)];
         let output: syn::ReturnType = syn::parse_quote!(-> bool);
 
-        let bound = build_fn_closure_trait(&lifetimes, &params, &output)
+        let bound = build_fn_closure_trait(&lifetimes, &params, &output, NameType::Fake)
             .expect("expected build_fn_closure_trait to succeed");
 
         let expected = parse_trait_bound("Fn(i32, &str) -> bool");
@@ -160,7 +178,7 @@ mod tests {
         let params: Vec<syn::Type> = vec![];
         let output = syn::ReturnType::Default;
 
-        let bound = build_fn_closure_trait(&lifetimes, &params, &output)
+        let bound = build_fn_closure_trait(&lifetimes, &params, &output, NameType::Fake)
             .expect("expected build_fn_closure_trait to succeed");
 
         let expected = parse_trait_bound("Fn()");
@@ -184,7 +202,7 @@ mod tests {
         let params: Vec<syn::Type> = vec![syn::parse_quote!(&'a str)];
         let output: syn::ReturnType = syn::parse_quote!(-> bool);
 
-        let bound = build_fn_closure_trait(&lifetimes, &params, &output)
+        let bound = build_fn_closure_trait(&lifetimes, &params, &output, NameType::Fake)
             .expect("expected build_fn_closure_trait to succeed");
 
         let expected = parse_trait_bound("for<'a> Fn(&'a str) -> bool");
@@ -208,7 +226,7 @@ mod tests {
         let params: Vec<syn::Type> = vec![];
         let output = syn::ReturnType::Default;
 
-        let bound = build_fn_closure_trait(&lifetimes, &params, &output)
+        let bound = build_fn_closure_trait(&lifetimes, &params, &output, NameType::Fake)
             .expect("expected build_fn_closure_trait to succeed");
 
         let expected = parse_trait_bound("for<'a, 'b> Fn()");
@@ -237,7 +255,7 @@ mod tests {
         let params: Vec<syn::Type> = vec![syn::parse_quote!(impl Clone)];
         let output = syn::ReturnType::Default;
 
-        let result = build_fn_closure_trait(&lifetimes, &params, &output);
+        let result = build_fn_closure_trait(&lifetimes, &params, &output, NameType::Fake);
 
         assert!(
             result.is_err(),
@@ -251,7 +269,7 @@ mod tests {
         let params: Vec<syn::Type> = vec![];
         let output: syn::ReturnType = syn::parse_quote!(-> !);
 
-        let result = build_fn_closure_trait(&lifetimes, &params, &output);
+        let result = build_fn_closure_trait(&lifetimes, &params, &output, NameType::Fake);
 
         assert!(
             result.is_err(),
@@ -267,7 +285,7 @@ mod tests {
         let params: Vec<syn::Type> = vec![syn::parse_quote!(_), syn::parse_quote!(i32)];
         let output = syn::ReturnType::Default;
 
-        let result = build_fn_closure_trait(&lifetimes, &params, &output);
+        let result = build_fn_closure_trait(&lifetimes, &params, &output, NameType::Fake);
 
         assert!(
             result.is_err(),

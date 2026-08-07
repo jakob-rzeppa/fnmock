@@ -23,7 +23,7 @@ fn calls_of_two_functions_in_the_expected_order() {
         .once()
         .in_sequence(&mut seq);
 
-    //get_user("a".to_string(), "uuid");
+    get_user("a".to_string(), "uuid");
     save_user("a".to_string());
 
     get.assert();

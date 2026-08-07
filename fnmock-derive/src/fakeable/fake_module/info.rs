@@ -148,7 +148,8 @@ mod tests {
                 todo!()
             }
         };
-        let function_info = extract_function_info(&item_fn).expect("valid standalone function");
+        let function_info =
+            extract_function_info(&item_fn, NameType::Fake).expect("valid standalone function");
 
         let info = FakeModuleInfo::try_from(&function_info)
             .expect("conversion should succeed for a non-generic standalone function");
@@ -203,8 +204,8 @@ mod tests {
                 x
             }
         };
-        let function_info =
-            extract_function_info(&item_fn).expect("valid generic standalone function");
+        let function_info = extract_function_info(&item_fn, NameType::Fake)
+            .expect("valid generic standalone function");
 
         let info = FakeModuleInfo::try_from(&function_info)
             .expect("conversion should succeed for a generic standalone function");

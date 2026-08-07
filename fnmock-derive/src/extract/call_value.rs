@@ -1,35 +1,39 @@
-//! Turning a parameter pattern back into the expression that forwards it to the fake.
+//! Turning a parameter pattern back into the expression that forwards its value on.
 
 use quote::{ToTokens, quote};
 
-/// One argument the injected lookup forwards to the fake, reconstructed from a parameter pattern.
+/// One argument the injected code forwards from the annotated function, reconstructed from a
+/// parameter pattern.
 ///
 /// A fake takes values, but a parameter may destructure one — `fn f((a, b): (i32, i32))` binds no
 /// name for the pair itself. Rebuilding `(a, b)` as an expression from the bindings the pattern
 /// introduced is what lets such parameters be passed on. Patterns that cannot be rebuilt this way
 /// (struct destructuring, wildcards, `ref`) are rejected with a spanned error instead.
+///
+/// Spies additionally need a *name* per parameter and so only accept [`CallValue::Ident`]; see
+/// [`extract_param_idents`](crate::extract::params::extract_param_idents).
 #[derive(Clone)]
-pub enum FakeCallValue {
+pub enum CallValue {
     /// A plain binding, forwarded by name.
     Ident(syn::Ident),
     /// A tuple pattern, reassembled as `(a, b, ..)`.
-    Tuple(Vec<FakeCallValue>),
+    Tuple(Vec<CallValue>),
     /// A slice pattern, reassembled as `[a, b, ..]`.
-    Slice(Vec<FakeCallValue>),
+    Slice(Vec<CallValue>),
 }
 
-impl ToTokens for FakeCallValue {
+impl ToTokens for CallValue {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match self {
-            FakeCallValue::Ident(ident) => {
+            CallValue::Ident(ident) => {
                 ident.to_tokens(tokens);
             }
-            FakeCallValue::Tuple(elements) => {
+            CallValue::Tuple(elements) => {
                 let element_tokens = elements.iter().map(|e| e.to_token_stream());
                 let tuple_tokens = quote! { (#(#element_tokens),*) };
                 tuple_tokens.to_tokens(tokens);
             }
-            FakeCallValue::Slice(elements) => {
+            CallValue::Slice(elements) => {
                 let element_tokens = elements.iter().map(|e| e.to_token_stream());
                 let slice_tokens = quote! { [#(#element_tokens),*] };
                 slice_tokens.to_tokens(tokens);
@@ -38,7 +42,7 @@ impl ToTokens for FakeCallValue {
     }
 }
 
-impl TryFrom<&syn::Pat> for FakeCallValue {
+impl TryFrom<&syn::Pat> for CallValue {
     type Error = syn::Error;
 
     fn try_from(pat: &syn::Pat) -> Result<Self, Self::Error> {
@@ -48,52 +52,52 @@ impl TryFrom<&syn::Pat> for FakeCallValue {
                 if pat_ident.by_ref.is_some() {
                     return Err(syn::Error::new_spanned(
                         pat_ident,
-                        "The `ref` keyword is not supported for fake call values. Please use the identifier directly without `ref` (e.g. `ident` instead of `ref ident`).",
+                        "The `ref` keyword is not supported for call values. Please use the identifier directly without `ref` (e.g. `ident` instead of `ref ident`).",
                     ));
                 }
 
                 // We need to ignore the mutability in the pattern and just get the identifier name for the fake call value.
-                Ok(FakeCallValue::Ident(pat_ident.ident.clone()))
+                Ok(CallValue::Ident(pat_ident.ident.clone()))
             }
             syn::Pat::Tuple(pat_tuple) => {
                 let elements = pat_tuple
                     .elems
                     .iter()
-                    .map(FakeCallValue::try_from)
+                    .map(CallValue::try_from)
                     .collect::<Result<Vec<_>, _>>()?;
-                Ok(FakeCallValue::Tuple(elements))
+                Ok(CallValue::Tuple(elements))
             }
             syn::Pat::Slice(slice) => {
                 let elements = slice
                     .elems
                     .iter()
-                    .map(FakeCallValue::try_from)
+                    .map(CallValue::try_from)
                     .collect::<Result<Vec<_>, _>>()?;
-                Ok(FakeCallValue::Slice(elements))
+                Ok(CallValue::Slice(elements))
             }
             syn::Pat::Struct(pat_struct) => Err(syn::Error::new_spanned(
                 pat_struct,
-                "Struct destructuring patterns are not supported for fake call values",
+                "Struct destructuring patterns are not supported for call values",
             )),
             syn::Pat::TupleStruct(pat_tuple_struct) => Err(syn::Error::new_spanned(
                 pat_tuple_struct,
-                "Tuple struct destructuring patterns are not supported for fake call values",
+                "Tuple struct destructuring patterns are not supported for call values",
             )),
             syn::Pat::Macro(pat_macro) => Err(syn::Error::new_spanned(
                 pat_macro,
-                "Macro patterns are not supported for fake call values",
+                "Macro patterns are not supported for call values",
             )),
             syn::Pat::Wild(pat_wild) => Err(syn::Error::new_spanned(
                 pat_wild,
-                "Wildcard patterns are not supported for fake call values",
+                "Wildcard patterns are not supported for call values",
             )),
             syn::Pat::Reference(pat_ref) => Err(syn::Error::new_spanned(
                 pat_ref,
-                "Reference patterns are not supported for fake call values",
+                "Reference patterns are not supported for call values",
             )),
             _ => Err(syn::Error::new_spanned(
                 pat,
-                "Unsupported pattern type for fake call values",
+                "Unsupported pattern type for call values",
             )),
         }
     }
@@ -115,12 +119,12 @@ mod tests {
         let pat = parse_pat(quote!(x));
 
         let value =
-            FakeCallValue::try_from(&pat).expect("a plain identifier pattern should be accepted");
+            CallValue::try_from(&pat).expect("a plain identifier pattern should be accepted");
 
         match value {
-            FakeCallValue::Ident(ident) => assert_eq!(ident, "x"),
-            FakeCallValue::Tuple(_) => panic!("expected FakeCallValue::Ident, got Tuple"),
-            FakeCallValue::Slice(_) => panic!("expected FakeCallValue::Ident, got Slice"),
+            CallValue::Ident(ident) => assert_eq!(ident, "x"),
+            CallValue::Tuple(_) => panic!("expected CallValue::Ident, got Tuple"),
+            CallValue::Slice(_) => panic!("expected CallValue::Ident, got Slice"),
         }
     }
 
@@ -128,13 +132,13 @@ mod tests {
     fn test_mut_ident_pattern_ignores_mutability() {
         let pat = parse_pat(quote!(mut x));
 
-        let value = FakeCallValue::try_from(&pat)
+        let value = CallValue::try_from(&pat)
             .expect("a `mut` identifier pattern should be accepted, ignoring mutability");
 
         match value {
-            FakeCallValue::Ident(ident) => assert_eq!(ident, "x"),
-            FakeCallValue::Tuple(_) => panic!("expected FakeCallValue::Ident, got Tuple"),
-            FakeCallValue::Slice(_) => panic!("expected FakeCallValue::Ident, got Slice"),
+            CallValue::Ident(ident) => assert_eq!(ident, "x"),
+            CallValue::Tuple(_) => panic!("expected CallValue::Ident, got Tuple"),
+            CallValue::Slice(_) => panic!("expected CallValue::Ident, got Slice"),
         }
     }
 
@@ -142,25 +146,25 @@ mod tests {
     fn test_single_level_tuple_pattern_becomes_tuple_of_idents() {
         let pat = parse_pat(quote!((a, b)));
 
-        let value = FakeCallValue::try_from(&pat)
+        let value = CallValue::try_from(&pat)
             .expect("a single-level tuple pattern of identifiers should be accepted");
 
         match value {
-            FakeCallValue::Tuple(elements) => {
+            CallValue::Tuple(elements) => {
                 assert_eq!(elements.len(), 2);
                 match &elements[0] {
-                    FakeCallValue::Ident(ident) => assert_eq!(ident, "a"),
-                    FakeCallValue::Tuple(_) => panic!("expected element 0 to be Ident, got Tuple"),
-                    FakeCallValue::Slice(_) => panic!("expected element 0 to be Ident, got Slice"),
+                    CallValue::Ident(ident) => assert_eq!(ident, "a"),
+                    CallValue::Tuple(_) => panic!("expected element 0 to be Ident, got Tuple"),
+                    CallValue::Slice(_) => panic!("expected element 0 to be Ident, got Slice"),
                 }
                 match &elements[1] {
-                    FakeCallValue::Ident(ident) => assert_eq!(ident, "b"),
-                    FakeCallValue::Tuple(_) => panic!("expected element 1 to be Ident, got Tuple"),
-                    FakeCallValue::Slice(_) => panic!("expected element 1 to be Ident, got Slice"),
+                    CallValue::Ident(ident) => assert_eq!(ident, "b"),
+                    CallValue::Tuple(_) => panic!("expected element 1 to be Ident, got Tuple"),
+                    CallValue::Slice(_) => panic!("expected element 1 to be Ident, got Slice"),
                 }
             }
-            FakeCallValue::Ident(_) => panic!("expected FakeCallValue::Tuple, got Ident"),
-            FakeCallValue::Slice(_) => panic!("expected FakeCallValue::Tuple, got Slice"),
+            CallValue::Ident(_) => panic!("expected CallValue::Tuple, got Ident"),
+            CallValue::Slice(_) => panic!("expected CallValue::Tuple, got Slice"),
         }
     }
 
@@ -168,55 +172,54 @@ mod tests {
     fn test_nested_tuple_pattern_recurses_into_inner_tuples() {
         let pat = parse_pat(quote!(((a, b), c)));
 
-        let value =
-            FakeCallValue::try_from(&pat).expect("a nested tuple pattern should be accepted");
+        let value = CallValue::try_from(&pat).expect("a nested tuple pattern should be accepted");
 
         match value {
-            FakeCallValue::Tuple(outer) => {
+            CallValue::Tuple(outer) => {
                 assert_eq!(outer.len(), 2);
 
                 match &outer[0] {
-                    FakeCallValue::Tuple(inner) => {
+                    CallValue::Tuple(inner) => {
                         assert_eq!(inner.len(), 2);
                         match &inner[0] {
-                            FakeCallValue::Ident(ident) => assert_eq!(ident, "a"),
-                            FakeCallValue::Tuple(_) => {
+                            CallValue::Ident(ident) => assert_eq!(ident, "a"),
+                            CallValue::Tuple(_) => {
                                 panic!("expected inner element 0 to be Ident, got Tuple")
                             }
-                            FakeCallValue::Slice(_) => {
+                            CallValue::Slice(_) => {
                                 panic!("expected inner element 0 to be Ident, got Slice")
                             }
                         }
                         match &inner[1] {
-                            FakeCallValue::Ident(ident) => assert_eq!(ident, "b"),
-                            FakeCallValue::Tuple(_) => {
+                            CallValue::Ident(ident) => assert_eq!(ident, "b"),
+                            CallValue::Tuple(_) => {
                                 panic!("expected inner element 1 to be Ident, got Tuple")
                             }
-                            FakeCallValue::Slice(_) => {
+                            CallValue::Slice(_) => {
                                 panic!("expected inner element 1 to be Ident, got Slice")
                             }
                         }
                     }
-                    FakeCallValue::Ident(_) => {
+                    CallValue::Ident(_) => {
                         panic!("expected outer element 0 to be Tuple, got Ident")
                     }
-                    FakeCallValue::Slice(_) => {
+                    CallValue::Slice(_) => {
                         panic!("expected outer element 0 to be Tuple, got Slice")
                     }
                 }
 
                 match &outer[1] {
-                    FakeCallValue::Ident(ident) => assert_eq!(ident, "c"),
-                    FakeCallValue::Tuple(_) => {
+                    CallValue::Ident(ident) => assert_eq!(ident, "c"),
+                    CallValue::Tuple(_) => {
                         panic!("expected outer element 1 to be Ident, got Tuple")
                     }
-                    FakeCallValue::Slice(_) => {
+                    CallValue::Slice(_) => {
                         panic!("expected outer element 1 to be Ident, got Slice")
                     }
                 }
             }
-            FakeCallValue::Ident(_) => panic!("expected FakeCallValue::Tuple, got Ident"),
-            FakeCallValue::Slice(_) => panic!("expected FakeCallValue::Tuple, got Slice"),
+            CallValue::Ident(_) => panic!("expected CallValue::Tuple, got Ident"),
+            CallValue::Slice(_) => panic!("expected CallValue::Tuple, got Slice"),
         }
     }
 
@@ -224,7 +227,7 @@ mod tests {
     fn test_ref_ident_pattern_is_rejected_with_message_mentioning_ref() {
         let pat = parse_pat(quote!(ref x));
 
-        let result = FakeCallValue::try_from(&pat);
+        let result = CallValue::try_from(&pat);
 
         let Err(error) = result else {
             panic!("a `ref` identifier pattern should be rejected");
@@ -240,7 +243,7 @@ mod tests {
     fn test_struct_pattern_is_rejected() {
         let pat = parse_pat(quote!(Foo { a, b }));
 
-        let result = FakeCallValue::try_from(&pat);
+        let result = CallValue::try_from(&pat);
 
         assert!(
             result.is_err(),
@@ -252,7 +255,7 @@ mod tests {
     fn test_tuple_struct_pattern_is_rejected() {
         let pat = parse_pat(quote!(Foo(a, b)));
 
-        let result = FakeCallValue::try_from(&pat);
+        let result = CallValue::try_from(&pat);
 
         assert!(
             result.is_err(),
@@ -264,7 +267,7 @@ mod tests {
     fn test_macro_pattern_is_rejected() {
         let pat = parse_pat(quote!(m!()));
 
-        let result = FakeCallValue::try_from(&pat);
+        let result = CallValue::try_from(&pat);
 
         assert!(result.is_err(), "a macro pattern should be rejected");
     }
@@ -273,7 +276,7 @@ mod tests {
     fn test_wildcard_pattern_is_rejected() {
         let pat = parse_pat(quote!(_));
 
-        let result = FakeCallValue::try_from(&pat);
+        let result = CallValue::try_from(&pat);
 
         assert!(result.is_err(), "a wildcard pattern should be rejected");
     }
@@ -285,21 +288,21 @@ mod tests {
         // message.
         let pat = parse_pat(quote!(&x));
 
-        let result = FakeCallValue::try_from(&pat);
+        let result = CallValue::try_from(&pat);
 
         let Err(error) = result else {
             panic!("a reference pattern should be rejected");
         };
         assert_eq!(
             error.to_string(),
-            "Reference patterns are not supported for fake call values"
+            "Reference patterns are not supported for call values"
         );
     }
 
     #[test]
     fn test_ident_value_renders_as_bare_ident() {
         let pat = parse_pat(quote!(x));
-        let value = FakeCallValue::try_from(&pat).expect("plain identifier pattern should parse");
+        let value = CallValue::try_from(&pat).expect("plain identifier pattern should parse");
 
         assert_eq!(value.to_token_stream().to_string(), quote!(x).to_string());
     }
@@ -307,7 +310,7 @@ mod tests {
     #[test]
     fn test_tuple_value_renders_like_a_tuple_expression() {
         let pat = parse_pat(quote!((a, b)));
-        let value = FakeCallValue::try_from(&pat).expect("tuple pattern should parse");
+        let value = CallValue::try_from(&pat).expect("tuple pattern should parse");
 
         assert_eq!(
             value.to_token_stream().to_string(),
@@ -318,7 +321,7 @@ mod tests {
     #[test]
     fn test_nested_tuple_value_renders_like_a_nested_tuple_expression() {
         let pat = parse_pat(quote!(((a, b), c)));
-        let value = FakeCallValue::try_from(&pat).expect("nested tuple pattern should parse");
+        let value = CallValue::try_from(&pat).expect("nested tuple pattern should parse");
 
         assert_eq!(
             value.to_token_stream().to_string(),

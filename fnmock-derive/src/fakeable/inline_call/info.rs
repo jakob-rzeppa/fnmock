@@ -1,15 +1,14 @@
 //! The information needed to generate the injected fake lookup.
 
 use crate::{
-    extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
-    fakeable::inline_call::info::fake_call_value::FakeCallValue,
+    extract::{
+        call_value::CallValue, function::info::FunctionInfo, item_impl::info::ImplItemFnInfo,
+    },
     names::{
         NameType, build_impl_interface_struct_name, build_impl_module_name,
         build_interface_struct_name, build_module_name,
     },
 };
-
-mod fake_call_value;
 
 /// Everything the injected fake lookup needs to name the fake and forward the call to it.
 #[derive(Clone)]
@@ -22,7 +21,7 @@ pub struct FakeInlineCallInfo {
 
     /// The expressions forwarded as arguments to the fake, derived from the function's parameter
     /// patterns and in the same order.
-    pub fake_call_values: Vec<FakeCallValue>,
+    pub fake_call_values: Vec<CallValue>,
 
     /// The generic parameters to instantiate the interface struct with, or `None` for a
     /// non-generic function.
@@ -40,7 +39,7 @@ impl TryFrom<&FunctionInfo> for FakeInlineCallInfo {
         let fake_call_values = function_info
             .param_pats
             .iter()
-            .map(FakeCallValue::try_from)
+            .map(CallValue::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
         let generic_idents = function_info
@@ -75,7 +74,7 @@ impl TryFrom<&ImplItemFnInfo> for FakeInlineCallInfo {
         let fake_call_values = impl_item_fn_info
             .param_pats
             .iter()
-            .map(FakeCallValue::try_from)
+            .map(CallValue::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
         let generic_idents = impl_item_fn_info
@@ -99,7 +98,7 @@ mod tests {
     use crate::extract::item_impl::extract_item_impl_info;
     use quote::ToTokens;
 
-    fn render_fake_call_values(values: &[FakeCallValue]) -> Vec<String> {
+    fn render_fake_call_values(values: &[CallValue]) -> Vec<String> {
         values
             .iter()
             .map(|value| value.to_token_stream().to_string())
@@ -120,7 +119,8 @@ mod tests {
                 unimplemented!()
             }
         };
-        let function_info = extract_function_info(&item_fn).expect("valid standalone function");
+        let function_info =
+            extract_function_info(&item_fn, NameType::Fake).expect("valid standalone function");
 
         let info = FakeInlineCallInfo::try_from(&function_info)
             .expect("conversion should succeed for a non-generic standalone function");
@@ -147,7 +147,8 @@ mod tests {
                 todo!()
             }
         };
-        let function_info = extract_function_info(&item_fn).expect("valid standalone function");
+        let function_info =
+            extract_function_info(&item_fn, NameType::Fake).expect("valid standalone function");
 
         let info = FakeInlineCallInfo::try_from(&function_info).expect("conversion should succeed");
 
@@ -162,7 +163,8 @@ mod tests {
         let item_fn: syn::ItemFn = syn::parse_quote! {
             fn foo((a, b): (i32, i32)) {}
         };
-        let function_info = extract_function_info(&item_fn).expect("valid standalone function");
+        let function_info =
+            extract_function_info(&item_fn, NameType::Fake).expect("valid standalone function");
 
         let info = FakeInlineCallInfo::try_from(&function_info).expect("conversion should succeed");
 
@@ -180,8 +182,8 @@ mod tests {
                 x
             }
         };
-        let function_info =
-            extract_function_info(&item_fn).expect("valid generic standalone function");
+        let function_info = extract_function_info(&item_fn, NameType::Fake)
+            .expect("valid generic standalone function");
 
         let info = FakeInlineCallInfo::try_from(&function_info)
             .expect("conversion should succeed for a generic standalone function");
@@ -197,7 +199,8 @@ mod tests {
         let item_fn: syn::ItemFn = syn::parse_quote! {
             fn foo(ref x: i32) {}
         };
-        let function_info = extract_function_info(&item_fn).expect("valid standalone function");
+        let function_info =
+            extract_function_info(&item_fn, NameType::Fake).expect("valid standalone function");
 
         let result = FakeInlineCallInfo::try_from(&function_info);
 

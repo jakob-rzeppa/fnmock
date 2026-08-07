@@ -2,12 +2,15 @@
 
 use syn::{spanned::Spanned, visit_mut::VisitMut};
 
-use crate::extract::{
-    fn_closure_trait::build_fn_closure_trait,
-    item_impl::{generics::extract_generic_impl_info, info::ImplItemFnInfo},
-    lifetimes::extract_lifetimes_from_generics,
-    params::{extract_param_pats, extract_param_types},
-    replace_self::ReplaceSelf,
+use crate::{
+    extract::{
+        fn_closure_trait::build_fn_closure_trait,
+        item_impl::{generics::extract_generic_impl_info, info::ImplItemFnInfo},
+        lifetimes::extract_lifetimes_from_generics,
+        params::{extract_param_pats, extract_param_types},
+        replace_self::ReplaceSelf,
+    },
+    names::NameType,
 };
 
 mod generics;
@@ -65,12 +68,13 @@ fn extract_single_item_impl_info_for_method(
         .collect::<Vec<_>>();
 
     let params = method.sig.inputs.iter().cloned().collect::<Vec<_>>();
-    let param_types = extract_param_types(&params, Some(&item_impl.self_ty))?;
+    let param_types = extract_param_types(&params, Some(&item_impl.self_ty), NameType::Fake)?;
     let param_pats = extract_param_pats(&params);
 
     let return_type = extract_return_type(&method.sig.output, &item_impl.self_ty);
 
-    let fn_closure_trait = build_fn_closure_trait(&lifetimes, &param_types, &return_type)?;
+    let fn_closure_trait =
+        build_fn_closure_trait(&lifetimes, &param_types, &return_type, NameType::Fake)?;
 
     Ok(ImplItemFnInfo {
         struct_name,

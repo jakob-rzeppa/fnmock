@@ -1,8 +1,12 @@
 //! Extraction of a function's parameter types and patterns.
 
+use quote::quote;
 use syn::{spanned::Spanned, visit_mut::VisitMut};
 
-use crate::extract::replace_self::ReplaceSelf;
+use crate::{
+    extract::{call_value::CallValue, replace_self::ReplaceSelf},
+    names::NameType,
+};
 
 /// Extracts the parameter types from a list of function parameters, replacing any `Self` types with the provided `self_ty`.
 ///
@@ -18,6 +22,7 @@ use crate::extract::replace_self::ReplaceSelf;
 pub fn extract_param_types(
     params: &[syn::FnArg],
     self_ty: Option<&syn::Type>,
+    name_type: NameType,
 ) -> syn::Result<Vec<syn::Type>> {
     // If a `self_ty` is provided, we will replace any `Self` types in the parameter types with the provided `self_ty`.
     // If no `self_ty` is provided, we don't need to replace `Self` in the parameter types, since we are in a standalone function context.
@@ -40,7 +45,10 @@ pub fn extract_param_types(
                         return Err(
                             syn::Error::new_spanned(
                                 receiver,
-                                "The `#[fakeable]` attribute found a `self` receiver on a free function. `self` receivers are only supported on methods inside an inherent impl block."
+                                format!(
+                                    "The `{}` attribute found a `self` receiver on a free function. `self` receivers are only supported on methods inside an inherent impl block.",
+                                    name_type.attribute_name()
+                                )
                             )
                         );
                     }
@@ -66,7 +74,7 @@ pub fn extract_param_types(
 /// written — it is part of the binding, not of the value being passed on.
 ///
 /// Patterns that cannot be forwarded are rejected later, when the patterns are turned into call
-/// arguments; see `FakeCallValue`.
+/// arguments; see [`CallValue`].
 pub fn extract_param_pats(params: &[syn::FnArg]) -> Vec<syn::Pat> {
     params
         .iter()
@@ -89,6 +97,68 @@ pub fn extract_param_pats(params: &[syn::FnArg]) -> Vec<syn::Pat> {
         .collect()
 }
 
+/// Extracts one identifier per parameter, in declaration order.
+///
+/// A spy names each parameter in its matcher — as a struct field, and in the message a failed
+/// expectation prints — so unlike a fake it needs a name for every parameter, not just a way to
+/// forward its value.
+///
+/// # Errors
+///
+/// Returns a spanned error for any pattern that binds no single name, either because [`CallValue`]
+/// rejects it outright (`ref`, wildcards, struct destructuring) or because it destructures into
+/// several bindings (`(a, b): (i32, i32)`).
+pub fn extract_param_idents(
+    param_pats: &[syn::Pat],
+    name_type: NameType,
+) -> syn::Result<Vec<syn::Ident>> {
+    param_pats
+        .iter()
+        .map(|pat| match CallValue::try_from(pat)? {
+            CallValue::Ident(ident) => Ok(ident),
+            CallValue::Tuple(_) | CallValue::Slice(_) => Err(syn::Error::new_spanned(
+                pat,
+                format!(
+                    "The `{}` attribute only supports plain identifier parameters. This parameter destructures its value, so there is no name to match it under.",
+                    name_type.attribute_name()
+                ),
+            )),
+        })
+        .collect()
+}
+
+/// Strips one level of reference from a type: `&T` and `&mut T` both become `T`, anything else is
+/// returned unchanged.
+///
+/// A spy observes every argument by shared reference, so `fn get_user(id: String, uuid: &str)` is
+/// matched as `(&String, &str)`. Getting there means stripping what the user already wrote as a
+/// reference, so that `&str` does not turn into `&&str`.
+pub fn strip_reference(ty: &syn::Type) -> syn::Type {
+    match ty {
+        syn::Type::Reference(type_reference) => type_reference.elem.as_ref().clone(),
+        other => other.clone(),
+    }
+}
+
+/// Builds the expression that passes a parameter on by shared reference, so that its type lines up
+/// with [`strip_reference`]'s.
+///
+/// - `&T`: forwarded as-is (`id`) — a shared reference is `Copy`, so the binding stays usable.
+/// - `&mut T`: reborrowed (`&*id`). Forwarding it as-is would *move* the `&mut` out of the
+///   binding and leave the rest of the user's body unable to use the parameter.
+/// - anything else: borrowed (`&id`).
+pub fn build_reference_call_value(ident: &syn::Ident, ty: &syn::Type) -> syn::Expr {
+    let expr = match ty {
+        syn::Type::Reference(type_reference) if type_reference.mutability.is_some() => {
+            quote! { &*#ident }
+        }
+        syn::Type::Reference(_) => quote! { #ident },
+        _ => quote! { &#ident },
+    };
+
+    syn::parse_quote!(#expr)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -98,7 +168,7 @@ mod tests {
         use super::*;
 
         fn param_type_string(params: &[syn::FnArg], self_ty: &syn::Type) -> String {
-            let param_types = extract_param_types(params, Some(self_ty))
+            let param_types = extract_param_types(params, Some(self_ty), NameType::Fake)
                 .expect("extract_param_types should succeed for a receiver with a self type");
             assert_eq!(param_types.len(), 1);
             param_types[0].to_token_stream().to_string()
@@ -110,7 +180,7 @@ mod tests {
                 self
             }];
 
-            let result = extract_param_types(&params, None);
+            let result = extract_param_types(&params, None, NameType::Fake);
 
             assert!(
                 result.is_err(),
@@ -236,7 +306,7 @@ mod tests {
                 syn::parse_quote! { c: bool },
             ];
 
-            let param_types = extract_param_types(&params, None)
+            let param_types = extract_param_types(&params, None, NameType::Fake)
                 .expect("extract_param_types should succeed for typed params with no self type");
 
             let type_strings: Vec<String> = param_types
@@ -266,7 +336,7 @@ mod tests {
                 syn::parse_quote! { b: Vec<String> },
             ];
 
-            let param_types = extract_param_types(&params, Some(&self_ty)).expect(
+            let param_types = extract_param_types(&params, Some(&self_ty), NameType::Fake).expect(
                 "extract_param_types should succeed for a receiver followed by typed params",
             );
 
@@ -295,7 +365,7 @@ mod tests {
                 syn::parse_quote! { f: fn(i32) -> bool },
             ];
 
-            let param_types = extract_param_types(&params, None).expect(
+            let param_types = extract_param_types(&params, None, NameType::Fake).expect(
                 "extract_param_types should succeed for a variety of typed params with no self type"
             );
 
@@ -325,7 +395,7 @@ mod tests {
             };
             let params: Vec<syn::FnArg> = vec![syn::parse_quote! { other: Self }];
 
-            let param_types = extract_param_types(&params, Some(&self_ty)).expect(
+            let param_types = extract_param_types(&params, Some(&self_ty), NameType::Fake).expect(
                 "extract_param_types should succeed for a non-receiver param typed as `Self`",
             );
 
@@ -345,7 +415,7 @@ mod tests {
                 syn::parse_quote! { pair: (Self, Self) },
             ];
 
-            let param_types = extract_param_types(&params, Some(&self_ty)).expect(
+            let param_types = extract_param_types(&params, Some(&self_ty), NameType::Fake).expect(
                 "extract_param_types should succeed for non-receiver params with `Self` nested inside other types"
             );
 
@@ -395,7 +465,7 @@ mod tests {
             };
             let params: Vec<syn::FnArg> = vec![syn::parse_quote! { other: Self }];
 
-            let param_types = extract_param_types(&params, Some(&self_ty)).expect(
+            let param_types = extract_param_types(&params, Some(&self_ty), NameType::Fake).expect(
                 "extract_param_types should succeed for a non-receiver `Self` param with a generic struct self type"
             );
 
@@ -412,7 +482,7 @@ mod tests {
             };
             let params: Vec<syn::FnArg> = vec![syn::parse_quote! { others: Vec<Self> }];
 
-            let param_types = extract_param_types(&params, Some(&self_ty)).expect(
+            let param_types = extract_param_types(&params, Some(&self_ty), NameType::Fake).expect(
                 "extract_param_types should succeed for `Self` nested inside another type with a generic struct self type"
             );
 
@@ -450,7 +520,7 @@ mod tests {
                 syn::parse_quote! { other: Self },
             ];
 
-            let param_types = extract_param_types(&params, Some(&self_ty)).expect(
+            let param_types = extract_param_types(&params, Some(&self_ty), NameType::Fake).expect(
                 "extract_param_types should succeed for a receiver plus a non-receiver `Self` param"
             );
 
@@ -592,6 +662,175 @@ mod tests {
             let params: Vec<syn::FnArg> = vec![syn::parse_quote! { a: &str }];
 
             assert_eq!(pat_strings(&params), vec![quote::quote!(a).to_string()]);
+        }
+    }
+
+    mod extract_param_idents {
+        use super::*;
+
+        fn ident_strings(params: &[syn::FnArg]) -> syn::Result<Vec<String>> {
+            Ok(
+                extract_param_idents(&extract_param_pats(params), NameType::Spy)?
+                    .iter()
+                    .map(|ident| ident.to_string())
+                    .collect(),
+            )
+        }
+
+        #[test]
+        fn test_empty_params_returns_empty_vec() {
+            let params: Vec<syn::FnArg> = vec![];
+
+            assert!(
+                ident_strings(&params)
+                    .expect("a function with no parameters should be accepted")
+                    .is_empty()
+            );
+        }
+
+        #[test]
+        fn test_multiple_params_preserve_order_and_drop_mutability() {
+            let params: Vec<syn::FnArg> = vec![
+                syn::parse_quote! { mut id: String },
+                syn::parse_quote! { uuid: &str },
+            ];
+
+            assert_eq!(
+                ident_strings(&params).expect("plain identifier parameters should be accepted"),
+                vec!["id".to_string(), "uuid".to_string()]
+            );
+        }
+
+        #[test]
+        fn test_receiver_is_named_self() {
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! {
+                &self
+            }];
+
+            assert_eq!(
+                ident_strings(&params).expect("a receiver is a plain identifier pattern"),
+                vec!["self".to_string()]
+            );
+        }
+
+        #[test]
+        fn test_tuple_destructuring_param_is_rejected() {
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! { (a, b): (i32, i32) }];
+
+            let Err(error) = ident_strings(&params) else {
+                panic!("a destructuring parameter should be rejected: it binds no single name");
+            };
+            assert!(
+                error.to_string().contains("#[spyable]"),
+                "the error should name the attribute that was applied, got: {error}"
+            );
+        }
+
+        #[test]
+        fn test_slice_destructuring_param_is_rejected() {
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! { [a, b]: [i32; 2] }];
+
+            assert!(
+                ident_strings(&params).is_err(),
+                "a slice destructuring parameter should be rejected"
+            );
+        }
+
+        #[test]
+        fn test_pattern_call_value_already_rejects_is_still_rejected() {
+            let params: Vec<syn::FnArg> = vec![syn::parse_quote! { ref a: i32 }];
+
+            let Err(error) = ident_strings(&params) else {
+                panic!("a `ref` parameter should be rejected");
+            };
+            assert!(
+                error.to_string().to_lowercase().contains("ref"),
+                "the error should mention `ref`, got: {error}"
+            );
+        }
+    }
+
+    mod strip_reference {
+        use super::*;
+
+        fn stripped(ty: syn::Type) -> String {
+            strip_reference(&ty).to_token_stream().to_string()
+        }
+
+        #[test]
+        fn test_shared_reference_loses_its_reference() {
+            assert_eq!(stripped(syn::parse_quote!(&str)), quote!(str).to_string());
+        }
+
+        #[test]
+        fn test_mutable_reference_loses_both_reference_and_mutability() {
+            assert_eq!(
+                stripped(syn::parse_quote!(&mut i32)),
+                quote!(i32).to_string()
+            );
+        }
+
+        #[test]
+        fn test_named_lifetime_reference_loses_its_lifetime_with_the_reference() {
+            assert_eq!(
+                stripped(syn::parse_quote!(&'a String)),
+                quote!(String).to_string()
+            );
+        }
+
+        #[test]
+        fn test_owned_type_is_unchanged() {
+            assert_eq!(
+                stripped(syn::parse_quote!(String)),
+                quote!(String).to_string()
+            );
+        }
+
+        #[test]
+        fn test_only_the_outermost_reference_is_stripped() {
+            assert_eq!(stripped(syn::parse_quote!(&&str)), quote!(&str).to_string());
+        }
+
+        #[test]
+        fn test_reference_nested_inside_another_type_is_kept() {
+            assert_eq!(
+                stripped(syn::parse_quote!(Vec<&str>)),
+                quote!(Vec<&str>).to_string()
+            );
+        }
+    }
+
+    mod build_reference_call_value {
+        use super::*;
+
+        fn call_value(ty: syn::Type) -> String {
+            let ident = syn::Ident::new("id", proc_macro2::Span::call_site());
+            build_reference_call_value(&ident, &ty)
+                .to_token_stream()
+                .to_string()
+        }
+
+        #[test]
+        fn test_owned_param_is_borrowed() {
+            assert_eq!(
+                call_value(syn::parse_quote!(String)),
+                quote!(&id).to_string()
+            );
+        }
+
+        #[test]
+        fn test_shared_reference_param_is_forwarded_as_is() {
+            assert_eq!(call_value(syn::parse_quote!(&str)), quote!(id).to_string());
+        }
+
+        /// Forwarding a `&mut` binding as-is would move it, leaving the rest of the user's body
+        /// unable to use the parameter, so it has to be reborrowed.
+        #[test]
+        fn test_mutable_reference_param_is_reborrowed() {
+            assert_eq!(
+                call_value(syn::parse_quote!(&mut String)),
+                quote!(&*id).to_string()
+            );
         }
     }
 }

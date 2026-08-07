@@ -12,6 +12,10 @@ pub struct FunctionInfo {
     /// fake closure.
     pub param_pats: Vec<syn::Pat>,
 
+    /// The parameter types, in declaration order and matching `param_pats`. A spy derives what it
+    /// matches on from these; a fake only needs them by way of `fn_closure_trait`.
+    pub param_types: Vec<syn::Type>,
+
     /// The `Fn(..) -> ..` trait bound a fake for this function must satisfy, with any lifetimes
     /// bound higher-ranked.
     pub fn_closure_trait: syn::TraitBound,

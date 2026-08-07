@@ -66,6 +66,7 @@ mod tests {
     use super::*;
     use crate::extract::function::extract_function_info;
     use crate::fakeable::inline_call::info::FakeInlineCallInfo;
+    use crate::names::NameType;
     use quote::ToTokens;
     use syn::parse_quote;
 
@@ -76,7 +77,8 @@ mod tests {
                 String::new()
             }
         };
-        let function_info = extract_function_info(&item_fn).expect("valid standalone function");
+        let function_info =
+            extract_function_info(&item_fn, NameType::Fake).expect("valid standalone function");
         let inline_call_info = FakeInlineCallInfo::try_from(&function_info)
             .expect("conversion should succeed for a non-generic standalone function");
 
@@ -112,8 +114,8 @@ mod tests {
                 x
             }
         };
-        let function_info =
-            extract_function_info(&item_fn).expect("valid generic standalone function");
+        let function_info = extract_function_info(&item_fn, NameType::Fake)
+            .expect("valid generic standalone function");
         let inline_call_info = FakeInlineCallInfo::try_from(&function_info)
             .expect("conversion should succeed for a generic standalone function");
 

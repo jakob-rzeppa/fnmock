@@ -17,6 +17,7 @@ use crate::{
         access_function::info::FakeAccessFunctionInfo, fake_module::info::FakeModuleInfo,
         inline_call::info::FakeInlineCallInfo,
     },
+    names::NameType,
 };
 
 mod access_function;
@@ -41,7 +42,7 @@ pub fn handle_fakeable(
     let expanded = match syn::parse2::<syn::Item>(item.clone()) {
         Ok(syn::Item::Fn(mut item_fn)) => {
             // If it's a function, extract the fake info for that function
-            let function_info = extract_function_info(&item_fn)?;
+            let function_info = extract_function_info(&item_fn, NameType::Fake)?;
             let inline_call_info = FakeInlineCallInfo::try_from(&function_info)?;
             let access_function_info = FakeAccessFunctionInfo::try_from(&function_info)?;
             let fake_module_info = FakeModuleInfo::try_from(&function_info)?;

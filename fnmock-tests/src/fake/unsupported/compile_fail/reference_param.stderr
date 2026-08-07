@@ -1,4 +1,4 @@
-error: Reference patterns are not supported for fake call values
+error: Reference patterns are not supported for call values
  --> src/fake/unsupported/compile_fail/reference_param.rs:7:22
   |
 7 | fn reference_pattern(&x: &i32) -> i32 {

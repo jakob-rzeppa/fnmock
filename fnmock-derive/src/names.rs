@@ -6,35 +6,63 @@
 
 /// Which kind of test double a name is being built for.
 ///
-/// Only fakes exist today; spies and mocks are planned, and this is the seam they will slot into
-/// so that each kind gets its own set of generated names without colliding.
+/// Fakes and spies exist today; mocks are planned, and this is the seam they will slot into so
+/// that each kind gets its own set of generated names without colliding.
+///
+/// It doubles as the identity of the attribute being expanded, so that the extraction code shared
+/// between the kinds can name the right attribute in its error messages — see
+/// [`NameType::attribute_name`].
+#[derive(Clone, Copy)]
 pub enum NameType {
     /// A fake: a user-supplied replacement implementation.
     Fake,
+    /// A spy: the real implementation, with its calls recorded and matched against expectations.
+    Spy,
 }
 
 impl NameType {
+    /// The attribute this kind is expanded from, spelled the way a user writes it.
+    ///
+    /// Used by the extraction code both attributes share, so that a rejected construct is
+    /// reported against the attribute that was actually applied.
+    pub fn attribute_name(&self) -> &'static str {
+        match self {
+            NameType::Fake => "#[fakeable]",
+            NameType::Spy => "#[spyable]",
+        }
+    }
+
     fn suffix_module(&self) -> &'static str {
         match self {
             NameType::Fake => "fake_module",
+            NameType::Spy => "spy_module",
         }
     }
 
     fn suffix_access_function(&self) -> &'static str {
         match self {
             NameType::Fake => "fake",
+            NameType::Spy => "spy",
         }
     }
 
     fn suffix_store(&self) -> &'static str {
         match self {
             NameType::Fake => "FAKE_STORE",
+            NameType::Spy => "SPY_STORE",
         }
     }
 
     fn suffix_interface_struct(&self) -> &'static str {
         match self {
             NameType::Fake => "FakeInterface",
+            NameType::Spy => "SpyInterface",
+        }
+    }
+
+    fn suffix_matcher(&self) -> &'static str {
+        match self {
+            NameType::Fake | NameType::Spy => "Matcher",
         }
     }
 }
@@ -149,6 +177,23 @@ pub fn build_impl_interface_struct_name(
     )
 }
 
+/// Build the matcher name for a function spy, mock etc.
+///
+/// The matcher lives inside the generated module, so this only has to stay clear of the other
+/// items generated beside it.
+///
+/// For a function named `get_user`, this will generate `GetUserMatcher`.
+pub fn build_matcher_name(fn_name: &syn::Ident, name_type: NameType) -> syn::Ident {
+    syn::Ident::new(
+        &format!(
+            "{}{}",
+            snake_to_pascal_case(&fn_name.to_string()),
+            name_type.suffix_matcher()
+        ),
+        proc_macro2::Span::mixed_site(),
+    )
+}
+
 /// Helper: Convert snake_case to PascalCase
 fn snake_to_pascal_case(s: &str) -> String {
     s.split('_')
@@ -232,5 +277,42 @@ mod tests {
             interface_struct_name.to_string(),
             "UserServiceGetUserFakeInterface"
         );
+    }
+
+    #[test]
+    fn test_build_matcher_name() {
+        let fn_name = syn::Ident::new("get_user", proc_macro2::Span::call_site());
+        let matcher_name = build_matcher_name(&fn_name, NameType::Spy);
+        assert_eq!(matcher_name.to_string(), "GetUserMatcher");
+    }
+
+    /// A spy's names have to agree with what the spy generators emit, and must not collide with
+    /// the fake's names for the same function.
+    #[test]
+    fn test_spy_names_for_a_free_function() {
+        let fn_name = syn::Ident::new("get_user", proc_macro2::Span::call_site());
+
+        assert_eq!(
+            build_module_name(&fn_name, NameType::Spy).to_string(),
+            "get_user_spy_module"
+        );
+        assert_eq!(
+            build_access_function_name(&fn_name, NameType::Spy).to_string(),
+            "get_user_spy"
+        );
+        assert_eq!(
+            build_store_name(&fn_name, NameType::Spy).to_string(),
+            "GET_USER_SPY_STORE"
+        );
+        assert_eq!(
+            build_interface_struct_name(&fn_name, NameType::Spy).to_string(),
+            "GetUserSpyInterface"
+        );
+    }
+
+    #[test]
+    fn test_attribute_name_matches_the_attribute_the_user_writes() {
+        assert_eq!(NameType::Fake.attribute_name(), "#[fakeable]");
+        assert_eq!(NameType::Spy.attribute_name(), "#[spyable]");
     }
 }
