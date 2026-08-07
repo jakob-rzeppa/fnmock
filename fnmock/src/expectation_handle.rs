@@ -1,4 +1,6 @@
-use crate::{Sequence, call_range::CallRange, expectation::Expectation, matcher::Matcher};
+use crate::{
+    Sequence, call_range::CallRange, expectation::Expectation, matcher::Matcher, sequence,
+};
 
 /// What `expect` hands back to the test, so the expectation can be refined by chaining.
 ///
@@ -70,14 +72,13 @@ impl<M: Matcher> ExpectationHandle<M> {
         self
     }
 
-    /// Append this expectation to `sequence`.
+    /// Add a sequence the expectation is appended to in drop.
     pub fn in_sequence(mut self, sequence: &mut Sequence) -> Self {
         let Some(ref expectation) = self.expectation else {
             unreachable!(
                 "The expectation of ExpectationHandle is None in in_sequence. This cannot happen because the only place the expectation in taken is in drop and in_sequence cannot be called after drop."
             );
         };
-        sequence.append_expectation(expectation.clone());
         if let Some(ref mut sequences) = self.sequences {
             sequences.push(sequence.clone());
         } else {
@@ -92,21 +93,24 @@ impl<M: Matcher> ExpectationHandle<M> {
 impl<M: Matcher> Drop for ExpectationHandle<M> {
     /// Here we register the expectation or sequences to the store.
     fn drop(&mut self) {
-        let Some(sequences) = self.sequences.take() else {
+        let Some(expectation) = self.expectation.take() else {
+            unreachable!(
+                "The expectation of ExpectationHandle is None in drop. This cannot happen because the only place the expectation in taken is in drop and drop cannot be called twice."
+            )
+        };
+
+        let Some(mut sequences) = self.sequences.take() else {
             unreachable!(
                 "The sequences field in ExpectationHandle is None in drop. This cannot happen because the only place the sequences are taken is in drop and drop cannot be called twice."
             )
         };
 
         if sequences.is_empty() {
-            if let Some(expectation) = self.expectation.take() {
-                (self.expectation_callback)(expectation);
-            } else {
-                unreachable!(
-                    "The expectation of ExpectationHandle is None in drop. This cannot happen because the only place the expectation in taken is in drop and drop cannot be called twice."
-                )
-            }
+            (self.expectation_callback)(expectation);
         } else {
+            for sequence in sequences.iter_mut() {
+                sequence.append_expectation(expectation.clone());
+            }
             (self.sequence_callback)(sequences)
         }
     }
