@@ -53,7 +53,7 @@ impl<M: Matcher + 'static> SpyStore<M> {
         if let Some(call_range) = &self.total_call_range {
             assert!(
                 !call_range.max_exceeded(&self.total_calls),
-                "Too many calls of the spied function '{}': got {}, expected at most {}.",
+                "Too many calls of the spied function '{}': got {}, expected {}.",
                 self.name,
                 self.total_calls,
                 call_range
