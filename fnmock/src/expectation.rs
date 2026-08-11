@@ -17,7 +17,7 @@ pub struct Expectation<M: Matcher> {
     /// The spied function this expectation belongs to, so panics can name it even when the
     /// caller (e.g. a [`Sequence`](crate::sequence::Sequence) spanning several functions) has
     /// no other way to know.
-    function_name: &'static str,
+    function_name: String,
 
     matcher: M,
 
@@ -28,10 +28,10 @@ pub struct Expectation<M: Matcher> {
 impl<M: Matcher> Expectation<M> {
     /// Create an expectation matching `matcher` on the spied function `function_name`,
     /// expecting at least one call.
-    pub fn new(matcher: M, function_name: &'static str) -> Self {
+    pub fn new(matcher: M, function_name: impl Into<String>) -> Self {
         Self {
             name: None,
-            function_name,
+            function_name: function_name.into(),
             matcher,
             call_range: (1..).into(),
             call_count: 0,

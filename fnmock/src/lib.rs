@@ -42,6 +42,8 @@ pub mod fake_store;
 #[doc(hidden)]
 pub mod generic_fake_store;
 #[doc(hidden)]
+pub mod generic_spy_store;
+#[doc(hidden)]
 pub mod matcher;
 #[doc(hidden)]
 pub mod sequence;

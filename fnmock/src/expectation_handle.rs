@@ -24,7 +24,7 @@ impl<M: Matcher> ExpectationHandle<M> {
     /// function they came from.
     pub fn new(
         matcher: M,
-        function_name: &'static str,
+        function_name: impl Into<String>,
         expectation_callback: impl Fn(Expectation<M>) + 'static,
         sequence_callback: impl Fn(Vec<Sequence>) + 'static,
     ) -> Self {

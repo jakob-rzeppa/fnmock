@@ -5,7 +5,8 @@
 use crate::{Sequence, call_range::CallRange, expectation::Expectation, matcher::Matcher};
 
 pub struct SpyStore<M: Matcher> {
-    name: &'static str,
+    /// How the spied function is named in panic messages.
+    name: String,
 
     /// Holds all standalone expectations.
     expectations: Vec<Expectation<M>>,
@@ -19,9 +20,9 @@ pub struct SpyStore<M: Matcher> {
 
 impl<M: Matcher + 'static> SpyStore<M> {
     /// Create a store with no expectations set.
-    pub fn new(name: &'static str) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         Self {
-            name,
+            name: name.into(),
             expectations: Vec::new(),
             sequences: Vec::new(),
             total_calls: 0,
@@ -71,12 +72,20 @@ impl<M: Matcher + 'static> SpyStore<M> {
         }
     }
 
-    /// Assert that every expectation set on the spied function is fulfilled.
+    /// The name the spied function is reported under, e.g. `get_user` or, for one instantiation
+    /// of a generic function, `identity::<alloc::string::String>`.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Check that every expectation set on the spied function is fulfilled.
+    /// One message per expectation of this store that is not fulfilled, empty when it is
+    /// satisfied.
     ///
-    /// # Panics
-    ///
-    /// Panics if any expectation is not fulfilled.
-    pub fn assert(&self) {
+    /// Split out of [`SpyStore::assert`] so that
+    /// [`GenericSpyStore`](crate::generic_spy_store::GenericSpyStore) can collect the failures of
+    /// every instantiation into a single panic instead of stopping at the first one.
+    pub fn check_for_failures(&self) -> Vec<String> {
         let mut failures: Vec<String> = Vec::new();
 
         if let Some(call_range) = &self.total_call_range {
@@ -107,6 +116,17 @@ impl<M: Matcher + 'static> SpyStore<M> {
                 ));
             }
         }
+
+        failures
+    }
+
+    /// Assert that every expectation set on the spied function is fulfilled.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any expectation is not fulfilled.
+    pub fn assert(&self) {
+        let failures = self.check_for_failures();
 
         assert!(
             failures.is_empty(),
