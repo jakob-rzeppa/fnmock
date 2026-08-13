@@ -33,7 +33,7 @@ fn test_assert_all_reports_every_failing_instantiation_at_once() {
 }
 
 #[test]
-#[should_panic(expected = "assert_all_reports_failures::<5>")]
+#[should_panic(expected = "assert_all_reports_failures_const::<5>")]
 fn test_assert_all_names_a_const_instantiation_by_value() {
     let spy = assert_all_reports_failures_const_spy::<5>();
     spy.expect(fnmock::predicate::always()).once();
