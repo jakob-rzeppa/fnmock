@@ -101,7 +101,16 @@ mod impl_block {
     }
 }
 
-mod visibility;
+mod visibility {
+    mod impl_method_pub;
+    mod impl_method_pub_crate;
+    mod impl_method_pub_in_path;
+    mod impl_method_pub_super;
+    mod standalone_pub;
+    mod standalone_pub_crate;
+    mod standalone_pub_in_path;
+    mod standalone_pub_super;
+}
 
 mod attributes;
 

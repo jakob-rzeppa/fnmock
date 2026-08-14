@@ -44,6 +44,7 @@ fn generate_access_method_for_impl_block(
     let access_function_name = &info.access_function_name;
     let module_name = &info.module_name;
     let interface_struct_name = &info.interface_struct_name;
+    let visibility = &info.visibility;
 
     let access_method_code = if let Some(generic_info) = &info.generic_info {
         let generic_idents = generic_info.generic_idents.as_slice();
@@ -62,7 +63,7 @@ fn generate_access_method_for_impl_block(
             ///
             /// Only available under `#[cfg(test)]`, and only reachable from tests within this
             /// crate: not from integration tests, doctests, or other crates.
-            pub(crate) fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
+            #visibility fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
                 self::#module_name::#interface_struct_name::new()
             }
         }
@@ -76,7 +77,7 @@ fn generate_access_method_for_impl_block(
             ///
             /// Only available under `#[cfg(test)]`, and only reachable from tests within this
             /// crate: not from integration tests, doctests, or other crates.
-            pub(crate) fn #access_function_name() -> self::#module_name::#interface_struct_name {
+            #visibility fn #access_function_name() -> self::#module_name::#interface_struct_name {
                 self::#module_name::#interface_struct_name::new()
             }
         }

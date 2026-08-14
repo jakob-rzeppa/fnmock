@@ -38,10 +38,7 @@ impl-block methods. See [attributes/](fnmock-tests/src/fake/attributes/).
 
 ## The accessor
 
-The accessor is emitted as `#[cfg(test)] pub(crate)`, so it can be called from a different module
-than the one defining the item ([visibility.rs](fnmock-tests/src/fake/visibility.rs)) — but only
-from a unit test inside the *same crate*. It does not exist in integration tests, doctests, or from
-another crate; see [test scope](USAGE.md#test-scope).
+The accessor is emitted as `#[cfg(test)]` with the same visibility as the function.
 
 Its exact shape depends on the item being faked:
 

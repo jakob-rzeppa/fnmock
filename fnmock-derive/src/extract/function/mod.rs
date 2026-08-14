@@ -20,6 +20,7 @@ pub fn extract_function_info(item_fn: &syn::ItemFn) -> syn::Result<FunctionInfo>
     }
 
     let name = item_fn.sig.ident.clone();
+    let visibility = item_fn.vis.clone();
     let params = item_fn.sig.inputs.iter().cloned().collect::<Vec<_>>();
     let param_types = extract_param_types(&params, None)?;
     let param_pats = extract_param_pats(&params);
@@ -29,6 +30,7 @@ pub fn extract_function_info(item_fn: &syn::ItemFn) -> syn::Result<FunctionInfo>
 
     Ok(FunctionInfo {
         name,
+        visibility,
         param_pats,
         fn_closure_trait,
         generic_info,

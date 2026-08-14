@@ -54,23 +54,7 @@ so outside of tests the function keeps its original body and no fake machinery i
 
 ## Test scope
 
-Both the injected lookup and the `_fake()` accessor are `#[cfg(test)]`-gated, and `cfg(test)` is
-only set while the crate defining the fakeable item is being compiled as *its own* unit tests. In
-practice:
-
-- **Works:** a `#[cfg(test)] mod tests { ... }` inside the same crate as the fakeable item. This is
-  how every example in this document and in `fnmock-tests` is written.
-- **Does not work: integration tests.** A file under `tests/` compiles your crate as an ordinary
-  dependency, without `cfg(test)` set on it. The accessor doesn't exist there, so
-  `fetch_user_fake()` fails with `cannot find function `fetch_user_fake` in this scope` rather than
-  silently no-opping.
-- **Does not work: doctests**, for the same reason — a doctest compiles against the crate the same
-  way an external user would.
-- **Does not work from another crate.** The accessor is generated `pub(crate)`, so even a workspace
-  sibling can't reach it from its own tests.
-
-If your tests live under `tests/` today, keep the fakeable item's own tests in a `#[cfg(test)]`
-module next to it (as shown throughout this file) rather than moving them out.
+Both the fake module and the `_fake()` accessor are `#[cfg(test)]`-gated, so they are only available in test builds. They match the visibility of the function they are generated for, so a `pub` function has a `pub` accessor and a `pub(crate)` function has a `pub(crate)` accessor.
 
 ## The basics
 

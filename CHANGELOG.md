@@ -10,6 +10,8 @@ together.
 
 ## [Unreleased]
 
+- Fakes match the visibility of the faked function, instead of being always `pub(crate)`.
+
 ## [0.1.0] - 2026-07-22
 
 ### Added
