@@ -7,13 +7,11 @@
 //! See the [README](https://github.com/jakob-rzeppa/fnmock/blob/master/README.md) for installation,
 //! a walkthrough and the current limitations.
 
-use crate::{fakeable::handle_fakeable, spyable::handle_spyable};
+use crate::old::{fakeable::handle_fakeable, spyable::handle_spyable};
 
-mod extract;
-mod fakeable;
 mod module_builder;
 mod names;
-mod spyable;
+mod old;
 
 /// Make a function or an inherent impl block fakeable in tests.
 ///
