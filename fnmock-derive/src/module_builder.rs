@@ -18,10 +18,8 @@ pub struct ModuleBuilder {
     /// This is placed inside thread_local! storage in the generated module.
     store: Option<proc_macro2::TokenStream>,
 
-    /// The code for the interface struct, which provides methods to interact with the fake.
-    ///
-    /// This must include the impl block for the interface struct, which defines the methods that users will call to set up and verify the fake.
-    interface_struct: Option<proc_macro2::TokenStream>,
+    /// The code in the module beside the store.
+    parts: Vec<proc_macro2::TokenStream>,
 }
 
 impl ModuleBuilder {
@@ -31,7 +29,7 @@ impl ModuleBuilder {
             name: None,
             visibility: None,
             store: None,
-            interface_struct: None,
+            parts: Vec::new(),
         }
     }
 
@@ -51,9 +49,9 @@ impl ModuleBuilder {
         self.store = Some(store);
     }
 
-    /// Set the interface struct, including its impl block — see the field's own note.
-    pub fn set_interface_struct(&mut self, interface_struct: proc_macro2::TokenStream) {
-        self.interface_struct = Some(interface_struct);
+    /// Add a part to the module. E.g. the interface struct or spy matcher
+    pub fn add_part(&mut self, part: proc_macro2::TokenStream) {
+        self.parts.push(part);
     }
 
     /// Assemble the parts into the generated module.
@@ -81,10 +79,7 @@ impl ModuleBuilder {
             .as_ref()
             .ok_or_else(|| internal_error("visibility"))?;
         let store = self.store.as_ref().ok_or_else(|| internal_error("store"))?;
-        let interface_struct = self
-            .interface_struct
-            .as_ref()
-            .ok_or_else(|| internal_error("interface struct"))?;
+        let parts = &self.parts;
 
         let code = quote! {
             #[cfg(test)]
@@ -95,7 +90,7 @@ impl ModuleBuilder {
                     #store
                 }
 
-                #interface_struct
+                #(#parts)*
             }
         };
 
@@ -116,7 +111,7 @@ mod tests {
     fn test_build_module_without_name_returns_error() {
         let mut builder = ModuleBuilder::new();
         builder.set_store(quote! {});
-        builder.set_interface_struct(quote! {});
+        builder.add_part(quote! {});
 
         assert!(
             builder.build_module().is_err(),
@@ -131,7 +126,7 @@ mod tests {
             "some_module",
             proc_macro2::Span::call_site(),
         ));
-        builder.set_interface_struct(quote! {});
+        builder.add_part(quote! {});
 
         assert!(
             builder.build_module().is_err(),
@@ -177,7 +172,7 @@ mod tests {
             ));
             builder.set_visibility(visibility.clone());
             builder.set_store(quote! {});
-            builder.set_interface_struct(quote! {});
+            builder.add_part(quote! {});
 
             let module = builder.build_module().expect("all required parts are set");
 

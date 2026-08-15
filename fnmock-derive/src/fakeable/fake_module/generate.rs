@@ -39,7 +39,7 @@ fn generate_regular_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
         }
     );
 
-    module_builder.set_interface_struct(quote! {
+    module_builder.add_part(quote! {
         pub struct #interface_struct_name;
 
         impl #interface_struct_name {
@@ -135,7 +135,7 @@ fn generate_generic_fake_module_code(info: &FakeModuleInfo) -> syn::Result<syn::
         }
     );
 
-    module_builder.set_interface_struct(
+    module_builder.add_part(
         quote! {
             pub struct #interface_struct_name<#(#generic_params),*> {
                 _marker: ::std::marker::PhantomData<(#(#generic_types_without_const_generics),*)>,
