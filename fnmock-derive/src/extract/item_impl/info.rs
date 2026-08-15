@@ -16,9 +16,16 @@ pub struct ImplItemFnInfo {
     /// `self` identifier. Used to forward the call's arguments to the fake closure.
     pub param_pats: Vec<syn::Pat>,
 
-    /// The `Fn(..) -> ..` trait bound a fake for this method must satisfy. The receiver is its
-    /// first argument, and every `Self` has been replaced by the impl block's concrete type.
-    pub fn_closure_trait: syn::TraitBound,
+    /// The parameter types, in declaration order and matching `param_pats`, with every `Self`
+    /// replaced by the impl block's concrete type. The receiver is included as the first entry.
+    pub param_types: Vec<syn::Type>,
+
+    /// The combined lifetime parameters of the struct and method. Only a fake needs these, to
+    /// bind them higher-ranked on its closure trait.
+    pub lifetimes: Vec<syn::Lifetime>,
+
+    /// The method's return type, with every `Self` replaced by the impl block's concrete type.
+    pub return_type: syn::ReturnType,
 
     /// The generic parameters of the struct and method, or `None` if neither has any.
     pub generic_info: Option<ImplItemFnGenericInfo>,

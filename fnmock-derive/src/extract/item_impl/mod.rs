@@ -4,7 +4,6 @@ use syn::{spanned::Spanned, visit_mut::VisitMut};
 
 use crate::{
     extract::{
-        fn_closure_trait::build_fn_closure_trait,
         item_impl::{generics::extract_generic_impl_info, info::ImplItemFnInfo},
         lifetimes::extract_lifetimes_from_generics,
         params::{extract_param_pats, extract_param_types},
@@ -73,15 +72,14 @@ fn extract_single_item_impl_info_for_method(
 
     let return_type = extract_return_type(&method.sig.output, &item_impl.self_ty);
 
-    let fn_closure_trait =
-        build_fn_closure_trait(&lifetimes, &param_types, &return_type, NameType::Fake)?;
-
     Ok(ImplItemFnInfo {
         struct_name,
         method_name,
         visibility,
         param_pats,
-        fn_closure_trait,
+        param_types,
+        lifetimes,
+        return_type,
         generic_info,
     })
 }

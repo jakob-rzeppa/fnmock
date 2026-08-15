@@ -124,7 +124,12 @@ impl<M: Matcher + 'static> SpyStore<M> {
     /// Add a sequence, skip if it already exists
     pub fn add_sequences(&mut self, sequences: Vec<Sequence>) {
         for sequence in sequences {
-            if let None = self.sequences.iter().find(|e| e.id() == sequence.id()) {
+            if self
+                .sequences
+                .iter()
+                .find(|e| e.id() == sequence.id())
+                .is_none()
+            {
                 self.sequences.push(sequence);
             }
         }

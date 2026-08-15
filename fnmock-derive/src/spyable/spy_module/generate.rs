@@ -46,6 +46,7 @@ pub fn generate_spy_module_code(info: &SpyModuleInfo) -> syn::Result<syn::ItemMo
     let mut builder = ModuleBuilder::new();
 
     builder.set_name(info.module_name.clone());
+    builder.set_visibility(info.visibility.clone());
 
     builder.set_store(quote! {
         static #store_name: ::std::cell::RefCell<::fnmock::spy_store::SpyStore<#matcher_name>> =
@@ -187,6 +188,7 @@ mod tests {
         let info = SpyModuleInfo {
             module_name: syn::parse_str("get_user_spy_module").unwrap(),
             store_name: syn::parse_str("SPY").unwrap(),
+            visibility: syn::parse_str("pub(crate)").unwrap(),
             display_name: "get_user".to_string(),
             matcher_name: syn::parse_str("GetUserMatcher").unwrap(),
             param_idents: vec![
@@ -348,6 +350,7 @@ mod tests {
         let info = SpyModuleInfo {
             module_name: syn::parse_str("save_user_spy_module").unwrap(),
             store_name: syn::parse_str("SPY").unwrap(),
+            visibility: syn::parse_str("pub(crate)").unwrap(),
             display_name: "save_user".to_string(),
             matcher_name: syn::parse_str("SaveUserMatcher").unwrap(),
             param_idents: vec![syn::parse_str("id").unwrap()],
@@ -497,6 +500,7 @@ mod tests {
         let info = SpyModuleInfo {
             module_name: syn::parse_str("ping_spy_module").unwrap(),
             store_name: syn::parse_str("SPY").unwrap(),
+            visibility: syn::parse_str("pub(crate)").unwrap(),
             display_name: "ping".to_string(),
             matcher_name: syn::parse_str("PingMatcher").unwrap(),
             param_idents: vec![],

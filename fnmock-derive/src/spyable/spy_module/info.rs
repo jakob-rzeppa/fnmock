@@ -38,6 +38,8 @@ pub struct SpyModuleInfo {
     /// Example: `SPY`.
     pub store_name: syn::Ident,
 
+    pub visibility: syn::Visibility,
+
     /// How the spied function is referred to in panic messages, e.g. `"UserService get_user"`.
     /// Used both as the `SpyStore`'s own name and as the `function_name` passed to
     /// `ExpectationHandle::new`.
@@ -72,6 +74,7 @@ impl TryFrom<&FunctionInfo> for SpyModuleInfo {
         Ok(SpyModuleInfo {
             module_name: build_module_name(&function_info.name, NameType::Spy),
             store_name: build_store_name(&function_info.name, NameType::Spy),
+            visibility: function_info.visibility.clone(),
             display_name: function_info.name.to_string(),
             matcher_name: build_matcher_name(&function_info.name, NameType::Spy),
             param_idents: extract_param_idents(&function_info.param_pats, NameType::Spy)?,

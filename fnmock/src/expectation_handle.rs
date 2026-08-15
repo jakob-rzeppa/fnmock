@@ -1,6 +1,4 @@
-use crate::{
-    Sequence, call_range::CallRange, expectation::Expectation, matcher::Matcher, sequence,
-};
+use crate::{Sequence, call_range::CallRange, expectation::Expectation, matcher::Matcher};
 
 /// What `expect` hands back to the test, so the expectation can be refined by chaining.
 ///
@@ -74,11 +72,6 @@ impl<M: Matcher> ExpectationHandle<M> {
 
     /// Add a sequence the expectation is appended to in drop.
     pub fn in_sequence(mut self, sequence: &mut Sequence) -> Self {
-        let Some(ref expectation) = self.expectation else {
-            unreachable!(
-                "The expectation of ExpectationHandle is None in in_sequence. This cannot happen because the only place the expectation in taken is in drop and in_sequence cannot be called after drop."
-            );
-        };
         if let Some(ref mut sequences) = self.sequences {
             sequences.push(sequence.clone());
         } else {

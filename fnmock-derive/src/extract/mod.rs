@@ -4,7 +4,6 @@
 //! off raw `syn` types, so signature validation happens in one place.
 
 pub mod call_value;
-mod fn_closure_trait;
 pub mod function;
 mod generics;
 pub mod item_impl;

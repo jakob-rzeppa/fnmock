@@ -13,12 +13,16 @@ pub struct FunctionInfo {
     pub param_pats: Vec<syn::Pat>,
 
     /// The parameter types, in declaration order and matching `param_pats`. A spy derives what it
-    /// matches on from these; a fake only needs them by way of `fn_closure_trait`.
+    /// matches on from these; a fake only needs them by way of the `Fn(..) -> ..` trait bound
+    /// built from these plus `lifetimes` and `return_type`.
     pub param_types: Vec<syn::Type>,
 
-    /// The `Fn(..) -> ..` trait bound a fake for this function must satisfy, with any lifetimes
-    /// bound higher-ranked.
-    pub fn_closure_trait: syn::TraitBound,
+    /// The function's lifetime parameters. Only a fake needs these, to bind them higher-ranked on
+    /// its closure trait.
+    pub lifetimes: Vec<syn::Lifetime>,
+
+    /// The function's return type.
+    pub return_type: syn::ReturnType,
 
     /// The function's generic parameters, or `None` if it has none (lifetimes don't count — they
     /// are not part of the fake's key).

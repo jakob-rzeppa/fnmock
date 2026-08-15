@@ -2,6 +2,7 @@
 
 use crate::{
     extract::{function::info::FunctionInfo, item_impl::info::ImplItemFnInfo},
+    fakeable::fn_closure_trait::build_fn_closure_trait,
     names::{
         NameType, build_impl_interface_struct_name, build_impl_module_name, build_impl_store_name,
         build_interface_struct_name, build_module_name, build_store_name,
@@ -63,6 +64,12 @@ impl TryFrom<&FunctionInfo> for FakeModuleInfo {
         let display_name = format!("{}", function_info.name);
         let interface_struct_name =
             build_interface_struct_name(&function_info.name, NameType::Fake);
+        let fn_closure_trait = build_fn_closure_trait(
+            &function_info.lifetimes,
+            &function_info.param_types,
+            &function_info.return_type,
+            NameType::Fake,
+        )?;
 
         Ok(FakeModuleInfo {
             module_name,
@@ -70,7 +77,7 @@ impl TryFrom<&FunctionInfo> for FakeModuleInfo {
             display_name,
             interface_struct_name,
             visibility: function_info.visibility.clone(),
-            fn_closure_trait: function_info.fn_closure_trait.clone(),
+            fn_closure_trait,
             generic_info: function_info
                 .generic_info
                 .as_ref()
@@ -107,6 +114,12 @@ impl TryFrom<&ImplItemFnInfo> for FakeModuleInfo {
             &impl_item_fn_info.method_name,
             NameType::Fake,
         );
+        let fn_closure_trait = build_fn_closure_trait(
+            &impl_item_fn_info.lifetimes,
+            &impl_item_fn_info.param_types,
+            &impl_item_fn_info.return_type,
+            NameType::Fake,
+        )?;
 
         Ok(FakeModuleInfo {
             module_name,
@@ -114,7 +127,7 @@ impl TryFrom<&ImplItemFnInfo> for FakeModuleInfo {
             display_name,
             interface_struct_name,
             visibility: impl_item_fn_info.visibility.clone(),
-            fn_closure_trait: impl_item_fn_info.fn_closure_trait.clone(),
+            fn_closure_trait,
             generic_info: impl_item_fn_info.generic_info.as_ref().map(|info| {
                 FakeModuleGenericInfo {
                     generic_count: info.count,

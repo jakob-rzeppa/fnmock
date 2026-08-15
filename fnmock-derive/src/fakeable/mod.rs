@@ -22,6 +22,7 @@ use crate::{
 
 mod access_function;
 mod fake_module;
+mod fn_closure_trait;
 mod inline_call;
 
 /// Expand the `#[fakeable]` attribute over the item it was applied to.

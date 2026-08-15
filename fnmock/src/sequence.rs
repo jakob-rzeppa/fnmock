@@ -94,7 +94,7 @@ impl Sequence {
                 // In a sequence may be Expectations for different functions / matchers.
                 // If downcast_ref returns None the expectation is for a different function.
                 if let Some(expectation) = expectation.as_any().downcast_ref::<Expectation<M>>() {
-                    expectation.matches(&params)
+                    expectation.matches(params)
                 } else {
                     false
                 }
@@ -174,5 +174,11 @@ impl Sequence {
                 )
             })
             .collect()
+    }
+}
+
+impl Default for Sequence {
+    fn default() -> Self {
+        Self::new()
     }
 }

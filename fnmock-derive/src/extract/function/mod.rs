@@ -2,7 +2,6 @@
 
 use crate::{
     extract::{
-        fn_closure_trait::build_fn_closure_trait,
         function::{generics::extract_generic_function_info, info::FunctionInfo},
         lifetimes::extract_lifetimes_from_generics,
         params::{extract_param_pats, extract_param_types},
@@ -38,15 +37,14 @@ pub fn extract_function_info(
     let param_pats = extract_param_pats(&params);
     let generic_info = extract_generic_function_info(&item_fn.sig.generics)?;
     let lifetimes = extract_lifetimes_from_generics(&item_fn.sig.generics);
-    let fn_closure_trait =
-        build_fn_closure_trait(&lifetimes, &param_types, &item_fn.sig.output, name_type)?;
 
     Ok(FunctionInfo {
         name,
         visibility,
         param_pats,
         param_types,
-        fn_closure_trait,
+        lifetimes,
+        return_type: item_fn.sig.output.clone(),
         generic_info,
     })
 }
