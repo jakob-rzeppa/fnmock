@@ -12,6 +12,8 @@ pub struct ModuleBuilder {
     /// The name of the generated module.
     name: Option<syn::Ident>,
 
+    visibility: Option<syn::Visibility>,
+
     /// The code for the store struct, which holds the state of the fake.
     /// This is placed inside thread_local! storage in the generated module.
     store: Option<proc_macro2::TokenStream>,
@@ -27,6 +29,7 @@ impl ModuleBuilder {
     pub fn new() -> Self {
         Self {
             name: None,
+            visibility: None,
             store: None,
             interface_struct: None,
         }
@@ -35,6 +38,11 @@ impl ModuleBuilder {
     /// Set the name of the generated module.
     pub fn set_name(&mut self, name: syn::Ident) {
         self.name = Some(name);
+    }
+
+    /// Set the visibility of the generated module.
+    pub fn set_visibility(&mut self, visibility: syn::Visibility) {
+        self.visibility = Some(visibility);
     }
 
     /// Set the store declaration. It is placed inside the module's `thread_local!` block, so it
@@ -68,6 +76,10 @@ impl ModuleBuilder {
         };
 
         let name = self.name.as_ref().ok_or_else(|| internal_error("name"))?;
+        let visibility = self
+            .visibility
+            .as_ref()
+            .ok_or_else(|| internal_error("visibility"))?;
         let store = self.store.as_ref().ok_or_else(|| internal_error("store"))?;
         let interface_struct = self
             .interface_struct
@@ -76,7 +88,7 @@ impl ModuleBuilder {
 
         let code = quote! {
             #[cfg(test)]
-            pub(crate) mod #name {
+            #visibility mod #name {
                 use super::*;
 
                 thread_local! {
@@ -140,5 +152,40 @@ mod tests {
             builder.build_module().is_err(),
             "expected build_module to error (not panic) when the interface struct is unset"
         );
+    }
+
+    fn render_visibility(visibility: &syn::Visibility) -> String {
+        quote! { #visibility }.to_string()
+    }
+
+    #[test]
+    fn test_build_module_preserves_visibility() {
+        let cases: Vec<syn::Visibility> = vec![
+            syn::Visibility::Inherited,
+            syn::parse_str("pub(self)").expect("valid visibility"),
+            syn::parse_str("pub(super)").expect("valid visibility"),
+            syn::parse_str("pub(crate)").expect("valid visibility"),
+            syn::parse_str("pub(in crate::foo)").expect("valid visibility"),
+            syn::parse_str("pub").expect("valid visibility"),
+        ];
+
+        for visibility in cases {
+            let mut builder = ModuleBuilder::new();
+            builder.set_name(syn::Ident::new(
+                "some_module",
+                proc_macro2::Span::call_site(),
+            ));
+            builder.set_visibility(visibility.clone());
+            builder.set_store(quote! {});
+            builder.set_interface_struct(quote! {});
+
+            let module = builder.build_module().expect("all required parts are set");
+
+            assert_eq!(
+                render_visibility(&module.vis),
+                render_visibility(&visibility),
+                "expected the module's visibility to match the visibility it was built with"
+            );
+        }
     }
 }

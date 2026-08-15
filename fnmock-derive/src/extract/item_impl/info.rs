@@ -9,6 +9,9 @@ pub struct ImplItemFnInfo {
     /// The method's own name.
     pub method_name: syn::Ident,
 
+    /// The method's visibility, which is copied to the generated items.
+    pub visibility: syn::Visibility,
+
     /// The parameter patterns, in declaration order, with the receiver represented as a plain
     /// `self` identifier. Used to forward the call's arguments to the fake closure.
     pub param_pats: Vec<syn::Pat>,

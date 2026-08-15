@@ -17,6 +17,8 @@ pub struct AccessFunctionInfo {
     /// The name of the fake module this access function reaches into.
     pub module_name: syn::Ident,
 
+    pub visibility: syn::Visibility,
+
     /// The name of the struct that provides the API for setting up and accessing the fake implementation.
     pub interface_struct_name: syn::Ident,
 
@@ -55,6 +57,7 @@ impl TryFrom<&FunctionInfo> for AccessFunctionInfo {
             access_function_name,
             module_name,
             interface_struct_name,
+            visibility: function_info.visibility.clone(),
             generic_info: function_info.generic_info.as_ref().map(|info| {
                 AccessFunctionGenericInfo {
                     generic_idents: info.idents.clone(),
@@ -86,6 +89,7 @@ impl TryFrom<&ImplItemFnInfo> for AccessFunctionInfo {
             access_function_name,
             module_name,
             interface_struct_name,
+            visibility: impl_item_fn_info.visibility.clone(),
             generic_info: impl_item_fn_info.generic_info.as_ref().map(|info| {
                 AccessFunctionGenericInfo {
                     generic_idents: info.idents.clone(),

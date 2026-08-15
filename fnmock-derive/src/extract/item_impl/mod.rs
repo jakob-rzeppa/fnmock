@@ -51,6 +51,7 @@ fn extract_single_item_impl_info_for_method(
 
     let struct_name = extract_struct_ident(&item_impl.self_ty)?;
     let method_name = method.sig.ident.clone();
+    let visibility = method.vis.clone();
 
     let generic_info = extract_generic_impl_info(item_impl, method)?;
     let struct_lifetimes = extract_lifetimes_from_generics(&item_impl.generics);
@@ -74,6 +75,7 @@ fn extract_single_item_impl_info_for_method(
     Ok(ImplItemFnInfo {
         struct_name,
         method_name,
+        visibility,
         param_pats,
         fn_closure_trait,
         generic_info,

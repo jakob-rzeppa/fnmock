@@ -18,6 +18,7 @@ pub fn generate_access_function_for_standalone(
     let access_function_name = &info.access_function_name;
     let module_name = &info.module_name;
     let interface_struct_name = &info.interface_struct_name;
+    let visibility = &info.visibility;
 
     let access_function_code = if let Some(generic_info) = &info.generic_info {
         let generic_idents = generic_info.generic_idents.as_slice();
@@ -33,7 +34,7 @@ pub fn generate_access_function_for_standalone(
             /// Only available under `#[cfg(test)]`, and only reachable from tests within this
             /// crate: not from integration tests, doctests, or other crates.
             #[cfg(test)]
-            pub(crate) fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
+            #visibility fn #access_function_name<#(#generic_params),*>() -> self::#module_name::#interface_struct_name<#(#generic_idents),*> {
                 self::#module_name::#interface_struct_name::new()
             }
         }
@@ -44,7 +45,7 @@ pub fn generate_access_function_for_standalone(
             /// Only available under `#[cfg(test)]`, and only reachable from tests within this
             /// crate: not from integration tests, doctests, or other crates.
             #[cfg(test)]
-            pub(crate) fn #access_function_name() -> self::#module_name::#interface_struct_name {
+            #visibility fn #access_function_name() -> self::#module_name::#interface_struct_name {
                 self::#module_name::#interface_struct_name::new()
             }
         }

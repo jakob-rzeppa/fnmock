@@ -5,6 +5,9 @@ pub struct FunctionInfo {
     /// The function's own name, which every generated name is derived from.
     pub name: syn::Ident,
 
+    /// The function's visibility, which is copied to the generated items.
+    pub visibility: syn::Visibility,
+
     /// The parameter patterns, in declaration order. Used to forward the call's arguments to the
     /// fake closure.
     pub param_pats: Vec<syn::Pat>,

@@ -23,6 +23,8 @@ pub struct FakeModuleInfo {
     /// The name of the interface struct carrying `setup`/`clear`/`is_set`/`get`.
     pub interface_struct_name: syn::Ident,
 
+    pub visibility: syn::Visibility,
+
     /// The `Fn(..) -> ..` bound a fake must satisfy. Used both as the stored closure's type and as
     /// the bound on `setup`'s argument.
     pub fn_closure_trait: syn::TraitBound,
@@ -67,6 +69,7 @@ impl TryFrom<&FunctionInfo> for FakeModuleInfo {
             store_name,
             display_name,
             interface_struct_name,
+            visibility: function_info.visibility.clone(),
             fn_closure_trait: function_info.fn_closure_trait.clone(),
             generic_info: function_info
                 .generic_info
@@ -110,6 +113,7 @@ impl TryFrom<&ImplItemFnInfo> for FakeModuleInfo {
             store_name,
             display_name,
             interface_struct_name,
+            visibility: impl_item_fn_info.visibility.clone(),
             fn_closure_trait: impl_item_fn_info.fn_closure_trait.clone(),
             generic_info: impl_item_fn_info.generic_info.as_ref().map(|info| {
                 FakeModuleGenericInfo {
