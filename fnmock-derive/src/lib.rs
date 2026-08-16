@@ -9,9 +9,14 @@
 
 use crate::old::{fakeable::handle_fakeable, spyable::handle_spyable};
 
-mod module_builder;
-mod names;
+mod expandable;
+mod expanded;
+mod fakeable;
+mod item_info;
 mod old;
+mod plan;
+mod spyable;
+mod strategy;
 
 /// Make a function or an inherent impl block fakeable in tests.
 ///
