@@ -15,7 +15,7 @@ pub fn insert_inline_call(item_fn: &mut syn::ItemFn, inline_call: &syn::Block) {
 
 #[cfg(test)]
 mod tests {
-    use quote::{ToTokens, quote};
+    use quote::ToTokens;
 
     use super::*;
 
@@ -26,7 +26,9 @@ mod tests {
                 42
             }
         };
-        let inline_call: syn::Block = parse_quote!({ my_inline_call(); });
+        let inline_call: syn::Block = parse_quote!({
+            my_inline_call();
+        });
 
         insert_inline_call(&mut item_fn, &inline_call);
 
