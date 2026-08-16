@@ -11,6 +11,8 @@ together.
 ## [Unreleased]
 
 - Fakes match the visibility of the faked function, instead of being always `pub(crate)`.
+- Fake interface methods `setup` and `clear` use `&self` instead of `self`, so they can't be chained anymore and `let fake = fake.clear()` doesn't work anymore.
+- Fake interface method `get` is removed, as it was a internal implementation detail and not part of the public API.
 
 ## [0.1.0] - 2026-07-22
 

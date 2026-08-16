@@ -38,3 +38,7 @@ src/
 
 Each stage directory is split by item kind (`function/`, `impl_block/`)
 and, where the type differs, by double kind (`fake/`, `spy/`).
+
+## Generics
+
+Generics are passed by an Option, since they are not always present and change how the macro behaves. If the Option is `Some`, the implementations will assume the generics are present. `item_info` makes sure, that the generics are present, if the Option is `Some`.

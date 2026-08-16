@@ -69,34 +69,14 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     ///
     /// The `WrappedClosure` type parameter should be a boxed closure that matches the signature of the faked function for the given combination of generic types.
     /// It needs to match the generic that was passed to `setup_for` for the same combination of generic types exactly.
-    ///
-    /// # Panics
-    ///
-    /// Panics if no implementation is set for the given types or if the stored implementation cannot be downcast to the expected function type.
     pub fn get_for<WrappedClosure: 'static>(
         &self,
         generic_keys: [GenericKeyPart; GENERIC_COUNT],
-    ) -> Rc<WrappedClosure> {
+    ) -> Option<Rc<WrappedClosure>> {
         self.impls
             .get(&generic_keys)
             .cloned()
-            .unwrap_or_else(|| {
-                // When using the macro API, the macro ensures that get is only called when is_set_for is true, so this should never happen if the API is used correctly.
-                panic!(
-                    "Generic fake {} for {:#?} should only be called with initialized types, since is_set_for is checked before calling. This should never happen if the API is used correctly.",
-                    self.name,
-                    generic_keys
-                )
-            })
-            .downcast::<WrappedClosure>()
-            .unwrap_or_else(|_| {
-                // When using the macro API, the macro ensures that the type of get_for and setup_for match, so this should never happen if the API is used correctly.
-                panic!(
-                    "Downcast of generic fake {} for {:#?} failed. This should never happen if the API is used correctly. Expected function type does not match the type of the provided implementation.",
-                    self.name,
-                    generic_keys
-                );
-            })
+            .and_then(|c| c.downcast::<WrappedClosure>().ok())
     }
 }
 
