@@ -1,9 +1,9 @@
-use crate::{expandable::function::FunctionExpandable, plan::function::fake::FunctionFakePlan};
+use crate::{expandable::function::FunctionExpandable, scheme::function::fake::FunctionFakeScheme};
 
-impl TryFrom<FunctionFakePlan> for FunctionExpandable {
+impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
     type Error = syn::Error;
 
-    fn try_from(value: FunctionFakePlan) -> Result<Self, Self::Error> {
+    fn try_from(value: FunctionFakeScheme) -> Result<Self, Self::Error> {
         todo!()
     }
 }

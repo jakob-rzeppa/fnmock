@@ -13,8 +13,8 @@ a fixed chain of `TryFrom` conversions defined by the `Strategy` trait
 ```mermaid
 flowchart TD
     Item["Item\nsyn::ItemFn / syn::ItemImpl"] -->|TryFrom| ItemInfo["ItemInfo\nFunctionInfo / ImplBlockInfo"]
-    ItemInfo -->|TryFrom| Plan["Plan\n...FakePlan / ...SpyPlan"]
-    Plan -->|TryFrom| Expandable["Expandable\nFunctionExpandable / ImplExpandable"]
+    ItemInfo -->|TryFrom| Scheme["Scheme\n...FakeScheme / ...SpyScheme"]
+    Scheme -->|TryFrom| Expandable["Expandable\nFunctionExpandable / ImplExpandable"]
     Expandable -->|TryFrom| Expanded["Expanded\nFunctionExpanded / ImplExpanded"]
     Expanded -->|Into| TokenStream[proc_macro2::TokenStream]
 ```
@@ -31,7 +31,7 @@ src/
 ├── fakeable.rs, spyable.rs   dispatch into strategy::execute
 ├── strategy/               Strategy trait + the four concrete strategies
 ├── item_info/               stage 1: extraction from syn AST (implemented)
-├── plan/                    stage 2: planning
+├── scheme/                  stage 2: scheme (identifiers/module layout to generate)
 ├── expandable/               stage 3: expandable form
 └── expanded/                 stage 4: final TokenStream
 ```

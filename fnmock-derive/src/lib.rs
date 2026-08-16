@@ -14,7 +14,7 @@ mod expanded;
 mod fakeable;
 mod item_info;
 mod old;
-mod plan;
+mod scheme;
 mod spyable;
 mod strategy;
 

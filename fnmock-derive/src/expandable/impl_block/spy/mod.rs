@@ -1,9 +1,9 @@
-use crate::{expandable::impl_block::ImplExpandable, plan::impl_block::spy::ImplSpyPlan};
+use crate::{expandable::impl_block::ImplExpandable, scheme::impl_block::spy::ImplSpyScheme};
 
-impl TryFrom<ImplSpyPlan> for ImplExpandable {
+impl TryFrom<ImplSpyScheme> for ImplExpandable {
     type Error = syn::Error;
 
-    fn try_from(value: ImplSpyPlan) -> Result<Self, Self::Error> {
+    fn try_from(value: ImplSpyScheme) -> Result<Self, Self::Error> {
         todo!()
     }
 }
