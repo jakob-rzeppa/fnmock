@@ -8,6 +8,8 @@ pub fn build_module(
     parse_quote! {
         #[cfg(test)]
         #vis mod #name {
+            use super::*;
+
             #(#parts)*
         }
     }
@@ -39,6 +41,8 @@ mod tests {
         let expected: syn::ItemMod = parse_quote! {
             #[cfg(test)]
             pub mod my_function_module {
+                use super::*;
+
                 pub fn get_fake_interface() -> FakeInterface {
                     FakeInterface {}
                 }

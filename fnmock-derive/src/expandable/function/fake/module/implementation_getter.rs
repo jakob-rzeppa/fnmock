@@ -8,7 +8,7 @@ pub fn build_implementation_getter(
 ) -> proc_macro2::TokenStream {
     if let (Some(generic_keys), Some(generic_params)) = (generic_keys, generic_params) {
         quote! {
-            pub(super) fn implementation<#(#generic_params),*>(&self) -> Option<::std::rc::Rc<Box<dyn #fn_closure_trait>>> {
+            pub(super) fn implementation<#(#generic_params),*>() -> Option<::std::rc::Rc<Box<dyn #fn_closure_trait>>> {
                 #store_name.with_borrow(|fake| {
                     fake.get_for::<Box<dyn #fn_closure_trait>>([#(#generic_keys),*])
                 })
@@ -16,7 +16,7 @@ pub fn build_implementation_getter(
         }
     } else {
         quote! {
-            pub(super) fn implementation(&self) -> Option<::std::rc::Rc<dyn #fn_closure_trait>> {
+            pub(super) fn implementation() -> Option<::std::rc::Rc<dyn #fn_closure_trait>> {
                 #store_name.with(|store| store.borrow().get())
             }
         }
@@ -37,7 +37,7 @@ mod tests {
         let res = build_implementation_getter(&store_name, &fn_closure_trait, None, None);
 
         let expected = quote! {
-            pub(super) fn implementation(&self) -> Option<::std::rc::Rc<dyn Fn(i32) -> bool>> {
+            pub(super) fn implementation() -> Option<::std::rc::Rc<dyn Fn(i32) -> bool>> {
                 MY_FUNCTION_STORE.with(|store| store.borrow().get())
             }
         };
@@ -60,7 +60,7 @@ mod tests {
         );
 
         let expected = quote! {
-            pub(super) fn implementation<T>(&self) -> Option<::std::rc::Rc<Box<dyn Fn(T) -> bool>>> {
+            pub(super) fn implementation<T>() -> Option<::std::rc::Rc<Box<dyn Fn(T) -> bool>>> {
                 MY_FUNCTION_STORE.with_borrow(|fake| {
                     fake.get_for::<Box<dyn Fn(T) -> bool>>([::std::any::TypeId::of::<T>()])
                 })
@@ -87,7 +87,7 @@ mod tests {
         );
 
         let expected = quote! {
-            pub(super) fn implementation<T: Display, const C: u64>(&self) -> Option<::std::rc::Rc<Box<dyn Fn()>>> {
+            pub(super) fn implementation<T: Display, const C: u64>() -> Option<::std::rc::Rc<Box<dyn Fn()>>> {
                 MY_FUNCTION_STORE.with_borrow(|fake| {
                     fake.get_for::<Box<dyn Fn()>>([::std::any::TypeId::of::<T>(), C])
                 })

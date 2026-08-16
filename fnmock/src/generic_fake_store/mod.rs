@@ -18,7 +18,7 @@ pub mod key;
 /// This leads to the closures being stored as Rc<Box<dyn Fn(...) -> ...>> in the store. This is a workaround for the fact that we cannot store `Rc<dyn Fn(...) -> ...>` directly in the store, because `dyn Fn(...) -> ...` is not `Sized`, and therefore cannot be used as a parameter on its own.
 pub struct GenericFakeStore<const GENERIC_COUNT: usize> {
     /// A name for the fake store, used in error messages to make it clear which function's fake store is being referred to.
-    name: &'static str,
+    _name: &'static str,
     /// Keyed by generic key parts (TypeId for type parameters, value for const parameters); value is erased to `dyn Any` and downcast when retrieved.
     /// We use Rc to allow cloning the function pointer for multiple calls.
     impls: HashMap<[GenericKeyPart; GENERIC_COUNT], Rc<dyn Any>>,
@@ -30,7 +30,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     /// The name is only used to identify the function in panic messages.
     pub fn new(name: &'static str) -> Self {
         Self {
-            name,
+            _name: name,
             impls: HashMap::new(),
         }
     }
@@ -120,9 +120,9 @@ mod tests {
         let f2 = store.get_for::<Box<dyn Fn(u32, String) -> String>>(u32_string_key.clone());
 
         println!("Calling f1:");
-        println!("{}", f1(42, "Alice".into()));
+        println!("{}", f1.unwrap()(42, "Alice".into()));
         println!("Calling f2:");
-        println!("{}", f2(42, "Bob".into()));
+        println!("{}", f2.unwrap()(42, "Bob".into()));
 
         store.clear_for(i32_string_key.clone());
         store.clear_for(u32_string_key.clone());

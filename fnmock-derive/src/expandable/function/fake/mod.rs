@@ -61,9 +61,6 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
             ),
             accessor_name,
             accessor_generic_params,
-            interface_getter: parse_quote! {
-                self::#module_name::interface()
-            },
             module_name,
             module_parts: vec![
                 build_fake_store(&store_name, &display_name, &fn_closure_trait, generic_count),

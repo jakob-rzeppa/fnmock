@@ -23,7 +23,6 @@ impl TryFrom<FunctionExpandable> for FunctionExpanded {
             ref accessor_name,
             ref accessor_generic_params,
 
-            ref interface_getter,
             ref interface_type,
 
             ref module_name,
@@ -34,8 +33,8 @@ impl TryFrom<FunctionExpandable> for FunctionExpanded {
         let accessor_fn = build_accessor(
             vis,
             accessor_name,
+            module_name,
             accessor_generic_params,
-            interface_getter,
             interface_type,
         );
         let module = build_module(vis, module_name, module_parts);

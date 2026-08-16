@@ -9,7 +9,7 @@
 /// - `WrappedClosure`: A closure trait for the faked function, wrapped in a `Rc` to allow for cloning. The closure trait should match the signature of the function being faked. For example, for a function `fn foo(x: i32) -> i32`, the `WrappedClosure` type parameter would be `Rc<dyn Fn(i32) -> i32>`. This is handled by the proc-macro, so you don't need to worry about it when using the macro API.
 pub struct FakeStore<WrappedClosure: Clone> {
     /// Function name for error messages.
-    name: &'static str,
+    _name: &'static str,
     /// Optional custom implementation.
     implementation: Option<WrappedClosure>,
 }
@@ -20,7 +20,7 @@ impl<WrappedClosure: Clone> FakeStore<WrappedClosure> {
     /// The name is only used to identify the function in panic messages.
     pub fn new(function_name: &'static str) -> Self {
         Self {
-            name: function_name,
+            _name: function_name,
             implementation: None,
         }
     }
@@ -80,7 +80,8 @@ mod tests {
         store.setup(Rc::new(|x: i32| x + 1));
 
         let f = store.get();
-        assert_eq!(f(41), 42);
+        assert!(f.is_some());
+        assert_eq!(f.unwrap()(41), 42);
     }
 
     #[test]
@@ -90,7 +91,9 @@ mod tests {
         store.setup(Rc::new(|| 1));
         store.setup(Rc::new(|| 2));
 
-        assert_eq!(store.get()(), 2);
+        let f = store.get();
+        assert!(f.is_some());
+        assert_eq!(f.unwrap()(), 2);
     }
 
     #[test]
@@ -104,10 +107,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "test_fn")]
-    fn get_panics_when_no_implementation_is_set() {
+    fn get_returns_none_when_no_implementation_is_set() {
         let store: FakeStore<Rc<dyn Fn() -> i32>> = FakeStore::new("test_fn");
 
-        store.get();
+        assert!(store.get().is_none());
     }
 }
