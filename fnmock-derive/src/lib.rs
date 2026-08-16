@@ -7,13 +7,12 @@
 //! See the [README](https://github.com/jakob-rzeppa/fnmock/blob/master/README.md) for installation,
 //! a walkthrough and the current limitations.
 
-use crate::old::{fakeable::handle_fakeable, spyable::handle_spyable};
+use crate::{fakeable::handle_fakeable, spyable::handle_spyable};
 
 mod expandable;
 mod expanded;
 mod fakeable;
 mod item_info;
-mod old;
 mod scheme;
 mod spyable;
 mod strategy;
