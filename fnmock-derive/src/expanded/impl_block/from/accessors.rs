@@ -4,7 +4,7 @@ pub struct AccessorMethodInfo<'a> {
     pub vis: &'a syn::Visibility,
     pub name: &'a syn::Ident,
     pub method_generic_params: &'a [syn::GenericParam],
-    pub interface_getter: &'a syn::Expr,
+    pub module_name: &'a syn::Ident,
     pub interface_type: &'a syn::Type,
 }
 
@@ -21,14 +21,14 @@ pub fn build_accessor_impl(
                  vis,
                  name,
                  method_generic_params,
-                 interface_getter,
+                 module_name,
                  interface_type,
              }| {
                 build_accessor_method(
                     vis,
                     name,
                     method_generic_params,
-                    interface_getter,
+                    module_name,
                     interface_type,
                 )
             },
@@ -52,12 +52,12 @@ fn build_accessor_method(
     vis: &syn::Visibility,
     name: &syn::Ident,
     method_generic_params: &[syn::GenericParam],
-    interface_getter: &syn::Expr,
+    module_name: &syn::Ident,
     interface_type: &syn::Type,
 ) -> syn::ItemFn {
     parse_quote! {
-        #vis fn #name<#(#method_generic_params),*>() -> #interface_type {
-            #interface_getter
+        #vis fn #name<#(#method_generic_params),*>() -> self::#module_name::#interface_type {
+            self::#module_name::interface()
         }
     }
 }
@@ -101,14 +101,14 @@ mod tests {
         let vis: syn::Visibility = parse_quote!(pub);
         let name: syn::Ident = parse_quote!(my_method_fake);
         let method_generic_params: Vec<syn::GenericParam> = vec![];
-        let interface_getter: syn::Expr = parse_quote!(self::my_method_module::interface());
+        let module_name: syn::Ident = parse_quote!(my_method_module);
         let interface_type: syn::Type = parse_quote!(FakeInterface);
 
         let methods = vec![AccessorMethodInfo {
             vis: &vis,
             name: &name,
             method_generic_params: &method_generic_params,
-            interface_getter: &interface_getter,
+            module_name: &module_name,
             interface_type: &interface_type,
         }];
 
@@ -121,7 +121,7 @@ mod tests {
 
         let expected: syn::ItemImpl = parse_quote! {
             impl MyStruct {
-                pub fn my_method_fake() -> FakeInterface {
+                pub fn my_method_fake() -> self::my_method_module::FakeInterface {
                     self::my_method_module::interface()
                 }
             }
@@ -142,14 +142,14 @@ mod tests {
         let vis: syn::Visibility = parse_quote!(pub);
         let name: syn::Ident = parse_quote!(my_method_fake);
         let method_generic_params: Vec<syn::GenericParam> = vec![parse_quote!(T)];
-        let interface_getter: syn::Expr = parse_quote!(self::my_method_module::interface::<S, T>());
+        let module_name: syn::Ident = parse_quote!(my_method_module);
         let interface_type: syn::Type = parse_quote!(FakeInterface<S, T>);
 
         let methods = vec![AccessorMethodInfo {
             vis: &vis,
             name: &name,
             method_generic_params: &method_generic_params,
-            interface_getter: &interface_getter,
+            module_name: &module_name,
             interface_type: &interface_type,
         }];
 
@@ -162,8 +162,8 @@ mod tests {
 
         let expected: syn::ItemImpl = parse_quote! {
             impl<S> MyStruct<S> {
-                pub fn my_method_fake<T>() -> FakeInterface<S, T> {
-                    self::my_method_module::interface::<S, T>()
+                pub fn my_method_fake<T>() -> self::my_method_module::FakeInterface<S, T> {
+                    self::my_method_module::interface()
                 }
             }
         };
@@ -183,13 +183,13 @@ mod tests {
         let vis_a: syn::Visibility = parse_quote!(pub);
         let name_a: syn::Ident = parse_quote!(method_a_fake);
         let method_generic_params_a: Vec<syn::GenericParam> = vec![];
-        let interface_getter_a: syn::Expr = parse_quote!(self::method_a_module::interface());
+        let module_name_a: syn::Ident = parse_quote!(method_a_module);
         let interface_type_a: syn::Type = parse_quote!(FakeInterfaceA);
 
         let vis_b: syn::Visibility = syn::Visibility::Inherited;
         let name_b: syn::Ident = parse_quote!(method_b_fake);
         let method_generic_params_b: Vec<syn::GenericParam> = vec![];
-        let interface_getter_b: syn::Expr = parse_quote!(self::method_b_module::interface());
+        let module_name_b: syn::Ident = parse_quote!(method_b_module);
         let interface_type_b: syn::Type = parse_quote!(FakeInterfaceB);
 
         let methods = vec![
@@ -197,14 +197,14 @@ mod tests {
                 vis: &vis_a,
                 name: &name_a,
                 method_generic_params: &method_generic_params_a,
-                interface_getter: &interface_getter_a,
+                module_name: &module_name_a,
                 interface_type: &interface_type_a,
             },
             AccessorMethodInfo {
                 vis: &vis_b,
                 name: &name_b,
                 method_generic_params: &method_generic_params_b,
-                interface_getter: &interface_getter_b,
+                module_name: &module_name_b,
                 interface_type: &interface_type_b,
             },
         ];
@@ -218,10 +218,10 @@ mod tests {
 
         let expected: syn::ItemImpl = parse_quote! {
             impl MyStruct {
-                pub fn method_a_fake() -> FakeInterfaceA {
+                pub fn method_a_fake() -> self::method_a_module::FakeInterfaceA {
                     self::method_a_module::interface()
                 }
-                fn method_b_fake() -> FakeInterfaceB {
+                fn method_b_fake() -> self::method_b_module::FakeInterfaceB {
                     self::method_b_module::interface()
                 }
             }

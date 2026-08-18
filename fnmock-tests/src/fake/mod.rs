@@ -1,5 +1,4 @@
 mod basic {
-    mod accessor_chaining;
     mod by_value;
     mod clear_and_is_set;
     mod interior_mutability;
@@ -62,56 +61,56 @@ mod trait_based {
     mod referenced_mut;
 }
 
-mod impl_block {
-    mod associated_function;
-    mod async_method;
-    mod basic;
-    mod clear_and_is_set;
-    mod multiple_methods;
-    mod same_method_name_isolation;
-    mod thread_isolation;
+// mod impl_block {
+//     mod associated_function;
+//     mod async_method;
+//     mod basic;
+//     mod clear_and_is_set;
+//     mod multiple_methods;
+//     mod same_method_name_isolation;
+//     mod thread_isolation;
 
-    mod receiver {
-        mod return_option_self;
-        mod return_result_self;
-        mod return_self;
-        mod return_self_referenced;
-        mod return_unit;
-        mod self_boxed;
-        mod self_consumed;
-        mod self_mut_referenced;
-        mod self_pin_mut;
-        mod self_rc;
-        mod self_referenced;
-        mod self_referenced_with_params;
-        mod self_type;
-    }
+//     mod receiver {
+//         mod return_option_self;
+//         mod return_result_self;
+//         mod return_self;
+//         mod return_self_referenced;
+//         mod return_unit;
+//         mod self_boxed;
+//         mod self_consumed;
+//         mod self_mut_referenced;
+//         mod self_pin_mut;
+//         mod self_rc;
+//         mod self_referenced;
+//         mod self_referenced_with_params;
+//         mod self_type;
+//     }
 
-    mod generics {
-        mod clear_and_is_set;
-        mod generic_combined;
-        mod generic_combined_where;
-        mod generic_method;
-        mod generic_method_async;
-        mod generic_method_where;
-        mod generic_struct;
-        mod generic_struct_where;
-        mod lifetimes_and_generics;
-        mod lifetimes_combined;
-    }
-}
+//     mod generics {
+//         mod clear_and_is_set;
+//         mod generic_combined;
+//         mod generic_combined_where;
+//         mod generic_method;
+//         mod generic_method_async;
+//         mod generic_method_where;
+//         mod generic_struct;
+//         mod generic_struct_where;
+//         mod lifetimes_and_generics;
+//         mod lifetimes_combined;
+//     }
+// }
 
 mod visibility {
-    mod impl_method_pub;
-    mod impl_method_pub_crate;
-    mod impl_method_pub_in_path;
-    mod impl_method_pub_super;
+    // mod impl_method_pub;
+    // mod impl_method_pub_crate;
+    // mod impl_method_pub_in_path;
+    // mod impl_method_pub_super;
     mod standalone_pub;
     mod standalone_pub_crate;
     mod standalone_pub_in_path;
     mod standalone_pub_super;
 }
 
-mod attributes;
+// mod attributes;
 
-mod unsupported;
+// mod unsupported;

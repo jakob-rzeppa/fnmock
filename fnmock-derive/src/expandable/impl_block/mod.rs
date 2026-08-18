@@ -23,7 +23,6 @@ pub struct ImplMethodExpandable {
 
     pub method_generic_params: Vec<syn::GenericParam>,
 
-    pub interface_getter: syn::Expr,
     /// The type with generics
     pub interface_type: syn::Type,
 

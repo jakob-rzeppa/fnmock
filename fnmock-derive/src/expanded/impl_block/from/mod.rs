@@ -40,7 +40,7 @@ impl TryFrom<ImplExpandable> for ImplExpanded {
                 vis: &method.vis,
                 name: &method.accessor_name,
                 method_generic_params: &method.method_generic_params,
-                interface_getter: &method.interface_getter,
+                module_name: &method.module_name,
                 interface_type: &method.interface_type,
             })
             .collect::<Vec<AccessorMethodInfo>>();
@@ -101,7 +101,6 @@ mod tests {
                 }),
                 accessor_name: parse_quote!(method_one_fake),
                 method_generic_params: vec![],
-                interface_getter: parse_quote!(self::method_one_module::interface::<S>()),
                 interface_type: parse_quote!(InterfaceOne<S>),
                 module_name: parse_quote!(method_one_module),
                 module_parts: vec![quote! {
@@ -120,7 +119,6 @@ mod tests {
                 }),
                 accessor_name: parse_quote!(method_two_fake),
                 method_generic_params: vec![parse_quote!(T: Display + 'static)],
-                interface_getter: parse_quote!(self::method_two_module::interface::<S, T>()),
                 interface_type: parse_quote!(InterfaceTwo<S, T>),
                 module_name: parse_quote!(method_two_module),
                 module_parts: vec![quote! {
@@ -179,12 +177,12 @@ mod tests {
 
         let expected_accessor_impl_block: syn::ItemImpl = parse_quote! {
             impl<S: Display + 'static> MyStruct<S> {
-                fn method_one_fake() -> InterfaceOne<S> {
-                    self::method_one_module::interface::<S>()
+                fn method_one_fake() -> self::method_one_module::InterfaceOne<S> {
+                    self::method_one_module::interface()
                 }
 
-                pub fn method_two_fake<T: Display + 'static>() -> InterfaceTwo<S, T> {
-                    self::method_two_module::interface::<S, T>()
+                pub fn method_two_fake<T: Display + 'static>() -> self::method_two_module::InterfaceTwo<S, T> {
+                    self::method_two_module::interface()
                 }
             }
         };
