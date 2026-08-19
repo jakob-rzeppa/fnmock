@@ -90,7 +90,7 @@ impl TryFrom<ImplBlockInfo> for ImplFakeScheme {
 /// Builds the fake scheme for a single method, merging the struct's generics (shared by every
 /// method) with the method's own.
 fn build_method_scheme(
-    struct_name: &syn::Ident,
+    struct_name: &syn::TypePath,
     struct_generic_params: &[syn::GenericParam],
     struct_generic_idents: &[syn::Ident],
     struct_generic_keys: &[syn::Expr],

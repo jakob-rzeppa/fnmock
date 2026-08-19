@@ -10,9 +10,18 @@ together.
 
 ## [Unreleased]
 
+### Changed
+
 - Fakes match the visibility of the faked function, instead of being always `pub(crate)`.
 - Fake interface methods `setup` and `clear` use `&self` instead of `self`, so they can't be chained anymore and `let fake = fake.clear()` doesn't work anymore.
+
+### Removed
+
 - Fake interface method `get` is removed, as it was a internal implementation detail and not part of the public API.
+
+### Fixed
+
+- `a::Struct` and `b::Struct` impls in the same module no longer collide, even if they have the same name.
 
 ## [0.1.0] - 2026-07-22
 

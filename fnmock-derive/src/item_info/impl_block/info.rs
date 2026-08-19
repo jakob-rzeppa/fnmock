@@ -14,9 +14,12 @@ pub struct ImplBlockInfo {
     /// The original, unmodified impl block.
     pub item_impl: syn::ItemImpl,
 
-    /// The type the impl block is for. Combined with each method's name to keep the generated
-    /// names of two same-named methods on different types apart.
-    pub struct_name: syn::Ident,
+    /// The type the impl block is for, kept as the full path (module segments + generic
+    /// arguments) rather than truncated to its last segment. Combined with each method's name to
+    /// keep the generated names of two same-named methods on different types apart — the
+    /// name-building functions in `scheme::impl_block::fake::names` are what mangle this into an
+    /// identifier, so the full path must survive until then.
+    pub struct_name: syn::TypePath,
 
     /// The struct's own generic parameters (e.g. `impl<S> Foo<S>`), shared by every method. `None`
     /// if the struct has none.
@@ -95,7 +98,7 @@ impl TryFrom<syn::ItemImpl> for ImplBlockInfo {
             ));
         }
 
-        let struct_name = extract_struct_ident(&item_impl.self_ty)?;
+        let struct_name = extract_struct_path(&item_impl.self_ty)?;
         let struct_generic_info = extract_struct_generic_info(&item_impl)?;
 
         let mut functions = Vec::new();
@@ -159,20 +162,10 @@ fn extract_single_item_impl_info_for_method(
     })
 }
 
-/// Extract the struct identifier from the `self_ty` of an impl block.
-fn extract_struct_ident(self_ty: &syn::Type) -> syn::Result<syn::Ident> {
+/// Extract the full type path from the `self_ty` of an impl block.
+fn extract_struct_path(self_ty: &syn::Type) -> syn::Result<syn::TypePath> {
     match self_ty {
-        syn::Type::Path(tp) => {
-            // Usually the last segment is the concrete type.
-            // Example: Foo<T> -> Path segments [..., Foo<T>]
-            let seg = tp.path.segments.last().ok_or_else(||
-                syn::Error::new(
-                    self_ty.span(),
-                    "internal error: expected the impl type path to have at least one segment. This is a bug in fnmock; please report it."
-                )
-            )?;
-            Ok(seg.ident.clone())
-        }
+        syn::Type::Path(tp) => Ok(tp.clone()),
         _ => Err(syn::Error::new(
             self_ty.span(),
             "Unsupported struct type. Only simple paths (+generics) are supported for impl blocks.",
@@ -198,6 +191,8 @@ fn extract_return_type(output: &syn::ReturnType, self_ty: &syn::Type) -> syn::Re
 
 #[cfg(test)]
 mod tests {
+    use quote::ToTokens;
+
     use super::*;
 
     #[test]
@@ -259,10 +254,51 @@ mod tests {
 
         let info = ImplBlockInfo::try_from(item_impl).expect("valid inherent impl block");
 
-        assert_eq!(info.struct_name.to_string(), "UserService");
+        assert_eq!(
+            info.struct_name.to_token_stream().to_string(),
+            quote::quote!(UserService).to_string()
+        );
         assert_eq!(info.functions.len(), 2);
         assert_eq!(info.functions[0].method_name.to_string(), "get_user");
         assert_eq!(info.functions[1].method_name.to_string(), "save_user");
+    }
+
+    #[test]
+    fn test_struct_name_captures_full_module_path() {
+        let item_impl: syn::ItemImpl = syn::parse_quote! {
+            impl a::Config {
+                fn basic(&self) -> i32 { 1 }
+            }
+        };
+
+        let info = ImplBlockInfo::try_from(item_impl).expect("valid inherent impl block");
+
+        assert_eq!(
+            info.struct_name.to_token_stream().to_string(),
+            quote::quote!(a::Config).to_string()
+        );
+    }
+
+    #[test]
+    fn test_struct_name_differs_for_same_type_name_in_different_modules() {
+        let impl_a: syn::ItemImpl = syn::parse_quote! {
+            impl a::Config {
+                fn basic(&self) -> i32 { 1 }
+            }
+        };
+        let impl_b: syn::ItemImpl = syn::parse_quote! {
+            impl b::Config {
+                fn basic(&self) -> i32 { 2 }
+            }
+        };
+
+        let info_a = ImplBlockInfo::try_from(impl_a).expect("valid inherent impl block");
+        let info_b = ImplBlockInfo::try_from(impl_b).expect("valid inherent impl block");
+
+        assert_ne!(
+            info_a.struct_name.to_token_stream().to_string(),
+            info_b.struct_name.to_token_stream().to_string()
+        );
     }
 
     #[test]
