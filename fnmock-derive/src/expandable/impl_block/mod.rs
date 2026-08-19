@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-
 pub mod fake;
 pub mod spy;
 
 pub struct ImplExpandable {
     pub item_impl: syn::ItemImpl,
 
-    /// The methods in the impl block, keyed by their original names.
-    pub methods: HashMap<syn::Ident, ImplMethodExpandable>,
+    /// (method_name, method_info) - The methods in the impl block.
+    /// The order of the methods must be preserved from the original impl block.
+    pub methods: Vec<(syn::Ident, ImplMethodExpandable)>,
 }
 
 pub struct ImplMethodExpandable {

@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-
 use syn::parse_quote;
 
 pub fn insert_inline_calls(
     item_impl: &mut syn::ItemImpl,
-    // A HashMap where the key is the method name and the value is the inline call to be inserted.
-    inline_calls: &HashMap<syn::Ident, syn::Block>,
+    // (method_name, inline_call)
+    inline_calls: &Vec<(syn::Ident, syn::Block)>,
 ) {
     for (method_name, inline_call) in inline_calls {
         let item: &mut syn::ImplItemFn = item_impl
@@ -53,13 +51,13 @@ mod tests {
             }
         };
 
-        let mut inline_calls = HashMap::new();
-        inline_calls.insert(
+        let mut inline_calls = Vec::new();
+        inline_calls.push((
             parse_quote!(my_method),
             parse_quote!({
                 my_inline_call();
             }),
-        );
+        ));
 
         insert_inline_calls(&mut item_impl, &inline_calls);
 
@@ -98,13 +96,13 @@ mod tests {
             }
         };
 
-        let mut inline_calls = HashMap::new();
-        inline_calls.insert(
+        let mut inline_calls = Vec::new();
+        inline_calls.push((
             parse_quote!(method_a),
             parse_quote!({
                 inline_call_a();
             }),
-        );
+        ));
 
         insert_inline_calls(&mut item_impl, &inline_calls);
 
@@ -143,7 +141,7 @@ mod tests {
             }
         };
 
-        let inline_calls = HashMap::new();
+        let inline_calls = Vec::new();
 
         insert_inline_calls(&mut item_impl, &inline_calls);
 
@@ -171,13 +169,13 @@ mod tests {
             }
         };
 
-        let mut inline_calls = HashMap::new();
-        inline_calls.insert(
+        let mut inline_calls = Vec::new();
+        inline_calls.push((
             parse_quote!(non_existent_method),
             parse_quote!({
                 inline_call();
             }),
-        );
+        ));
 
         let result = std::panic::catch_unwind(move || {
             insert_inline_calls(&mut item_impl, &inline_calls);
@@ -190,5 +188,67 @@ mod tests {
             .downcast_ref::<String>()
             .unwrap()
             .contains("Method non_existent_method not found in impl block. This is a error in fnmock. Please report this bug."));
+    }
+
+    #[test]
+    fn test_insert_inline_calls_multiple_methods() {
+        let mut item_impl: syn::ItemImpl = parse_quote! {
+            impl MyStruct {
+                fn method_a(&self) -> i32 {
+                    1
+                }
+
+                fn method_b(&self) -> i32 {
+                    2
+                }
+            }
+        };
+
+        let mut inline_calls = Vec::new();
+        inline_calls.push((
+            parse_quote!(method_a),
+            parse_quote!({
+                inline_call_a();
+            }),
+        ));
+        inline_calls.push((
+            parse_quote!(method_b),
+            parse_quote!({
+                inline_call_b();
+            }),
+        ));
+
+        insert_inline_calls(&mut item_impl, &inline_calls);
+
+        let expected: syn::ItemImpl = parse_quote! {
+            impl MyStruct {
+                fn method_a(&self) -> i32 {
+                    #[cfg(test)]
+                    {
+                        inline_call_a();
+                    }
+
+                    {
+                        1
+                    }
+                }
+
+                fn method_b(&self) -> i32 {
+                    #[cfg(test)]
+                    {
+                        inline_call_b();
+                    }
+
+                    {
+                        2
+                    }
+                }
+            }
+        };
+
+        assert_eq!(
+            item_impl.to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
+        );
     }
 }

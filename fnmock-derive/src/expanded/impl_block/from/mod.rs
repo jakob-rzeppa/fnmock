@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{
     expandable::impl_block::ImplExpandable,
     expanded::impl_block::{
@@ -25,15 +23,15 @@ impl TryFrom<ImplExpandable> for ImplExpanded {
             ref methods,
         } = value;
 
-        let mut inline_calls_map: HashMap<syn::Ident, syn::Block> = HashMap::new();
+        let mut inline_calls: Vec<(syn::Ident, syn::Block)> = Vec::new();
         for (method_name, method) in methods {
-            inline_calls_map.insert(method_name.clone(), method.inline_call.clone());
+            inline_calls.push((method_name.clone(), method.inline_call.clone()));
         }
-        insert_inline_calls(&mut item_impl, &inline_calls_map);
+        insert_inline_calls(&mut item_impl, &inline_calls);
 
         let accessor_method_infos = methods
-            .values()
-            .map(|method| AccessorMethodInfo {
+            .iter()
+            .map(|(_, method)| AccessorMethodInfo {
                 vis: &method.vis,
                 name: &method.accessor_name,
                 method_generic_params: &method.method_generic_params,
@@ -87,8 +85,8 @@ mod tests {
             }
         };
 
-        let mut methods = HashMap::new();
-        methods.insert(
+        let mut methods = Vec::new();
+        methods.push((
             parse_quote!(method_one),
             ImplMethodExpandable {
                 vis: syn::Visibility::Inherited,
@@ -105,8 +103,8 @@ mod tests {
                     }
                 }],
             },
-        );
-        methods.insert(
+        ));
+        methods.push((
             parse_quote!(method_two),
             ImplMethodExpandable {
                 vis: parse_quote!(pub),
@@ -123,7 +121,7 @@ mod tests {
                     }
                 }],
             },
-        );
+        ));
 
         let expandable = ImplExpandable { item_impl, methods };
 
@@ -177,11 +175,9 @@ mod tests {
                 }
             }
         };
-        // `methods` is a HashMap, so the order of the generated accessor methods
-        // is not guaranteed; compare them as an order-independent set.
         assert_eq!(
-            normalize_impl(&expanded.accessor_impl_block),
-            normalize_impl(&expected_accessor_impl_block)
+            expanded.accessor_impl_block.to_token_stream().to_string(),
+            expected_accessor_impl_block.to_token_stream().to_string()
         );
 
         let expected_module_one: syn::ItemMod = parse_quote! {
@@ -204,35 +200,15 @@ mod tests {
                 }
             }
         };
-        // `methods` is a HashMap, so the order of the generated modules is not
-        // guaranteed; compare them as an order-independent set.
-        let mut actual_modules: Vec<String> = expanded
+        let actual_modules: Vec<String> = expanded
             .modules
             .iter()
             .map(|m| m.to_token_stream().to_string())
             .collect();
-        actual_modules.sort();
-        let mut expected_modules = vec![
+        let expected_modules = vec![
             expected_module_one.to_token_stream().to_string(),
             expected_module_two.to_token_stream().to_string(),
         ];
-        expected_modules.sort();
         assert_eq!(actual_modules, expected_modules);
-    }
-
-    /// Splits an `ItemImpl` into its header (everything but the items) and its
-    /// items, sorted, so impls can be compared regardless of item order.
-    fn normalize_impl(item_impl: &syn::ItemImpl) -> (String, Vec<String>) {
-        let mut header = item_impl.clone();
-        header.items.clear();
-
-        let mut items: Vec<String> = item_impl
-            .items
-            .iter()
-            .map(|item| item.to_token_stream().to_string())
-            .collect();
-        items.sort();
-
-        (header.to_token_stream().to_string(), items)
     }
 }

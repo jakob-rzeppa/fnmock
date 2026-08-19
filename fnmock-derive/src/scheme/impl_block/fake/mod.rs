@@ -21,6 +21,7 @@ mod names;
 pub struct ImplFakeScheme {
     pub common: ImplCommonScheme,
 
+    /// The order of the methods must be preserved from the original impl block.
     pub methods: Vec<ImplFakeMethodScheme>,
 }
 

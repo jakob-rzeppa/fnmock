@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{
     expandable::impl_block::{
         ImplExpandable, ImplMethodExpandable,
@@ -42,7 +40,7 @@ impl TryFrom<ImplFakeScheme> for ImplExpandable {
                 let method_name = method.common.method_name.clone();
                 (method_name, create_impl_method_expandable(method))
             })
-            .collect::<HashMap<syn::Ident, ImplMethodExpandable>>();
+            .collect::<Vec<(syn::Ident, ImplMethodExpandable)>>();
 
         Ok(ImplExpandable { item_impl, methods })
     }
@@ -258,7 +256,57 @@ mod tests {
             item_impl.to_token_stream().to_string()
         );
         assert_eq!(res.methods.len(), 2);
-        assert!(res.methods.contains_key(&parse_quote!(method_one)));
-        assert!(res.methods.contains_key(&parse_quote!(method_two)));
+
+        let expected_method_one_name: syn::Ident = parse_quote!(method_one);
+        let expected_method_one_accessor: syn::Ident = parse_quote!(method_one_fake);
+        let expected_method_one_module: syn::Ident = parse_quote!(method_one_module);
+        let expected_method_one_inline_call: syn::Block = parse_quote! {{
+            if let Some(implementation) = self::method_one_module::implementation() {
+                return implementation();
+            }
+        }};
+        let method_one = &res.methods[0];
+        assert_eq!(method_one.0, expected_method_one_name);
+        assert!(matches!(method_one.1.vis, syn::Visibility::Inherited));
+        assert_eq!(
+            method_one.1.inline_call.to_token_stream().to_string(),
+            expected_method_one_inline_call
+                .to_token_stream()
+                .to_string()
+        );
+        assert_eq!(method_one.1.accessor_name, expected_method_one_accessor);
+        assert_eq!(method_one.1.method_generic_params.len(), 0);
+        assert_eq!(
+            method_one.1.interface_type.to_token_stream().to_string(),
+            "MethodOneInterface"
+        );
+        assert_eq!(method_one.1.module_name, expected_method_one_module);
+        assert_eq!(method_one.1.module_parts.len(), 5);
+
+        let expected_method_two_name: syn::Ident = parse_quote!(method_two);
+        let expected_method_two_accessor: syn::Ident = parse_quote!(method_two_fake);
+        let expected_method_two_module: syn::Ident = parse_quote!(method_two_module);
+        let expected_method_two_inline_call: syn::Block = parse_quote! {{
+            if let Some(implementation) = self::method_two_module::implementation() {
+                return implementation();
+            }
+        }};
+        let method_two = &res.methods[1];
+        assert_eq!(method_two.0, expected_method_two_name);
+        assert!(matches!(method_two.1.vis, syn::Visibility::Inherited));
+        assert_eq!(
+            method_two.1.inline_call.to_token_stream().to_string(),
+            expected_method_two_inline_call
+                .to_token_stream()
+                .to_string()
+        );
+        assert_eq!(method_two.1.accessor_name, expected_method_two_accessor);
+        assert_eq!(method_two.1.method_generic_params.len(), 0);
+        assert_eq!(
+            method_two.1.interface_type.to_token_stream().to_string(),
+            "MethodTwoInterface"
+        );
+        assert_eq!(method_two.1.module_name, expected_method_two_module);
+        assert_eq!(method_two.1.module_parts.len(), 5);
     }
 }
