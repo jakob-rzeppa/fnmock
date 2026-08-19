@@ -20,6 +20,8 @@ fn build_module(
     parse_quote! {
         #[cfg(test)]
         #vis mod #name {
+            use super::*;
+
             #(#parts)*
         }
     }
@@ -61,6 +63,8 @@ mod tests {
         let expected: syn::ItemMod = parse_quote! {
             #[cfg(test)]
             pub mod my_method_module {
+                use super::*;
+
                 pub fn get_fake_interface() -> FakeInterface {
                     FakeInterface {}
                 }
@@ -101,11 +105,15 @@ mod tests {
 
         let expected_a: syn::ItemMod = parse_quote! {
             #[cfg(test)]
-            pub mod method_a_module {}
+            pub mod method_a_module {
+                use super::*;
+            }
         };
         let expected_b: syn::ItemMod = parse_quote! {
             #[cfg(test)]
-            mod method_b_module {}
+            mod method_b_module {
+                use super::*;
+            }
         };
 
         assert_eq!(res.len(), 2);

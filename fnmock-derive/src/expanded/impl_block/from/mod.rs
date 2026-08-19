@@ -196,6 +196,8 @@ mod tests {
         let expected_module_one: syn::ItemMod = parse_quote! {
             #[cfg(test)]
             mod method_one_module {
+                use super::*;
+
                 pub fn interface() -> InterfaceOne<S> {
                     InterfaceOne {}
                 }
@@ -204,6 +206,8 @@ mod tests {
         let expected_module_two: syn::ItemMod = parse_quote! {
             #[cfg(test)]
             pub mod method_two_module {
+                use super::*;
+
                 pub fn interface() -> InterfaceTwo<S, T> {
                     InterfaceTwo {}
                 }

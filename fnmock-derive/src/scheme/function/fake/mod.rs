@@ -2,16 +2,17 @@ use syn::parse_quote;
 
 use crate::{
     item_info::{call_value::CallValue, function::info::FunctionInfo},
-    scheme::function::{
-        common::FunctionCommonScheme,
-        fake::{
-            fn_closure_trait::build_fn_closure_trait,
-            names::{build_accessor_name, build_interface_name, build_module_name, build_store_name},
+    scheme::{
+        common::fn_closure_trait::build_fn_closure_trait,
+        function::{
+            common::FunctionCommonScheme,
+            fake::names::{
+                build_accessor_name, build_interface_name, build_module_name, build_store_name,
+            },
         },
     },
 };
 
-mod fn_closure_trait;
 mod names;
 
 pub struct FunctionFakeScheme {

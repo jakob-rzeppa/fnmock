@@ -45,8 +45,8 @@ impl TryFrom<ImplFakeScheme> for ImplExpandable {
         let methods = methods
             .into_iter()
             .map(|method| {
-                let accessor_name = method.common.accessor_name.clone();
-                (accessor_name, create_impl_method_expandable(method))
+                let method_name = method.common.method_name.clone();
+                (method_name, create_impl_method_expandable(method))
             })
             .collect::<HashMap<syn::Ident, ImplMethodExpandable>>();
 
@@ -65,6 +65,7 @@ fn create_impl_method_expandable(scheme: ImplFakeMethodScheme) -> ImplMethodExpa
         common:
             ImplCommonMethodScheme {
                 vis,
+                method_name: _,
                 accessor_name,
                 method_generic_params,
                 module_name,
@@ -127,6 +128,7 @@ mod tests {
     use super::*;
 
     fn non_generic_method_scheme(
+        method_name: syn::Ident,
         accessor_name: syn::Ident,
         module_name: syn::Ident,
         store_name: syn::Ident,
@@ -135,6 +137,7 @@ mod tests {
         ImplFakeMethodScheme {
             common: ImplCommonMethodScheme {
                 vis: syn::Visibility::Inherited,
+                method_name,
                 accessor_name,
                 method_generic_params: vec![],
                 module_name,
@@ -159,6 +162,7 @@ mod tests {
     #[test]
     fn test_create_impl_method_expandable_non_generic() {
         let scheme = non_generic_method_scheme(
+            parse_quote!(my_method),
             parse_quote!(my_method_fake),
             parse_quote!(my_method_module),
             parse_quote!(MY_METHOD_STORE),
@@ -192,6 +196,7 @@ mod tests {
     #[test]
     fn test_create_impl_method_expandable_generic() {
         let mut scheme = non_generic_method_scheme(
+            parse_quote!(my_method),
             parse_quote!(my_method_fake),
             parse_quote!(my_method_module),
             parse_quote!(MY_METHOD_STORE),
@@ -245,12 +250,14 @@ mod tests {
             },
             methods: vec![
                 non_generic_method_scheme(
+                    parse_quote!(method_one),
                     parse_quote!(method_one_fake),
                     parse_quote!(method_one_module),
                     parse_quote!(METHOD_ONE_STORE),
                     parse_quote!(MethodOneInterface),
                 ),
                 non_generic_method_scheme(
+                    parse_quote!(method_two),
                     parse_quote!(method_two_fake),
                     parse_quote!(method_two_module),
                     parse_quote!(METHOD_TWO_STORE),
@@ -268,7 +275,7 @@ mod tests {
             item_impl.to_token_stream().to_string()
         );
         assert_eq!(res.methods.len(), 2);
-        assert!(res.methods.contains_key(&parse_quote!(method_one_fake)));
-        assert!(res.methods.contains_key(&parse_quote!(method_two_fake)));
+        assert!(res.methods.contains_key(&parse_quote!(method_one)));
+        assert!(res.methods.contains_key(&parse_quote!(method_two)));
     }
 }

@@ -10,7 +10,7 @@ pub struct ImplExpandable {
     pub struct_generic_params: Vec<syn::GenericParam>,
     pub struct_generic_idents: Vec<syn::Ident>,
 
-    /// The methods in the impl block, keyed by their accessor names.
+    /// The methods in the impl block, keyed by their original names.
     pub methods: HashMap<syn::Ident, ImplMethodExpandable>,
 }
 

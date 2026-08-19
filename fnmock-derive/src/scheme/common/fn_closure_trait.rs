@@ -38,19 +38,19 @@ fn check_type_is_supported(ty: &syn::Type) -> syn::Result<()> {
     match ty {
         syn::Type::ImplTrait(_) => Err(syn::Error::new_spanned(
             ty,
-            "#[fakeable] does not support `impl Trait` in a function signature. Please use a concrete type or a generic type parameter instead.",
+            "`impl Trait` is not supported. Please use a generic type parameter instead.",
         )),
         syn::Type::Infer(_) => Err(syn::Error::new_spanned(
             ty,
-            "#[fakeable] does not support the inferred type `_` in a function signature. Please specify the type explicitly.",
+            "The inferred type `_` is not supported. Please specify the type explicitly.",
         )),
         syn::Type::Macro(_) => Err(syn::Error::new_spanned(
             ty,
-            "#[fakeable] does not support macros in a function signature. Please use a concrete type or a generic type parameter instead.",
+            "Macros in the function signiture are not supported.",
         )),
         syn::Type::Never(_) => Err(syn::Error::new_spanned(
             ty,
-            "#[fakeable] does not support the never type `!` in a function signature.",
+            "The never type `!` is not supported.",
         )),
         _ => Ok(()),
     }
@@ -106,7 +106,10 @@ mod tests {
 
         let result = build_fn_closure_trait(&lifetimes, &params, &output);
 
-        assert!(result.is_err(), "expected `impl Trait` param to be rejected");
+        assert!(
+            result.is_err(),
+            "expected `impl Trait` param to be rejected"
+        );
     }
 
     #[test]
