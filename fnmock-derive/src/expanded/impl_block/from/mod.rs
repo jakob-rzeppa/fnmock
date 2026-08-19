@@ -22,9 +22,6 @@ impl TryFrom<ImplExpandable> for ImplExpanded {
     fn try_from(value: ImplExpandable) -> Result<Self, Self::Error> {
         let ImplExpandable {
             mut item_impl,
-            ref struct_name,
-            ref struct_generic_params,
-            ref struct_generic_idents,
             ref methods,
         } = value;
 
@@ -45,9 +42,8 @@ impl TryFrom<ImplExpandable> for ImplExpanded {
             })
             .collect::<Vec<AccessorMethodInfo>>();
         let accessor = build_accessor_impl(
-            struct_name,
-            struct_generic_params,
-            struct_generic_idents,
+            &item_impl.generics,
+            &item_impl.self_ty,
             &accessor_method_infos,
         );
 
@@ -129,13 +125,7 @@ mod tests {
             },
         );
 
-        let expandable = ImplExpandable {
-            item_impl,
-            struct_name: parse_quote!(MyStruct),
-            struct_generic_params: vec![parse_quote!(S: Display + 'static)],
-            struct_generic_idents: vec![parse_quote!(S)],
-            methods,
-        };
+        let expandable = ImplExpandable { item_impl, methods };
 
         let expanded = ImplExpanded::try_from(expandable).unwrap();
 
@@ -176,6 +166,7 @@ mod tests {
         );
 
         let expected_accessor_impl_block: syn::ItemImpl = parse_quote! {
+            #[cfg(test)]
             impl<S: Display + 'static> MyStruct<S> {
                 fn method_one_fake() -> self::method_one_module::InterfaceOne<S> {
                     self::method_one_module::interface()

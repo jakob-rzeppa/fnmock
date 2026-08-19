@@ -9,9 +9,8 @@ pub struct AccessorMethodInfo<'a> {
 }
 
 pub fn build_accessor_impl(
-    struct_name: &syn::Ident,
-    struct_generic_params: &[syn::GenericParam],
-    struct_generic_idents: &[syn::Ident],
+    generics: &syn::Generics,
+    self_ty: &syn::Type,
     methods: &[AccessorMethodInfo<'_>],
 ) -> syn::ItemImpl {
     let methods = methods
@@ -35,15 +34,11 @@ pub fn build_accessor_impl(
         )
         .collect::<Vec<syn::ItemFn>>();
 
-    let self_ty: syn::Type = if struct_generic_idents.is_empty() {
-        parse_quote!(#struct_name)
-    } else {
-        parse_quote!(#struct_name<#(#struct_generic_idents),*>)
-    };
+    let (impl_generics, _, where_clause) = generics.split_for_impl();
 
     parse_quote! {
         #[cfg(test)]
-        impl<#(#struct_generic_params),*> #self_ty {
+        impl #impl_generics #self_ty #where_clause {
             #(#methods)*
         }
     }
@@ -71,19 +66,14 @@ mod tests {
 
     #[test]
     fn test_build_accessor_impl_no_methods() {
-        let struct_name: syn::Ident = parse_quote!(MyStruct);
-        let struct_generic_params: Vec<syn::GenericParam> = vec![];
-        let struct_generic_idents: Vec<syn::Ident> = vec![];
+        let generics: syn::Generics = parse_quote!();
+        let self_ty: syn::Type = parse_quote!(MyStruct);
         let methods: Vec<AccessorMethodInfo<'_>> = vec![];
 
-        let res = build_accessor_impl(
-            &struct_name,
-            &struct_generic_params,
-            &struct_generic_idents,
-            &methods,
-        );
+        let res = build_accessor_impl(&generics, &self_ty, &methods);
 
         let expected: syn::ItemImpl = parse_quote! {
+            #[cfg(test)]
             impl MyStruct {}
         };
 
@@ -94,10 +84,28 @@ mod tests {
     }
 
     #[test]
+    fn test_build_accessor_impl_with_struct_lifetime() {
+        let generics: syn::Generics = parse_quote!(<'s>);
+        let self_ty: syn::Type = parse_quote!(MyStruct<'s>);
+        let methods: Vec<AccessorMethodInfo<'_>> = vec![];
+
+        let res = build_accessor_impl(&generics, &self_ty, &methods);
+
+        let expected: syn::ItemImpl = parse_quote! {
+            #[cfg(test)]
+            impl<'s> MyStruct<'s> {}
+        };
+
+        assert_eq!(
+            res.to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
+        );
+    }
+
+    #[test]
     fn test_build_accessor_impl_single_method_no_generics() {
-        let struct_name: syn::Ident = parse_quote!(MyStruct);
-        let struct_generic_params: Vec<syn::GenericParam> = vec![];
-        let struct_generic_idents: Vec<syn::Ident> = vec![];
+        let generics: syn::Generics = parse_quote!();
+        let self_ty: syn::Type = parse_quote!(MyStruct);
 
         let vis: syn::Visibility = parse_quote!(pub);
         let name: syn::Ident = parse_quote!(my_method_fake);
@@ -113,14 +121,10 @@ mod tests {
             interface_type: &interface_type,
         }];
 
-        let res = build_accessor_impl(
-            &struct_name,
-            &struct_generic_params,
-            &struct_generic_idents,
-            &methods,
-        );
+        let res = build_accessor_impl(&generics, &self_ty, &methods);
 
         let expected: syn::ItemImpl = parse_quote! {
+            #[cfg(test)]
             impl MyStruct {
                 pub fn my_method_fake() -> self::my_method_module::FakeInterface {
                     self::my_method_module::interface()
@@ -136,9 +140,8 @@ mod tests {
 
     #[test]
     fn test_build_accessor_impl_with_struct_and_method_generics() {
-        let struct_name: syn::Ident = parse_quote!(MyStruct);
-        let struct_generic_params: Vec<syn::GenericParam> = vec![parse_quote!(S)];
-        let struct_generic_idents: Vec<syn::Ident> = vec![parse_quote!(S)];
+        let generics: syn::Generics = parse_quote!(<S>);
+        let self_ty: syn::Type = parse_quote!(MyStruct<S>);
 
         let vis: syn::Visibility = parse_quote!(pub);
         let name: syn::Ident = parse_quote!(my_method_fake);
@@ -154,14 +157,10 @@ mod tests {
             interface_type: &interface_type,
         }];
 
-        let res = build_accessor_impl(
-            &struct_name,
-            &struct_generic_params,
-            &struct_generic_idents,
-            &methods,
-        );
+        let res = build_accessor_impl(&generics, &self_ty, &methods);
 
         let expected: syn::ItemImpl = parse_quote! {
+            #[cfg(test)]
             impl<S> MyStruct<S> {
                 pub fn my_method_fake<T>() -> self::my_method_module::FakeInterface<S, T> {
                     self::my_method_module::interface()
@@ -177,9 +176,8 @@ mod tests {
 
     #[test]
     fn test_build_accessor_impl_multiple_methods() {
-        let struct_name: syn::Ident = parse_quote!(MyStruct);
-        let struct_generic_params: Vec<syn::GenericParam> = vec![];
-        let struct_generic_idents: Vec<syn::Ident> = vec![];
+        let generics: syn::Generics = parse_quote!();
+        let self_ty: syn::Type = parse_quote!(MyStruct);
 
         let vis_a: syn::Visibility = parse_quote!(pub);
         let name_a: syn::Ident = parse_quote!(method_a_fake);
@@ -210,14 +208,10 @@ mod tests {
             },
         ];
 
-        let res = build_accessor_impl(
-            &struct_name,
-            &struct_generic_params,
-            &struct_generic_idents,
-            &methods,
-        );
+        let res = build_accessor_impl(&generics, &self_ty, &methods);
 
         let expected: syn::ItemImpl = parse_quote! {
+            #[cfg(test)]
             impl MyStruct {
                 pub fn method_a_fake() -> self::method_a_module::FakeInterfaceA {
                     self::method_a_module::interface()

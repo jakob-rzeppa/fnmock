@@ -1,8 +1,5 @@
 pub struct ImplCommonScheme {
     pub item_impl: syn::ItemImpl,
-    pub struct_name: syn::Ident,
-    pub struct_generic_params: Vec<syn::GenericParam>,
-    pub struct_generic_idents: Vec<syn::Ident>,
 }
 
 pub struct ImplCommonMethodScheme {

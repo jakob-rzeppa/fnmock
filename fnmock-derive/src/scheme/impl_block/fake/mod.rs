@@ -80,9 +80,6 @@ impl TryFrom<ImplBlockInfo> for ImplFakeScheme {
         Ok(ImplFakeScheme {
             common: ImplCommonScheme {
                 item_impl: value.item_impl,
-                struct_name: value.struct_name,
-                struct_generic_params,
-                struct_generic_idents,
             },
             methods,
         })

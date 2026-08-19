@@ -32,13 +32,7 @@ impl TryFrom<ImplFakeScheme> for ImplExpandable {
 
     fn try_from(value: ImplFakeScheme) -> Result<Self, Self::Error> {
         let ImplFakeScheme {
-            common:
-                ImplCommonScheme {
-                    item_impl,
-                    struct_name,
-                    struct_generic_params,
-                    struct_generic_idents,
-                },
+            common: ImplCommonScheme { item_impl },
             methods,
         } = value;
 
@@ -50,13 +44,7 @@ impl TryFrom<ImplFakeScheme> for ImplExpandable {
             })
             .collect::<HashMap<syn::Ident, ImplMethodExpandable>>();
 
-        Ok(ImplExpandable {
-            item_impl,
-            struct_name,
-            struct_generic_params,
-            struct_generic_idents,
-            methods,
-        })
+        Ok(ImplExpandable { item_impl, methods })
     }
 }
 
@@ -244,9 +232,6 @@ mod tests {
         let scheme = ImplFakeScheme {
             common: ImplCommonScheme {
                 item_impl: item_impl.clone(),
-                struct_name: parse_quote!(MyStruct),
-                struct_generic_params: vec![],
-                struct_generic_idents: vec![],
             },
             methods: vec![
                 non_generic_method_scheme(
@@ -268,8 +253,6 @@ mod tests {
 
         let res = ImplExpandable::try_from(scheme).unwrap();
 
-        let expected_struct_name: syn::Ident = parse_quote!(MyStruct);
-        assert_eq!(res.struct_name, expected_struct_name);
         assert_eq!(
             res.item_impl.to_token_stream().to_string(),
             item_impl.to_token_stream().to_string()
