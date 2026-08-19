@@ -39,7 +39,7 @@ fn insert_inline_call(impl_item_fn: &mut syn::ImplItemFn, inline_call: &syn::Blo
 
 #[cfg(test)]
 mod tests {
-    use quote::{ToTokens, quote};
+    use quote::ToTokens;
 
     use super::*;
 

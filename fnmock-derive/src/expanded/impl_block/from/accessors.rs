@@ -42,6 +42,7 @@ pub fn build_accessor_impl(
     };
 
     parse_quote! {
+        #[cfg(test)]
         impl<#(#struct_generic_params),*> #self_ty {
             #(#methods)*
         }
