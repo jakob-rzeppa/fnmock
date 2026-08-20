@@ -1,6 +1,4 @@
-use crate::{
-    item_info::function::info::FunctionInfo, scheme::function::common::FunctionCommonScheme,
-};
+use crate::{item_info::function::FunctionInfo, scheme::function::common::FunctionCommonScheme};
 
 pub struct FunctionSpyScheme {
     common: FunctionCommonScheme,

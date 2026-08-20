@@ -1,6 +1,4 @@
-use crate::{
-    item_info::impl_block::info::ImplBlockInfo, scheme::impl_block::common::ImplCommonScheme,
-};
+use crate::{item_info::impl_block::ImplBlockInfo, scheme::impl_block::common::ImplCommonScheme};
 
 pub struct ImplSpyScheme {
     common: ImplCommonScheme,

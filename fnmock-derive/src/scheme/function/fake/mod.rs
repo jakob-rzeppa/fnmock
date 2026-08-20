@@ -1,7 +1,7 @@
 use syn::parse_quote;
 
 use crate::{
-    item_info::{call_value::CallValue, function::info::FunctionInfo},
+    item_info::{call_value::CallValue, function::FunctionInfo},
     scheme::{
         common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::GenericScheme},
         function::{
@@ -39,36 +39,50 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
         let interface_name = build_interface_name(&value.name);
         let display_name = value.name.to_string();
 
+        let param_types = value
+            .params
+            .iter()
+            .map(|p| p.ty.clone())
+            .collect::<Vec<_>>();
         let fn_closure_trait =
-            build_fn_closure_trait(&value.lifetimes, &value.param_types, &value.return_type)?;
+            build_fn_closure_trait(&value.lifetimes, &param_types, &value.return_type)?;
 
         let fake_call_values = value
-            .param_pats
+            .params
             .iter()
-            .map(CallValue::try_from)
+            .map(|p| CallValue::try_from(&p.pat))
             .collect::<Result<Vec<_>, _>>()?;
 
-        let generic_scheme = value.generic_info.as_ref().map(|info| {
-            let idents_without_const_generics = info
+        let generic_scheme = if value.generic_params.is_empty() {
+            None
+        } else {
+            let idents_without_const_generics = value
                 .generic_params
                 .iter()
-                .filter_map(|param| match param {
+                .filter_map(|g| match &g.param {
                     syn::GenericParam::Type(type_param) => Some(type_param.ident.clone()),
                     _ => None,
                 })
                 .collect::<Vec<_>>();
 
-            GenericScheme {
-                params: info.generic_params.clone(),
-                idents: info.idents.clone(),
+            Some(GenericScheme {
+                params: value
+                    .generic_params
+                    .iter()
+                    .map(|g| g.param.clone())
+                    .collect(),
+                idents: value
+                    .generic_params
+                    .iter()
+                    .map(|g| g.ident.clone())
+                    .collect(),
                 idents_without_const_generics,
-                keys: info.generic_keys.clone(),
-            }
-        });
-        let accessor_generic_params = value
-            .generic_info
+                keys: value.generic_params.iter().map(|g| g.key.clone()).collect(),
+            })
+        };
+        let accessor_generic_params = generic_scheme
             .as_ref()
-            .map(|info| info.generic_params.clone())
+            .map(|scheme| scheme.params.clone())
             .unwrap_or_default();
 
         let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
@@ -115,7 +129,10 @@ mod tests {
         let scheme = FunctionFakeScheme::try_from(info)
             .expect("conversion should succeed for a non-generic function");
 
-        assert_eq!(scheme.common.module_name.to_string(), "get_user_fake_module");
+        assert_eq!(
+            scheme.common.module_name.to_string(),
+            "get_user_fake_module"
+        );
         assert_eq!(scheme.common.display_name, "get_user");
         assert_eq!(scheme.common.accessor_name.to_string(), "get_user_fake");
         assert!(scheme.common.accessor_generic_params.is_empty());
@@ -189,7 +206,10 @@ mod tests {
 
         let result = FunctionFakeScheme::try_from(info);
 
-        assert!(result.is_err(), "expected `impl Trait` param to be rejected");
+        assert!(
+            result.is_err(),
+            "expected `impl Trait` param to be rejected"
+        );
     }
 
     #[test]
@@ -201,6 +221,9 @@ mod tests {
 
         let result = FunctionFakeScheme::try_from(info);
 
-        assert!(result.is_err(), "expected a wildcard param pattern to be rejected");
+        assert!(
+            result.is_err(),
+            "expected a wildcard param pattern to be rejected"
+        );
     }
 }

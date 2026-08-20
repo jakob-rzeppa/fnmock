@@ -3,10 +3,14 @@ use syn::parse_quote;
 use crate::{
     item_info::{
         call_value::CallValue,
-        impl_block::info::{ImplBlockInfo, ImplMethodInfo},
+        generic_param_info::GenericParamInfo,
+        impl_block::{ImplBlockInfo, ImplMethodInfo},
     },
     scheme::{
-        common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::GenericScheme},
+        common::{
+            fn_closure_trait::build_fn_closure_trait,
+            generic_scheme::{GenericScheme, build_generic_scheme},
+        },
         impl_block::{
             common::{ImplCommonMethodScheme, ImplCommonScheme},
             fake::names::{
@@ -44,40 +48,20 @@ impl TryFrom<ImplBlockInfo> for ImplFakeScheme {
     type Error = syn::Error;
 
     fn try_from(value: ImplBlockInfo) -> Result<Self, Self::Error> {
-        let struct_generic_params = value
-            .struct_generic_info
-            .as_ref()
-            .map(|info| info.generic_params.clone())
-            .unwrap_or_default();
-        let struct_generic_idents = value
-            .struct_generic_info
-            .as_ref()
-            .map(|info| info.idents.clone())
-            .unwrap_or_default();
-        let struct_generic_keys = value
-            .struct_generic_info
-            .as_ref()
-            .map(|info| info.generic_keys.clone())
-            .unwrap_or_default();
+        let ImplBlockInfo {
+            item_impl,
+            struct_name,
+            generic_param_infos,
+            functions,
+        } = value;
 
-        let methods = value
-            .functions
+        let methods = functions
             .into_iter()
-            .map(|method| {
-                build_method_scheme(
-                    &value.struct_name,
-                    &struct_generic_params,
-                    &struct_generic_idents,
-                    &struct_generic_keys,
-                    method,
-                )
-            })
+            .map(|method| build_method_scheme(&struct_name, &generic_param_infos, method))
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(ImplFakeScheme {
-            common: ImplCommonScheme {
-                item_impl: value.item_impl,
-            },
+            common: ImplCommonScheme { item_impl },
             methods,
         })
     }
@@ -87,19 +71,16 @@ impl TryFrom<ImplBlockInfo> for ImplFakeScheme {
 /// method) with the method's own.
 fn build_method_scheme(
     struct_name: &syn::TypePath,
-    struct_generic_params: &[syn::GenericParam],
-    struct_generic_idents: &[syn::Ident],
-    struct_generic_keys: &[syn::Expr],
+    struct_generic_param_infos: &[GenericParamInfo],
     method: ImplMethodInfo,
 ) -> syn::Result<ImplFakeMethodScheme> {
     let ImplMethodInfo {
         method_name,
         visibility,
-        param_pats,
-        param_types,
+        param_infos,
         lifetimes,
         return_type,
-        generic_info,
+        generic_param_infos: method_generic_param_infos,
     } = method;
 
     let module_name = build_module_name(struct_name, &method_name);
@@ -108,60 +89,25 @@ fn build_method_scheme(
     let interface_name = build_interface_name(struct_name, &method_name);
     let display_name = method_name.to_string();
 
+    let param_types = param_infos.iter().map(|p| p.ty.clone()).collect::<Vec<_>>();
     let fn_closure_trait = build_fn_closure_trait(&lifetimes, &param_types, &return_type)?;
 
-    let fake_call_values = param_pats
+    let fake_call_values = param_infos
         .iter()
-        .map(CallValue::try_from)
+        .map(|p| CallValue::try_from(&p.pat))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let method_generic_params = generic_info
-        .as_ref()
-        .map(|info| info.generic_params.clone())
-        .unwrap_or_default();
-    let method_generic_idents = generic_info
-        .as_ref()
-        .map(|info| info.idents.clone())
-        .unwrap_or_default();
-    let method_generic_keys = generic_info
-        .as_ref()
-        .map(|info| info.generic_keys.clone())
-        .unwrap_or_default();
-
-    let combined_generic_params: Vec<syn::GenericParam> = struct_generic_params
+    let method_generic_params = method_generic_param_infos
         .iter()
-        .cloned()
-        .chain(method_generic_params.iter().cloned())
-        .collect();
-    let combined_generic_idents: Vec<syn::Ident> = struct_generic_idents
-        .iter()
-        .cloned()
-        .chain(method_generic_idents)
-        .collect();
-    let combined_generic_keys: Vec<syn::Expr> = struct_generic_keys
-        .iter()
-        .cloned()
-        .chain(method_generic_keys)
-        .collect();
+        .map(|g| g.param.clone())
+        .collect::<Vec<_>>();
 
-    let generic_scheme = if combined_generic_params.is_empty() {
-        None
-    } else {
-        let idents_without_const_generics = combined_generic_params
-            .iter()
-            .filter_map(|param| match param {
-                syn::GenericParam::Type(type_param) => Some(type_param.ident.clone()),
-                _ => None,
-            })
-            .collect::<Vec<_>>();
+    let mut combined_generic_param_infos = struct_generic_param_infos.to_vec();
+    for method_generic_param_info in method_generic_param_infos {
+        combined_generic_param_infos.push(method_generic_param_info);
+    }
 
-        Some(GenericScheme {
-            params: combined_generic_params,
-            idents: combined_generic_idents,
-            idents_without_const_generics,
-            keys: combined_generic_keys,
-        })
-    };
+    let generic_scheme = build_generic_scheme(&combined_generic_param_infos);
 
     let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
         let generic_idents = &generic_scheme.idents;

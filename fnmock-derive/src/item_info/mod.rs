@@ -1,7 +1,7 @@
 pub mod call_value;
 pub mod function;
-mod generics;
+pub mod generic_param_info;
 pub mod impl_block;
 mod lifetimes;
-pub mod params;
+pub mod param_info;
 mod replace_self;
