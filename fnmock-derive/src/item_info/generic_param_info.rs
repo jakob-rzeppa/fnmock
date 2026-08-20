@@ -60,9 +60,9 @@ pub fn extract_generic_param_infos(generics: &syn::Generics) -> syn::Result<Vec<
         }
     }
 
-    Ok(generic_params
+    generic_params
         .iter()
-        .filter_map(|param| {
+        .map(|param| {
             let (ident, key_tokens) = match param {
                 syn::GenericParam::Type(type_param) => {
                     let ident = type_param.ident.clone();
@@ -80,23 +80,26 @@ pub fn extract_generic_param_infos(generics: &syn::Generics) -> syn::Result<Vec<
                     };
                     (ident, key_tokens)
                 }
-                syn::GenericParam::Lifetime(_) => return None,
+                syn::GenericParam::Lifetime(_) => return Ok(None),
             };
 
-            let key = syn::parse2(key_tokens).unwrap_or_else(|e| {
-                panic!(
-                    "internal error: failed to build a generic key expression: {}. This is a bug in fnmock; please report it.",
-                    e
-                );
-            });
+            let key = syn::parse2(key_tokens).map_err(|e| {
+                syn::Error::new_spanned(
+                    param,
+                    format!(
+                        "Failed to build a generic key expression: {e}. This is an error in fnmock. Please report this bug."
+                    ),
+                )
+            })?;
 
-            Some(GenericParamInfo {
+            Ok(Some(GenericParamInfo {
                 param: param.clone(),
                 ident,
                 key,
-            })
+            }))
         })
-        .collect())
+        .collect::<syn::Result<Vec<_>>>()
+        .map(|infos| infos.into_iter().flatten().collect())
 }
 
 /// Merge the where bounds into the type parameters.

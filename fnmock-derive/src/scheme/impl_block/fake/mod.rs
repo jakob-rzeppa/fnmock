@@ -86,7 +86,7 @@ fn build_method_scheme(
     let module_name = build_module_name(struct_name, &method_name);
     let store_name = build_store_name(struct_name, &method_name);
     let accessor_name = build_accessor_name(&method_name);
-    let interface_name = build_interface_name(struct_name, &method_name);
+    let interface_name = build_interface_name(struct_name, &method_name)?;
     let display_name = method_name.to_string();
 
     let param_types = param_infos.iter().map(|p| p.ty.clone()).collect::<Vec<_>>();

@@ -30,21 +30,25 @@ pub fn build_accessor_name(method_name: &syn::Ident) -> syn::Ident {
 }
 
 /// Builds the interface struct name, e.g. `UserService` + `get_user` -> `UserServiceGetUserFakeInterface`.
-pub fn build_interface_name(struct_name: &syn::TypePath, method_name: &syn::Ident) -> syn::Ident {
-    let last_segment = struct_name
-        .path
-        .segments
-        .last()
-        .expect("No last segment in struct path found.");
+pub fn build_interface_name(
+    struct_name: &syn::TypePath,
+    method_name: &syn::Ident,
+) -> syn::Result<syn::Ident> {
+    let last_segment = struct_name.path.segments.last().ok_or_else(|| {
+        syn::Error::new_spanned(
+            struct_name,
+            "Struct path has no segments. This is an error in fnmock. Please report this bug.",
+        )
+    })?;
 
-    syn::Ident::new(
+    Ok(syn::Ident::new(
         &format!(
             "{}{}FakeInterface",
             last_segment.ident,
             snake_to_pascal_case(&method_name.to_string())
         ),
         proc_macro2::Span::mixed_site(),
-    )
+    ))
 }
 
 /// Mangles every segment of a type path into one snake_case string, e.g. `a::Config` ->
@@ -193,7 +197,9 @@ mod tests {
         let struct_name: syn::TypePath = syn::parse_quote!(UserService);
         let method_name: syn::Ident = syn::parse_quote!(get_user);
         assert_eq!(
-            build_interface_name(&struct_name, &method_name).to_string(),
+            build_interface_name(&struct_name, &method_name)
+                .expect("valid struct path")
+                .to_string(),
             "UserServiceGetUserFakeInterface"
         );
     }
@@ -203,7 +209,9 @@ mod tests {
         let struct_name: syn::TypePath = syn::parse_quote!(a::Config);
         let method_name: syn::Ident = syn::parse_quote!(basic);
         assert_eq!(
-            build_interface_name(&struct_name, &method_name).to_string(),
+            build_interface_name(&struct_name, &method_name)
+                .expect("valid struct path")
+                .to_string(),
             "ConfigBasicFakeInterface"
         );
     }
