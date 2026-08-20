@@ -92,6 +92,9 @@ mod impl_block {
         mod clear_and_is_set;
         mod generic_combined;
         mod generic_combined_where;
+        mod generic_instantiation;
+        mod generic_instantiation_isolation;
+        mod generic_instantiation_mixed;
         mod generic_method;
         mod generic_method_async;
         mod generic_method_where;

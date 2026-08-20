@@ -48,15 +48,47 @@ pub fn build_interface_name(struct_name: &syn::TypePath, method_name: &syn::Iden
 }
 
 /// Mangles every segment of a type path into one snake_case string, e.g. `a::Config` ->
-/// `a__config`. The double underscore is used to separate segments to avoid collisions, e.g. `a::Config` and `a_config` would otherwise both mangle to `a_config`.
+/// `a__config`. The double underscore is used to separate segments to avoid collisions, e.g. `a::Config` and `a_config` would otherwise both mangle to `a_config`. Each segment's generic
+/// arguments (if any) are folded in too, e.g. `Foo<u8>` -> `foo_u8`, so that two impl blocks for
+/// the same struct at different concrete type arguments (e.g. `Foo<u8>` and `Foo<u16>`) don't
+/// mangle to the same identifier.
 fn snake_case_path(struct_name: &syn::TypePath) -> String {
     struct_name
         .path
         .segments
         .iter()
-        .map(|segment| pascal_to_snake_case(&segment.ident.to_string()))
+        .map(|segment| {
+            let base = pascal_to_snake_case(&segment.ident.to_string());
+            match mangle_generic_arguments(&segment.arguments) {
+                Some(suffix) => format!("{base}_{suffix}"),
+                None => base,
+            }
+        })
         .collect::<Vec<_>>()
         .join("__")
+}
+
+/// Mangles a path segment's generic arguments (if any) into a snake_case suffix, e.g. `<u8>` ->
+/// `u8`, `<u8, U>` -> `u8_u`. Returns `None` for `PathArguments::None` so non-generic segments'
+/// mangled names are unaffected.
+fn mangle_generic_arguments(arguments: &syn::PathArguments) -> Option<String> {
+    if matches!(arguments, syn::PathArguments::None) {
+        return None;
+    }
+
+    let tokens = quote::ToTokens::to_token_stream(arguments).to_string();
+    let mangled: String = tokens
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '_' })
+        .collect();
+
+    Some(
+        mangled
+            .split('_')
+            .filter(|s| !s.is_empty())
+            .collect::<Vec<_>>()
+            .join("_"),
+    )
 }
 
 fn snake_to_pascal_case(s: &str) -> String {
@@ -116,12 +148,34 @@ mod tests {
     }
 
     #[test]
+    fn test_build_module_name_mangles_generic_arguments() {
+        let struct_name: syn::TypePath = syn::parse_quote!(Foo<u8>);
+        let other_struct_name: syn::TypePath = syn::parse_quote!(Foo<u16>);
+        let method_name: syn::Ident = syn::parse_quote!(bar);
+        assert_ne!(
+            build_module_name(&struct_name, &method_name),
+            build_module_name(&other_struct_name, &method_name)
+        );
+    }
+
+    #[test]
     fn test_build_store_name() {
         let struct_name: syn::TypePath = syn::parse_quote!(UserService);
         let method_name: syn::Ident = syn::parse_quote!(get_user);
         assert_eq!(
             build_store_name(&struct_name, &method_name).to_string(),
             "USER_SERVICE_GET_USER_FAKE_STORE"
+        );
+    }
+
+    #[test]
+    fn test_build_store_name_mangles_generic_arguments() {
+        let struct_name: syn::TypePath = syn::parse_quote!(Foo<u8>);
+        let other_struct_name: syn::TypePath = syn::parse_quote!(Foo<u16>);
+        let method_name: syn::Ident = syn::parse_quote!(bar);
+        assert_ne!(
+            build_store_name(&struct_name, &method_name),
+            build_store_name(&other_struct_name, &method_name)
         );
     }
 

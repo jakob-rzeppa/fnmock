@@ -22,6 +22,7 @@ together.
 ### Fixed
 
 - `a::Struct` and `b::Struct` impls in the same module no longer collide, even if they have the same name.
+- `Struct<u8>` and `Struct<u16>` impls in the same module no longer collide, even if they have the same function names.
 
 ## [0.1.0] - 2026-07-22
 
