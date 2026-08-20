@@ -1,10 +1,12 @@
+use crate::item_info::original::OriginalFn;
+
 pub mod fake;
 pub mod spy;
 
 pub struct FunctionExpandable {
     pub vis: syn::Visibility,
 
-    pub item_fn: syn::ItemFn,
+    pub original: OriginalFn,
     pub inline_call: syn::Block,
 
     pub accessor_name: syn::Ident,

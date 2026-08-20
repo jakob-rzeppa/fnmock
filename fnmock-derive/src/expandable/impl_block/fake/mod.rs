@@ -30,7 +30,7 @@ impl TryFrom<ImplFakeScheme> for ImplExpandable {
 
     fn try_from(value: ImplFakeScheme) -> Result<Self, Self::Error> {
         let ImplFakeScheme {
-            common: ImplCommonScheme { item_impl },
+            common: ImplCommonScheme { original },
             methods,
         } = value;
 
@@ -42,7 +42,7 @@ impl TryFrom<ImplFakeScheme> for ImplExpandable {
             })
             .collect::<Vec<(syn::Ident, ImplMethodExpandable)>>();
 
-        Ok(ImplExpandable { item_impl, methods })
+        Ok(ImplExpandable { original, methods })
     }
 }
 
@@ -102,7 +102,7 @@ mod tests {
     use syn::parse_quote;
 
     use super::*;
-    use crate::scheme::common::generic_scheme::GenericScheme;
+    use crate::{item_info::original::OriginalImpl, scheme::common::generic_scheme::GenericScheme};
 
     fn non_generic_method_scheme(
         method_name: syn::Ident,
@@ -217,7 +217,7 @@ mod tests {
 
         let scheme = ImplFakeScheme {
             common: ImplCommonScheme {
-                item_impl: item_impl.clone(),
+                original: OriginalImpl::new(item_impl.clone()),
             },
             methods: vec![
                 non_generic_method_scheme(
@@ -240,7 +240,7 @@ mod tests {
         let res = ImplExpandable::try_from(scheme).unwrap();
 
         assert_eq!(
-            res.item_impl.to_token_stream().to_string(),
+            res.original.to_token_stream().to_string(),
             item_impl.to_token_stream().to_string()
         );
         assert_eq!(res.methods.len(), 2);

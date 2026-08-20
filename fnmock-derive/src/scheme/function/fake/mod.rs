@@ -95,7 +95,7 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
         Ok(FunctionFakeScheme {
             common: FunctionCommonScheme {
                 vis: value.visibility,
-                item_fn: value.item_fn,
+                original: value.original,
                 module_name,
                 display_name,
                 accessor_name,

@@ -5,14 +5,14 @@ use syn::spanned::Spanned;
 use crate::item_info::{
     generic_param_info::{GenericParamInfo, extract_generic_param_infos},
     lifetimes::extract_lifetimes_from_generics,
+    original::OriginalImpl,
     param_info::{ParamInfo, extract_params},
 };
 
 /// Everything shared across every method of one fakeable/spyable inherent impl block, plus one
 /// [`ImplItemFnInfo`] per method.
 pub struct ImplBlockInfo {
-    /// The original, unmodified impl block.
-    pub item_impl: syn::ItemImpl,
+    pub original: OriginalImpl,
 
     /// The type the impl block is for, kept as the full path (module segments + generic
     /// arguments) rather than truncated to its last segment. Combined with each method's name to
@@ -77,7 +77,7 @@ impl TryFrom<syn::ItemImpl> for ImplBlockInfo {
         }
 
         Ok(ImplBlockInfo {
-            item_impl,
+            original: OriginalImpl::new(item_impl),
             struct_name,
             generic_param_infos,
             functions,

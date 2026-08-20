@@ -4,14 +4,12 @@ use crate::{
         ImplExpanded,
         from::{
             accessors::{AccessorMethodInfo, build_accessor_impl},
-            inline_calls::insert_inline_calls,
             modules::build_modules,
         },
     },
 };
 
 mod accessors;
-mod inline_calls;
 mod modules;
 
 impl TryFrom<ImplExpandable> for ImplExpanded {
@@ -19,7 +17,7 @@ impl TryFrom<ImplExpandable> for ImplExpanded {
 
     fn try_from(value: ImplExpandable) -> Result<Self, Self::Error> {
         let ImplExpandable {
-            mut item_impl,
+            original,
             ref methods,
         } = value;
 
@@ -27,7 +25,7 @@ impl TryFrom<ImplExpandable> for ImplExpanded {
         for (method_name, method) in methods {
             inline_calls.push((method_name.clone(), method.inline_call.clone()));
         }
-        insert_inline_calls(&mut item_impl, &inline_calls);
+        let item_impl = original.into_impl_with_inline_calls(&inline_calls)?;
 
         let accessor_method_infos = methods
             .iter()
@@ -69,7 +67,7 @@ mod tests {
     use syn::parse_quote;
 
     use super::*;
-    use crate::expandable::impl_block::ImplMethodExpandable;
+    use crate::{expandable::impl_block::ImplMethodExpandable, item_info::original::OriginalImpl};
 
     #[test]
     fn test_try_from_impl_expandable_multiple_methods_with_generics() {
@@ -123,7 +121,10 @@ mod tests {
             },
         ));
 
-        let expandable = ImplExpandable { item_impl, methods };
+        let expandable = ImplExpandable {
+            original: OriginalImpl::new(item_impl),
+            methods,
+        };
 
         let expanded = ImplExpanded::try_from(expandable).unwrap();
 

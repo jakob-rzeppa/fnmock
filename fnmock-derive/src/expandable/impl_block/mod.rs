@@ -1,8 +1,10 @@
+use crate::item_info::original::OriginalImpl;
+
 pub mod fake;
 pub mod spy;
 
 pub struct ImplExpandable {
-    pub item_impl: syn::ItemImpl,
+    pub original: OriginalImpl,
 
     /// (method_name, method_info) - The methods in the impl block.
     /// The order of the methods must be preserved from the original impl block.

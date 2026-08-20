@@ -38,7 +38,7 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
 
         let FunctionCommonScheme {
             vis,
-            item_fn,
+            original,
             module_name,
             display_name,
             accessor_name,
@@ -47,7 +47,7 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
 
         Ok(FunctionExpandable {
             vis,
-            item_fn,
+            original,
             inline_call: build_inline_call(
                 &module_name,
                 &fake_call_values,
@@ -63,7 +63,11 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
                     &fn_closure_trait,
                     generic_scheme.as_ref().map(|g| g.params.len()),
                 ),
-                build_implementation_getter(&store_name, &fn_closure_trait, generic_scheme.as_ref()),
+                build_implementation_getter(
+                    &store_name,
+                    &fn_closure_trait,
+                    generic_scheme.as_ref(),
+                ),
                 build_interface_struct(&interface_name, generic_scheme.as_ref()),
                 build_interface_impl(
                     &interface_name,

@@ -1,5 +1,7 @@
+use crate::item_info::original::OriginalImpl;
+
 pub struct ImplCommonScheme {
-    pub item_impl: syn::ItemImpl,
+    pub original: OriginalImpl,
 }
 
 pub struct ImplCommonMethodScheme {

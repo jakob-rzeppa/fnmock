@@ -3,13 +3,13 @@
 use crate::item_info::{
     generic_param_info::{GenericParamInfo, extract_generic_param_infos},
     lifetimes::extract_lifetimes_from_generics,
+    original::OriginalFn,
     param_info::{ParamInfo, extract_params},
 };
 
 /// Everything the generators need to know about a fakeable free function.
 pub struct FunctionInfo {
-    /// The original, unmodified item.
-    pub item_fn: syn::ItemFn,
+    pub original: OriginalFn,
 
     /// The function's own name, which every generated name is derived from.
     pub name: syn::Ident,
@@ -55,7 +55,7 @@ impl TryFrom<syn::ItemFn> for FunctionInfo {
         let generic_params = extract_generic_param_infos(&item_fn.sig.generics)?;
 
         Ok(FunctionInfo {
-            item_fn,
+            original: OriginalFn::new(item_fn),
             name,
             visibility,
             params,

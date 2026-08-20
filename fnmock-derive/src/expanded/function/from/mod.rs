@@ -2,12 +2,11 @@ use crate::{
     expandable::function::FunctionExpandable,
     expanded::function::{
         FunctionExpanded,
-        from::{accessor::build_accessor, inline_call::insert_inline_call, module::build_module},
+        from::{accessor::build_accessor, module::build_module},
     },
 };
 
 mod accessor;
-mod inline_call;
 mod module;
 
 impl TryFrom<FunctionExpandable> for FunctionExpanded {
@@ -17,7 +16,7 @@ impl TryFrom<FunctionExpandable> for FunctionExpanded {
         let FunctionExpandable {
             ref vis,
 
-            mut item_fn,
+            original,
             ref inline_call,
 
             ref accessor_name,
@@ -29,7 +28,7 @@ impl TryFrom<FunctionExpandable> for FunctionExpanded {
             ref module_parts,
         } = value;
 
-        insert_inline_call(&mut item_fn, inline_call);
+        let fn_with_inline_call = original.into_fn_with_inline_call(inline_call);
         let accessor_fn = build_accessor(
             vis,
             accessor_name,
@@ -40,7 +39,7 @@ impl TryFrom<FunctionExpandable> for FunctionExpanded {
         let module = build_module(vis, module_name, module_parts);
 
         Ok(FunctionExpanded {
-            fn_with_inline_call: item_fn,
+            fn_with_inline_call,
             accessor_fn,
             module,
         })

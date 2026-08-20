@@ -49,7 +49,7 @@ impl TryFrom<ImplBlockInfo> for ImplFakeScheme {
 
     fn try_from(value: ImplBlockInfo) -> Result<Self, Self::Error> {
         let ImplBlockInfo {
-            item_impl,
+            original,
             struct_name,
             generic_param_infos,
             functions,
@@ -61,7 +61,7 @@ impl TryFrom<ImplBlockInfo> for ImplFakeScheme {
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(ImplFakeScheme {
-            common: ImplCommonScheme { item_impl },
+            common: ImplCommonScheme { original },
             methods,
         })
     }
