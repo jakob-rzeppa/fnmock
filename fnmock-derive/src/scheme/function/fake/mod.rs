@@ -3,7 +3,7 @@ use syn::parse_quote;
 use crate::{
     item_info::{call_value::CallValue, function::info::FunctionInfo},
     scheme::{
-        common::fn_closure_trait::build_fn_closure_trait,
+        common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::GenericScheme},
         function::{
             common::FunctionCommonScheme,
             fake::names::{
@@ -26,11 +26,7 @@ pub struct FunctionFakeScheme {
     pub interface_type: syn::Type,
     pub fake_call_values: Vec<CallValue>,
 
-    pub generic_count: Option<usize>,
-    pub generic_params: Option<Vec<syn::GenericParam>>,
-    pub generic_idents: Option<Vec<syn::Ident>>,
-    pub generic_idents_without_const_generics: Option<Vec<syn::Ident>>,
-    pub generic_keys: Option<Vec<syn::Expr>>,
+    pub generic_scheme: Option<GenericScheme>,
 }
 
 impl TryFrom<FunctionInfo> for FunctionFakeScheme {
@@ -52,33 +48,31 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
             .map(CallValue::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
-        let generic_count = value.generic_info.as_ref().map(|info| info.count);
-        let generic_params = value
-            .generic_info
-            .as_ref()
-            .map(|info| info.generic_params.clone());
-        let generic_idents = value.generic_info.as_ref().map(|info| info.idents.clone());
-        let generic_idents_without_const_generics =
-            value.generic_info.as_ref().map(|info| {
-                info.generic_params
-                    .iter()
-                    .filter_map(|param| match param {
-                        syn::GenericParam::Type(type_param) => Some(type_param.ident.clone()),
-                        _ => None,
-                    })
-                    .collect::<Vec<_>>()
-            });
-        let generic_keys = value
-            .generic_info
-            .as_ref()
-            .map(|info| info.generic_keys.clone());
+        let generic_scheme = value.generic_info.as_ref().map(|info| {
+            let idents_without_const_generics = info
+                .generic_params
+                .iter()
+                .filter_map(|param| match param {
+                    syn::GenericParam::Type(type_param) => Some(type_param.ident.clone()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+
+            GenericScheme {
+                params: info.generic_params.clone(),
+                idents: info.idents.clone(),
+                idents_without_const_generics,
+                keys: info.generic_keys.clone(),
+            }
+        });
         let accessor_generic_params = value
             .generic_info
             .as_ref()
             .map(|info| info.generic_params.clone())
             .unwrap_or_default();
 
-        let interface_type: syn::Type = if let Some(generic_idents) = &generic_idents {
+        let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
+            let generic_idents = &generic_scheme.idents;
             parse_quote! { #interface_name<#(#generic_idents),*> }
         } else {
             parse_quote! { #interface_name }
@@ -98,11 +92,7 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
             interface_name,
             interface_type,
             fake_call_values,
-            generic_count,
-            generic_params,
-            generic_idents,
-            generic_idents_without_const_generics,
-            generic_keys,
+            generic_scheme,
         })
     }
 }
@@ -136,11 +126,7 @@ mod tests {
             quote::quote!(GetUserFakeInterface).to_string()
         );
         assert_eq!(scheme.fake_call_values.len(), 1);
-        assert!(scheme.generic_count.is_none());
-        assert!(scheme.generic_params.is_none());
-        assert!(scheme.generic_idents.is_none());
-        assert!(scheme.generic_idents_without_const_generics.is_none());
-        assert!(scheme.generic_keys.is_none());
+        assert!(scheme.generic_scheme.is_none());
     }
 
     #[test]
@@ -155,11 +141,12 @@ mod tests {
         let scheme = FunctionFakeScheme::try_from(info)
             .expect("conversion should succeed for a generic function");
 
-        assert_eq!(scheme.generic_count, Some(1));
-        let generic_idents = scheme
-            .generic_idents
+        let generic_scheme = scheme
+            .generic_scheme
             .as_ref()
-            .expect("expected generic_idents to be Some");
+            .expect("expected generic_scheme to be Some");
+        assert_eq!(generic_scheme.params.len(), 1);
+        let generic_idents = &generic_scheme.idents;
         assert_eq!(
             generic_idents
                 .iter()
@@ -186,11 +173,11 @@ mod tests {
         let scheme = FunctionFakeScheme::try_from(info)
             .expect("conversion should succeed for a const-generic function");
 
-        let idents_without_const = scheme
-            .generic_idents_without_const_generics
+        let generic_scheme = scheme
+            .generic_scheme
             .as_ref()
             .expect("expected Some for a generic function, even with only const generics");
-        assert!(idents_without_const.is_empty());
+        assert!(generic_scheme.idents_without_const_generics.is_empty());
     }
 
     #[test]

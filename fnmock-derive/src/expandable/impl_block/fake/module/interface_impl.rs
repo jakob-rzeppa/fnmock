@@ -1,16 +1,17 @@
 use quote::quote;
 
+use crate::scheme::common::generic_scheme::GenericScheme;
+
 pub fn build_interface_impl(
     interface_name: &syn::Ident,
     store_name: &syn::Ident,
-    generic_params: Option<&[syn::GenericParam]>,
-    generic_idents: Option<&[syn::Ident]>,
-    generic_keys: Option<&[syn::Expr]>,
+    generic_scheme: Option<&GenericScheme>,
     fn_closure_trait: &syn::TraitBound,
 ) -> proc_macro2::TokenStream {
-    if let (Some(generic_params), Some(generic_idents), Some(generic_keys)) =
-        (generic_params, generic_idents, generic_keys)
-    {
+    if let Some(generic_scheme) = generic_scheme {
+        let generic_params = &generic_scheme.params;
+        let generic_idents = &generic_scheme.idents;
+        let generic_keys = &generic_scheme.keys;
         quote! {
             impl<#(#generic_params),*> #interface_name<#(#generic_idents),*> {
                 /// Install a fake implementation for this combination of generic arguments,
@@ -104,14 +105,7 @@ mod tests {
         let store_name: syn::Ident = parse_quote!(MY_METHOD_STORE);
         let fn_closure_trait: syn::TraitBound = parse_quote!(Fn(i32) -> bool);
 
-        let res = build_interface_impl(
-            &interface_name,
-            &store_name,
-            None,
-            None,
-            None,
-            &fn_closure_trait,
-        );
+        let res = build_interface_impl(&interface_name, &store_name, None, &fn_closure_trait);
 
         let expected = quote! {
             impl MyMethodInterface {
@@ -141,16 +135,17 @@ mod tests {
         let interface_name: syn::Ident = parse_quote!(MyMethodInterface);
         let store_name: syn::Ident = parse_quote!(MY_METHOD_STORE);
         let fn_closure_trait: syn::TraitBound = parse_quote!(Fn(i32) -> bool);
-        let generic_params: Vec<syn::GenericParam> = vec![parse_quote!(T)];
-        let generic_idents: Vec<syn::Ident> = vec![parse_quote!(T)];
-        let generic_keys: Vec<syn::Expr> = vec![parse_quote!(::std::any::TypeId::of::<T>())];
+        let generic_scheme = GenericScheme {
+            params: vec![parse_quote!(T)],
+            idents: vec![parse_quote!(T)],
+            idents_without_const_generics: vec![parse_quote!(T)],
+            keys: vec![parse_quote!(::std::any::TypeId::of::<T>())],
+        };
 
         let res = build_interface_impl(
             &interface_name,
             &store_name,
-            Some(&generic_params),
-            Some(&generic_idents),
-            Some(&generic_keys),
+            Some(&generic_scheme),
             &fn_closure_trait,
         );
 
@@ -184,18 +179,17 @@ mod tests {
         let interface_name: syn::Ident = parse_quote!(MyMethodInterface);
         let store_name: syn::Ident = parse_quote!(MY_METHOD_STORE);
         let fn_closure_trait: syn::TraitBound = parse_quote!(Fn());
-        let generic_params: Vec<syn::GenericParam> =
-            vec![parse_quote!(T), parse_quote!(const C: u32)];
-        let generic_idents: Vec<syn::Ident> = vec![parse_quote!(T), parse_quote!(C)];
-        let generic_keys: Vec<syn::Expr> =
-            vec![parse_quote!(::std::any::TypeId::of::<T>()), parse_quote!(C)];
+        let generic_scheme = GenericScheme {
+            params: vec![parse_quote!(T), parse_quote!(const C: u32)],
+            idents: vec![parse_quote!(T), parse_quote!(C)],
+            idents_without_const_generics: vec![parse_quote!(T)],
+            keys: vec![parse_quote!(::std::any::TypeId::of::<T>()), parse_quote!(C)],
+        };
 
         let res = build_interface_impl(
             &interface_name,
             &store_name,
-            Some(&generic_params),
-            Some(&generic_idents),
-            Some(&generic_keys),
+            Some(&generic_scheme),
             &fn_closure_trait,
         );
 

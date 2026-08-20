@@ -1,5 +1,3 @@
-use syn::parse_quote;
-
 use crate::{
     expandable::function::{
         FunctionExpandable,
@@ -35,11 +33,7 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
             interface_type,
             fn_closure_trait,
             fake_call_values,
-            generic_count,
-            generic_params,
-            generic_idents,
-            generic_idents_without_const_generics,
-            generic_keys,
+            generic_scheme,
         } = value;
 
         let FunctionCommonScheme {
@@ -57,37 +51,27 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
             inline_call: build_inline_call(
                 &module_name,
                 &fake_call_values,
-                generic_idents.as_deref(),
+                generic_scheme.as_ref().map(|g| g.idents.as_slice()),
             ),
             accessor_name,
             accessor_generic_params,
             module_name,
             module_parts: vec![
-                build_fake_store(&store_name, &display_name, &fn_closure_trait, generic_count),
-                build_implementation_getter(
+                build_fake_store(
                     &store_name,
+                    &display_name,
                     &fn_closure_trait,
-                    generic_params.as_deref(),
-                    generic_keys.as_deref(),
+                    generic_scheme.as_ref().map(|g| g.params.len()),
                 ),
-                build_interface_struct(
-                    &interface_name,
-                    generic_params.as_deref(),
-                    generic_idents_without_const_generics.as_deref(),
-                ),
+                build_implementation_getter(&store_name, &fn_closure_trait, generic_scheme.as_ref()),
+                build_interface_struct(&interface_name, generic_scheme.as_ref()),
                 build_interface_impl(
                     &interface_name,
                     &store_name,
-                    generic_params.as_deref(),
-                    generic_idents.as_deref(),
-                    generic_keys.as_deref(),
+                    generic_scheme.as_ref(),
                     &fn_closure_trait,
                 ),
-                build_interface_getter(
-                    &interface_name,
-                    generic_params.as_deref(),
-                    generic_idents.as_deref(),
-                ),
+                build_interface_getter(&interface_name, generic_scheme.as_ref()),
             ],
             interface_type,
         })

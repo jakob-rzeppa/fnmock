@@ -6,7 +6,7 @@ use crate::{
         impl_block::info::{ImplBlockInfo, ImplMethodInfo},
     },
     scheme::{
-        common::fn_closure_trait::build_fn_closure_trait,
+        common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::GenericScheme},
         impl_block::{
             common::{ImplCommonMethodScheme, ImplCommonScheme},
             fake::names::{
@@ -37,11 +37,7 @@ pub struct ImplFakeMethodScheme {
     pub fake_call_values: Vec<CallValue>,
 
     /// The struct's and method's generics, combined.
-    pub generic_count: Option<usize>,
-    pub generic_params: Option<Vec<syn::GenericParam>>,
-    pub generic_idents: Option<Vec<syn::Ident>>,
-    pub generic_idents_without_const_generics: Option<Vec<syn::Ident>>,
-    pub generic_keys: Option<Vec<syn::Expr>>,
+    pub generic_scheme: Option<GenericScheme>,
 }
 
 impl TryFrom<ImplBlockInfo> for ImplFakeScheme {
@@ -148,14 +144,8 @@ fn build_method_scheme(
         .chain(method_generic_keys)
         .collect();
 
-    let (
-        generic_count,
-        generic_params,
-        generic_idents,
-        generic_idents_without_const_generics,
-        generic_keys,
-    ) = if combined_generic_params.is_empty() {
-        (None, None, None, None, None)
+    let generic_scheme = if combined_generic_params.is_empty() {
+        None
     } else {
         let idents_without_const_generics = combined_generic_params
             .iter()
@@ -165,16 +155,16 @@ fn build_method_scheme(
             })
             .collect::<Vec<_>>();
 
-        (
-            Some(combined_generic_params.len()),
-            Some(combined_generic_params),
-            Some(combined_generic_idents),
-            Some(idents_without_const_generics),
-            Some(combined_generic_keys),
-        )
+        Some(GenericScheme {
+            params: combined_generic_params,
+            idents: combined_generic_idents,
+            idents_without_const_generics,
+            keys: combined_generic_keys,
+        })
     };
 
-    let interface_type: syn::Type = if let Some(generic_idents) = &generic_idents {
+    let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
+        let generic_idents = &generic_scheme.idents;
         parse_quote! { #interface_name<#(#generic_idents),*> }
     } else {
         parse_quote! { #interface_name }
@@ -194,11 +184,7 @@ fn build_method_scheme(
         interface_name,
         interface_type,
         fake_call_values,
-        generic_count,
-        generic_params,
-        generic_idents,
-        generic_idents_without_const_generics,
-        generic_keys,
+        generic_scheme,
     })
 }
 
@@ -245,11 +231,7 @@ mod tests {
         );
         // The receiver (`self`) plus the one declared parameter.
         assert_eq!(method.fake_call_values.len(), 2);
-        assert!(method.generic_count.is_none());
-        assert!(method.generic_params.is_none());
-        assert!(method.generic_idents.is_none());
-        assert!(method.generic_idents_without_const_generics.is_none());
-        assert!(method.generic_keys.is_none());
+        assert!(method.generic_scheme.is_none());
     }
 
     #[test]
@@ -286,13 +268,14 @@ mod tests {
         let scheme = ImplFakeScheme::try_from(info).expect("conversion should succeed");
 
         let method = &scheme.methods[0];
-        assert_eq!(method.generic_count, Some(1));
-        let generic_idents = method
-            .generic_idents
+        let generic_scheme = method
+            .generic_scheme
             .as_ref()
-            .expect("expected generic_idents to be Some");
+            .expect("expected generic_scheme to be Some");
+        assert_eq!(generic_scheme.params.len(), 1);
         assert_eq!(
-            generic_idents
+            generic_scheme
+                .idents
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<_>>(),
@@ -320,14 +303,15 @@ mod tests {
         let scheme = ImplFakeScheme::try_from(info).expect("conversion should succeed");
 
         let method = &scheme.methods[0];
-        assert_eq!(method.generic_count, Some(1));
-        assert_eq!(method.common.method_generic_params.len(), 1);
-        let generic_idents = method
-            .generic_idents
+        let generic_scheme = method
+            .generic_scheme
             .as_ref()
-            .expect("expected generic_idents to be Some");
+            .expect("expected generic_scheme to be Some");
+        assert_eq!(generic_scheme.params.len(), 1);
+        assert_eq!(method.common.method_generic_params.len(), 1);
         assert_eq!(
-            generic_idents
+            generic_scheme
+                .idents
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<_>>(),
@@ -347,13 +331,14 @@ mod tests {
         let scheme = ImplFakeScheme::try_from(info).expect("conversion should succeed");
 
         let method = &scheme.methods[0];
-        assert_eq!(method.generic_count, Some(2));
-        let generic_idents = method
-            .generic_idents
+        let generic_scheme = method
+            .generic_scheme
             .as_ref()
-            .expect("expected generic_idents to be Some");
+            .expect("expected generic_scheme to be Some");
+        assert_eq!(generic_scheme.params.len(), 2);
         assert_eq!(
-            generic_idents
+            generic_scheme
+                .idents
                 .iter()
                 .map(|i| i.to_string())
                 .collect::<Vec<_>>(),
@@ -381,11 +366,11 @@ mod tests {
         let scheme = ImplFakeScheme::try_from(info).expect("conversion should succeed");
 
         let method = &scheme.methods[0];
-        let idents_without_const = method
-            .generic_idents_without_const_generics
+        let generic_scheme = method
+            .generic_scheme
             .as_ref()
             .expect("expected Some for a generic method, even with only const generics");
-        assert!(idents_without_const.is_empty());
+        assert!(generic_scheme.idents_without_const_generics.is_empty());
     }
 
     #[test]

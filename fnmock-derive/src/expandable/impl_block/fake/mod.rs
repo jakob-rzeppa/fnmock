@@ -62,46 +62,36 @@ fn create_impl_method_expandable(scheme: ImplFakeMethodScheme) -> ImplMethodExpa
         interface_name,
         interface_type,
         fake_call_values,
-        generic_count,
-        generic_params,
-        generic_idents,
-        generic_idents_without_const_generics,
-        generic_keys,
+        generic_scheme,
     } = scheme;
 
     ImplMethodExpandable {
         vis,
-        inline_call: build_inline_call(&module_name, &fake_call_values, generic_idents.as_deref()),
+        inline_call: build_inline_call(
+            &module_name,
+            &fake_call_values,
+            generic_scheme.as_ref().map(|g| g.idents.as_slice()),
+        ),
         accessor_name,
         method_generic_params,
         interface_type,
         module_name,
         module_parts: vec![
-            build_fake_store(&store_name, &display_name, &fn_closure_trait, generic_count),
-            build_implementation_getter(
+            build_fake_store(
                 &store_name,
+                &display_name,
                 &fn_closure_trait,
-                generic_params.as_deref(),
-                generic_keys.as_deref(),
+                generic_scheme.as_ref().map(|g| g.params.len()),
             ),
-            build_interface_struct(
-                &interface_name,
-                generic_params.as_deref(),
-                generic_idents_without_const_generics.as_deref(),
-            ),
+            build_implementation_getter(&store_name, &fn_closure_trait, generic_scheme.as_ref()),
+            build_interface_struct(&interface_name, generic_scheme.as_ref()),
             build_interface_impl(
                 &interface_name,
                 &store_name,
-                generic_params.as_deref(),
-                generic_idents.as_deref(),
-                generic_keys.as_deref(),
+                generic_scheme.as_ref(),
                 &fn_closure_trait,
             ),
-            build_interface_getter(
-                &interface_name,
-                generic_params.as_deref(),
-                generic_idents.as_deref(),
-            ),
+            build_interface_getter(&interface_name, generic_scheme.as_ref()),
         ],
     }
 }
@@ -112,6 +102,7 @@ mod tests {
     use syn::parse_quote;
 
     use super::*;
+    use crate::scheme::common::generic_scheme::GenericScheme;
 
     fn non_generic_method_scheme(
         method_name: syn::Ident,
@@ -137,11 +128,7 @@ mod tests {
                 path: interface_name.into(),
             }),
             fake_call_values: vec![],
-            generic_count: None,
-            generic_params: None,
-            generic_idents: None,
-            generic_idents_without_const_generics: None,
-            generic_keys: None,
+            generic_scheme: None,
         }
     }
 
@@ -189,11 +176,12 @@ mod tests {
             parse_quote!(MyMethodInterface),
         );
         scheme.interface_type = parse_quote!(MyMethodInterface<S>);
-        scheme.generic_count = Some(1);
-        scheme.generic_params = Some(vec![parse_quote!(S: 'static)]);
-        scheme.generic_idents = Some(vec![parse_quote!(S)]);
-        scheme.generic_idents_without_const_generics = Some(vec![parse_quote!(S)]);
-        scheme.generic_keys = Some(vec![parse_quote!(::std::any::TypeId::of::<S>())]);
+        scheme.generic_scheme = Some(GenericScheme {
+            params: vec![parse_quote!(S: 'static)],
+            idents: vec![parse_quote!(S)],
+            idents_without_const_generics: vec![parse_quote!(S)],
+            keys: vec![parse_quote!(::std::any::TypeId::of::<S>())],
+        });
 
         let res = create_impl_method_expandable(scheme);
 

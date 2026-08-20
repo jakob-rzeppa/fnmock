@@ -1,11 +1,14 @@
 use quote::quote;
 
+use crate::scheme::common::generic_scheme::GenericScheme;
+
 pub fn build_interface_getter(
     interface_name: &syn::Ident,
-    generic_params: Option<&[syn::GenericParam]>,
-    generic_idents: Option<&[syn::Ident]>,
+    generic_scheme: Option<&GenericScheme>,
 ) -> proc_macro2::TokenStream {
-    if let (Some(generic_params), Some(generic_idents)) = (generic_params, generic_idents) {
+    if let Some(generic_scheme) = generic_scheme {
+        let generic_params = &generic_scheme.params;
+        let generic_idents = &generic_scheme.idents;
         quote! {
             pub(super) fn interface<#(#generic_params),*>()
                 -> #interface_name<#(#generic_idents),*>
@@ -34,7 +37,7 @@ mod tests {
     fn test_non_generic() {
         let interface_name: syn::Ident = parse_quote!(MyFunctionInterface);
 
-        let res = build_interface_getter(&interface_name, None, None);
+        let res = build_interface_getter(&interface_name, None);
 
         let expected = quote! {
             pub(super) fn interface() -> MyFunctionInterface {
@@ -48,14 +51,14 @@ mod tests {
     #[test]
     fn test_generic_with_single_param() {
         let interface_name: syn::Ident = parse_quote!(MyFunctionInterface);
-        let generic_params: Vec<syn::GenericParam> = vec![parse_quote!(T: Display + 'static)];
-        let generic_idents: Vec<syn::Ident> = vec![parse_quote!(T)];
+        let generic_scheme = GenericScheme {
+            params: vec![parse_quote!(T: Display + 'static)],
+            idents: vec![parse_quote!(T)],
+            idents_without_const_generics: vec![parse_quote!(T)],
+            keys: vec![],
+        };
 
-        let res = build_interface_getter(
-            &interface_name,
-            Some(&generic_params),
-            Some(&generic_idents),
-        );
+        let res = build_interface_getter(&interface_name, Some(&generic_scheme));
 
         let expected = quote! {
             pub(super) fn interface<T: Display + 'static>() -> MyFunctionInterface<T> {
@@ -71,15 +74,14 @@ mod tests {
     #[test]
     fn test_generic_with_multiple_params_and_const_generic() {
         let interface_name: syn::Ident = parse_quote!(MyFunctionInterface);
-        let generic_params: Vec<syn::GenericParam> =
-            vec![parse_quote!(T), parse_quote!(const C: u32)];
-        let generic_idents: Vec<syn::Ident> = vec![parse_quote!(T), parse_quote!(C)];
+        let generic_scheme = GenericScheme {
+            params: vec![parse_quote!(T), parse_quote!(const C: u32)],
+            idents: vec![parse_quote!(T), parse_quote!(C)],
+            idents_without_const_generics: vec![parse_quote!(T)],
+            keys: vec![],
+        };
 
-        let res = build_interface_getter(
-            &interface_name,
-            Some(&generic_params),
-            Some(&generic_idents),
-        );
+        let res = build_interface_getter(&interface_name, Some(&generic_scheme));
 
         let expected = quote! {
             pub(super) fn interface<T, const C: u32>() -> MyFunctionInterface<T, C> {
