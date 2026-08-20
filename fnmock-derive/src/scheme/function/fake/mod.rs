@@ -80,10 +80,6 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
                 keys: value.generic_params.iter().map(|g| g.key.clone()).collect(),
             })
         };
-        let accessor_generic_params = generic_scheme
-            .as_ref()
-            .map(|scheme| scheme.params.clone())
-            .unwrap_or_default();
 
         let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
             let generic_idents = &generic_scheme.idents;
@@ -99,7 +95,6 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
                 module_name,
                 display_name,
                 accessor_name,
-                accessor_generic_params,
             },
             store_name,
             fn_closure_trait,
@@ -135,7 +130,6 @@ mod tests {
         );
         assert_eq!(scheme.common.display_name, "get_user");
         assert_eq!(scheme.common.accessor_name.to_string(), "get_user_fake");
-        assert!(scheme.common.accessor_generic_params.is_empty());
         assert_eq!(scheme.store_name.to_string(), "GET_USER_FAKE_STORE");
         assert_eq!(scheme.interface_name.to_string(), "GetUserFakeInterface");
         assert_eq!(
@@ -171,7 +165,6 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["T".to_string()]
         );
-        assert_eq!(scheme.common.accessor_generic_params.len(), 1);
         assert_eq!(
             scheme.interface_type.to_token_stream().to_string(),
             quote::quote!(FooFakeInterface<T>).to_string()

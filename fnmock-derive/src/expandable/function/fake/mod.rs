@@ -42,8 +42,12 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
             module_name,
             display_name,
             accessor_name,
-            accessor_generic_params,
         } = common;
+
+        let accessor_generic_params = generic_scheme
+            .as_ref()
+            .map(|g| g.params.clone())
+            .unwrap_or_default();
 
         Ok(FunctionExpandable {
             vis,
