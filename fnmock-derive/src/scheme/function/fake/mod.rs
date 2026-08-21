@@ -22,8 +22,6 @@ pub struct FunctionFakeScheme {
 
     pub fn_closure_trait: syn::TraitBound,
 
-    pub interface_name: syn::Ident,
-    pub interface_type: syn::Type,
     pub fake_call_values: Vec<CallValue>,
 
     pub generic_scheme: Option<GenericScheme>,
@@ -81,13 +79,6 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
             })
         };
 
-        let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
-            let generic_idents = &generic_scheme.idents;
-            parse_quote! { #interface_name<#(#generic_idents),*> }
-        } else {
-            parse_quote! { #interface_name }
-        };
-
         Ok(FunctionFakeScheme {
             common: FunctionCommonScheme {
                 vis: value.visibility,
@@ -95,11 +86,10 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
                 module_name,
                 display_name,
                 accessor_name,
+                interface_name,
             },
             store_name,
             fn_closure_trait,
-            interface_name,
-            interface_type,
             fake_call_values,
             generic_scheme,
         })
@@ -108,8 +98,6 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
 
 #[cfg(test)]
 mod tests {
-    use quote::ToTokens;
-
     use super::*;
 
     #[test]
@@ -130,12 +118,11 @@ mod tests {
         );
         assert_eq!(scheme.common.display_name, "get_user");
         assert_eq!(scheme.common.accessor_name.to_string(), "get_user_fake");
-        assert_eq!(scheme.store_name.to_string(), "GET_USER_FAKE_STORE");
-        assert_eq!(scheme.interface_name.to_string(), "GetUserFakeInterface");
         assert_eq!(
-            scheme.interface_type.to_token_stream().to_string(),
-            quote::quote!(GetUserFakeInterface).to_string()
+            scheme.common.interface_name.to_string(),
+            "GetUserFakeInterface"
         );
+        assert_eq!(scheme.store_name.to_string(), "GET_USER_FAKE_STORE");
         assert_eq!(scheme.fake_call_values.len(), 1);
         assert!(scheme.generic_scheme.is_none());
     }
@@ -164,10 +151,6 @@ mod tests {
                 .map(|i| i.to_string())
                 .collect::<Vec<_>>(),
             vec!["T".to_string()]
-        );
-        assert_eq!(
-            scheme.interface_type.to_token_stream().to_string(),
-            quote::quote!(FooFakeInterface<T>).to_string()
         );
     }
 

@@ -1,3 +1,5 @@
+use syn::parse_quote;
+
 use crate::{
     expandable::function::{
         FunctionExpandable,
@@ -29,8 +31,6 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
         let FunctionFakeScheme {
             common,
             store_name,
-            interface_name,
-            interface_type,
             fn_closure_trait,
             fake_call_values,
             generic_scheme,
@@ -42,12 +42,20 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
             module_name,
             display_name,
             accessor_name,
+            interface_name,
         } = common;
 
         let accessor_generic_params = generic_scheme
             .as_ref()
             .map(|g| g.params.clone())
             .unwrap_or_default();
+
+        let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
+            let generic_idents = &generic_scheme.idents;
+            parse_quote! { #interface_name<#(#generic_idents),*> }
+        } else {
+            parse_quote! { #interface_name }
+        };
 
         Ok(FunctionExpandable {
             vis,

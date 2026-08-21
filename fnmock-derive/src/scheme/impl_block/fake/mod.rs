@@ -36,8 +36,6 @@ pub struct ImplFakeMethodScheme {
 
     pub fn_closure_trait: syn::TraitBound,
 
-    pub interface_name: syn::Ident,
-    pub interface_type: syn::Type,
     pub fake_call_values: Vec<CallValue>,
 
     /// The struct's and method's generics, combined.
@@ -109,26 +107,18 @@ fn build_method_scheme(
 
     let generic_scheme = build_generic_scheme(&combined_generic_param_infos);
 
-    let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
-        let generic_idents = &generic_scheme.idents;
-        parse_quote! { #interface_name<#(#generic_idents),*> }
-    } else {
-        parse_quote! { #interface_name }
-    };
-
     Ok(ImplFakeMethodScheme {
         common: ImplCommonMethodScheme {
             vis: visibility,
             method_name,
             accessor_name,
-            method_generic_params,
             module_name,
             display_name,
+            interface_name,
+            method_generic_params,
         },
         store_name,
         fn_closure_trait,
-        interface_name,
-        interface_type,
         fake_call_values,
         generic_scheme,
     })
@@ -164,16 +154,12 @@ mod tests {
         assert_eq!(method.common.accessor_name.to_string(), "get_user_fake");
         assert!(method.common.method_generic_params.is_empty());
         assert_eq!(
-            method.store_name.to_string(),
-            "USER_SERVICE_GET_USER_FAKE_STORE"
-        );
-        assert_eq!(
-            method.interface_name.to_string(),
+            method.common.interface_name.to_string(),
             "UserServiceGetUserFakeInterface"
         );
         assert_eq!(
-            method.interface_type.to_token_stream().to_string(),
-            quote::quote!(UserServiceGetUserFakeInterface).to_string()
+            method.store_name.to_string(),
+            "USER_SERVICE_GET_USER_FAKE_STORE"
         );
         // The receiver (`self`) plus the one declared parameter.
         assert_eq!(method.fake_call_values.len(), 2);
@@ -230,10 +216,6 @@ mod tests {
         // The struct's generics are already in scope from the enclosing `impl<..>` block, so the
         // method's own (empty) generic params are what's redeclared on the accessor function.
         assert!(method.common.method_generic_params.is_empty());
-        assert_eq!(
-            method.interface_type.to_token_stream().to_string(),
-            quote::quote!(FooBarFakeInterface<S>).to_string()
-        );
     }
 
     #[test]
@@ -293,10 +275,6 @@ mod tests {
         // Only the method's own generics get redeclared on the accessor; the struct's are already
         // in scope from the enclosing `impl<..>` block.
         assert_eq!(method.common.method_generic_params.len(), 1);
-        assert_eq!(
-            method.interface_type.to_token_stream().to_string(),
-            quote::quote!(FooBarFakeInterface<S, M>).to_string()
-        );
     }
 
     #[test]

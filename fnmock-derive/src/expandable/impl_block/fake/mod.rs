@@ -1,3 +1,5 @@
+use syn::parse_quote;
+
 use crate::{
     expandable::impl_block::{
         ImplExpandable, ImplMethodExpandable,
@@ -56,14 +58,20 @@ fn create_impl_method_expandable(scheme: ImplFakeMethodScheme) -> ImplMethodExpa
                 method_generic_params,
                 module_name,
                 display_name,
+                interface_name,
             },
         store_name,
         fn_closure_trait,
-        interface_name,
-        interface_type,
         fake_call_values,
         generic_scheme,
     } = scheme;
+
+    let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
+        let generic_idents = &generic_scheme.idents;
+        parse_quote! { #interface_name<#(#generic_idents),*> }
+    } else {
+        parse_quote! { #interface_name }
+    };
 
     ImplMethodExpandable {
         vis,
@@ -119,14 +127,10 @@ mod tests {
                 method_generic_params: vec![],
                 module_name,
                 display_name: "my_method".to_string(),
+                interface_name: interface_name.clone(),
             },
             store_name,
             fn_closure_trait: parse_quote!(Fn() -> i32),
-            interface_name: interface_name.clone(),
-            interface_type: syn::Type::Path(syn::TypePath {
-                qself: None,
-                path: interface_name.into(),
-            }),
             fake_call_values: vec![],
             generic_scheme: None,
         }
@@ -175,7 +179,6 @@ mod tests {
             parse_quote!(MY_METHOD_STORE),
             parse_quote!(MyMethodInterface),
         );
-        scheme.interface_type = parse_quote!(MyMethodInterface<S>);
         scheme.generic_scheme = Some(GenericScheme {
             params: vec![parse_quote!(S: 'static)],
             idents: vec![parse_quote!(S)],
