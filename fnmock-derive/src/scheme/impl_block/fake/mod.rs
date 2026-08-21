@@ -21,7 +21,8 @@ pub struct ImplFakeScheme {
     pub common: ImplCommonScheme,
 
     /// The order of the methods must be preserved from the original impl block.
-    pub methods: Vec<ImplFakeMethodScheme>,
+    /// (method_name, method_info)
+    pub methods: Vec<(syn::Ident, ImplFakeMethodScheme)>,
 }
 
 pub struct ImplFakeMethodScheme {
@@ -63,7 +64,7 @@ fn build_method_scheme(
     struct_name: &syn::TypePath,
     struct_generic_param_infos: &[GenericParamInfo],
     method: ImplMethodInfo,
-) -> syn::Result<ImplFakeMethodScheme> {
+) -> syn::Result<(syn::Ident, ImplFakeMethodScheme)> {
     let ImplMethodInfo {
         method_name,
         visibility,
@@ -99,21 +100,23 @@ fn build_method_scheme(
 
     let generic_scheme = build_generic_scheme(&combined_generic_param_infos);
 
-    Ok(ImplFakeMethodScheme {
-        common: ImplCommonMethodScheme {
-            vis: visibility,
-            method_name,
-            accessor_name,
-            module_name,
-            display_name,
-            interface_name,
-            generic_scheme,
-            method_generic_params,
+    Ok((
+        method_name,
+        ImplFakeMethodScheme {
+            common: ImplCommonMethodScheme {
+                vis: visibility,
+                accessor_name,
+                module_name,
+                display_name,
+                interface_name,
+                generic_scheme,
+                method_generic_params,
+            },
+            store_name,
+            fn_closure_trait,
+            fake_call_values,
         },
-        store_name,
-        fn_closure_trait,
-        fake_call_values,
-    })
+    ))
 }
 
 #[cfg(test)]
@@ -138,24 +141,25 @@ mod tests {
 
         assert_eq!(scheme.methods.len(), 1);
         let method = &scheme.methods[0];
+        assert_eq!(method.0.to_string(), "get_user");
         assert_eq!(
-            method.common.module_name.to_string(),
+            method.1.common.module_name.to_string(),
             "user_service__get_user_fake_module"
         );
-        assert_eq!(method.common.display_name, "get_user");
-        assert_eq!(method.common.accessor_name.to_string(), "get_user_fake");
-        assert!(method.common.method_generic_params.is_empty());
-        assert!(method.common.generic_scheme.is_none());
+        assert_eq!(method.1.common.display_name, "get_user");
+        assert_eq!(method.1.common.accessor_name.to_string(), "get_user_fake");
+        assert!(method.1.common.method_generic_params.is_empty());
+        assert!(method.1.common.generic_scheme.is_none());
         assert_eq!(
-            method.common.interface_name.to_string(),
+            method.1.common.interface_name.to_string(),
             "UserServiceGetUserFakeInterface"
         );
         assert_eq!(
-            method.store_name.to_string(),
+            method.1.store_name.to_string(),
             "USER_SERVICE_GET_USER_FAKE_STORE"
         );
         // The receiver (`self`) plus the one declared parameter.
-        assert_eq!(method.fake_call_values.len(), 2);
+        assert_eq!(method.1.fake_call_values.len(), 2);
     }
 
     #[test]
@@ -171,13 +175,18 @@ mod tests {
         let scheme = ImplFakeScheme::try_from(info).expect("conversion should succeed");
 
         assert_eq!(scheme.methods.len(), 2);
-        assert_eq!(scheme.methods[0].common.display_name, "get_user");
-        assert_eq!(scheme.methods[1].common.display_name, "save_user");
+        assert_eq!(scheme.methods[0].0.to_string(), "get_user");
+        assert_eq!(scheme.methods[1].0.to_string(), "save_user");
+        assert_eq!(scheme.methods[0].1.common.display_name, "get_user");
+        assert_eq!(scheme.methods[1].1.common.display_name, "save_user");
         assert_ne!(
-            scheme.methods[0].common.module_name,
-            scheme.methods[1].common.module_name
+            scheme.methods[0].1.common.module_name,
+            scheme.methods[1].1.common.module_name
         );
-        assert_ne!(scheme.methods[0].store_name, scheme.methods[1].store_name);
+        assert_ne!(
+            scheme.methods[0].1.store_name,
+            scheme.methods[1].1.store_name
+        );
     }
 
     #[test]
@@ -193,6 +202,7 @@ mod tests {
 
         let method = &scheme.methods[0];
         let generic_scheme = method
+            .1
             .common
             .generic_scheme
             .as_ref()
@@ -208,7 +218,7 @@ mod tests {
         );
         // The struct's generics are already in scope from the enclosing `impl<..>` block, so the
         // method's own (empty) generic params are what's redeclared on the accessor function.
-        assert!(method.common.method_generic_params.is_empty());
+        assert!(method.1.common.method_generic_params.is_empty());
     }
 
     #[test]
@@ -225,12 +235,13 @@ mod tests {
 
         let method = &scheme.methods[0];
         let generic_scheme = method
+            .1
             .common
             .generic_scheme
             .as_ref()
             .expect("expected generic_scheme to be Some");
         assert_eq!(generic_scheme.params.len(), 1);
-        assert_eq!(method.common.method_generic_params.len(), 1);
+        assert_eq!(method.1.common.method_generic_params.len(), 1);
         assert_eq!(
             generic_scheme
                 .idents
@@ -254,6 +265,7 @@ mod tests {
 
         let method = &scheme.methods[0];
         let generic_scheme = method
+            .1
             .common
             .generic_scheme
             .as_ref()
@@ -269,7 +281,7 @@ mod tests {
         );
         // Only the method's own generics get redeclared on the accessor; the struct's are already
         // in scope from the enclosing `impl<..>` block.
-        assert_eq!(method.common.method_generic_params.len(), 1);
+        assert_eq!(method.1.common.method_generic_params.len(), 1);
     }
 
     #[test]
@@ -286,6 +298,7 @@ mod tests {
 
         let method = &scheme.methods[0];
         let generic_scheme = method
+            .1
             .common
             .generic_scheme
             .as_ref()

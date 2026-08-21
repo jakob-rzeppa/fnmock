@@ -7,7 +7,6 @@ pub struct ImplCommonScheme {
 pub struct ImplCommonMethodScheme {
     pub vis: syn::Visibility,
 
-    pub method_name: syn::Ident,
     pub accessor_name: syn::Ident,
     pub module_name: syn::Ident,
     pub display_name: String,
