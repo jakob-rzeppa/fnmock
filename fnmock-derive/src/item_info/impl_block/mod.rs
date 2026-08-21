@@ -93,9 +93,7 @@ fn extract_single_item_impl_info_for_method(
     if let Some(const_token) = &method.sig.constness {
         return Err(syn::Error::new_spanned(
             const_token,
-            format!(
-                "The macro does not support const fn. The code fnmock injects cannot run in a const context."
-            ),
+            "The macro does not support const fn. The code fnmock injects cannot run in a const context.".to_string(),
         ));
     }
 

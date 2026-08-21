@@ -48,9 +48,7 @@ pub fn extract_params(
                         return Err(
                             syn::Error::new_spanned(
                                 receiver,
-                                format!(
-                                    "The macro found a `self` receiver on a free function. `self` receivers are only supported on methods inside an inherent impl block."
-                                )
+                                "The macro found a `self` receiver on a free function. `self` receivers are only supported on methods inside an inherent impl block.".to_string()
                             )
                         );
                     }

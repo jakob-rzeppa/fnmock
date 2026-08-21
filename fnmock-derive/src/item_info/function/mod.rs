@@ -40,9 +40,7 @@ impl TryFrom<syn::ItemFn> for FunctionInfo {
         if let Some(const_token) = &item_fn.sig.constness {
             return Err(syn::Error::new_spanned(
                 const_token,
-                format!(
-                    "The macro does not support const fn. The code fnmock injects cannot run in a const context."
-                ),
+                "The macro does not support const fn. The code fnmock injects cannot run in a const context.".to_string(),
             ));
         }
 

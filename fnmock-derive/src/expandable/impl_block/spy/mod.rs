@@ -3,7 +3,7 @@ use crate::{expandable::impl_block::ImplExpandable, scheme::impl_block::spy::Imp
 impl TryFrom<ImplSpyScheme> for ImplExpandable {
     type Error = syn::Error;
 
-    fn try_from(value: ImplSpyScheme) -> Result<Self, Self::Error> {
+    fn try_from(_value: ImplSpyScheme) -> Result<Self, Self::Error> {
         todo!()
     }
 }

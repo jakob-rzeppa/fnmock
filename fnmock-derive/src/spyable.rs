@@ -10,13 +10,13 @@ pub fn handle_spyable(
         Ok(syn::Item::Fn(item_fn)) => execute::<FunctionSpyStrategy>(item_fn),
         Ok(syn::Item::Impl(item_impl)) => execute::<ImplSpyStrategy>(item_impl),
         Ok(item) => {
-            return Err(syn::Error::new_spanned(
+            Err(syn::Error::new_spanned(
                 item,
                 "The #[spyable] attribute can only be applied to functions and impl blocks.",
-            ));
+            ))
         }
         Err(e) => {
-            return Err(e);
+            Err(e)
         }
     }
 }

@@ -1,4 +1,3 @@
-use syn::parse_quote;
 
 use crate::{
     item_info::{call_value::CallValue, function::FunctionInfo},
@@ -97,6 +96,7 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use syn::parse_quote;
 
     #[test]
     fn test_standalone_non_generic_function() {

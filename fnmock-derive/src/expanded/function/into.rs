@@ -2,13 +2,13 @@ use quote::quote;
 
 use crate::expanded::function::FunctionExpanded;
 
-impl Into<proc_macro2::TokenStream> for FunctionExpanded {
-    fn into(self) -> proc_macro2::TokenStream {
+impl From<FunctionExpanded> for proc_macro2::TokenStream {
+    fn from(val: FunctionExpanded) -> Self {
         let FunctionExpanded {
             fn_with_inline_call,
             accessor_fn,
             module,
-        } = self;
+        } = val;
 
         quote! {
             #fn_with_inline_call

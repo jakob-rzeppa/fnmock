@@ -10,13 +10,13 @@ pub fn handle_fakeable(
         Ok(syn::Item::Fn(item_fn)) => execute::<FunctionFakeStrategy>(item_fn),
         Ok(syn::Item::Impl(item_impl)) => execute::<ImplFakeStrategy>(item_impl),
         Ok(item) => {
-            return Err(syn::Error::new_spanned(
+            Err(syn::Error::new_spanned(
                 item,
                 "The #[fakeable] attribute can only be applied to functions and impl blocks.",
-            ));
+            ))
         }
         Err(e) => {
-            return Err(e);
+            Err(e)
         }
     }
 }
