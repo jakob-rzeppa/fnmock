@@ -23,8 +23,6 @@ pub struct FunctionFakeScheme {
     pub fn_closure_trait: syn::TraitBound,
 
     pub fake_call_values: Vec<CallValue>,
-
-    pub generic_scheme: Option<GenericScheme>,
 }
 
 impl TryFrom<FunctionInfo> for FunctionFakeScheme {
@@ -87,11 +85,11 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
                 display_name,
                 accessor_name,
                 interface_name,
+                generic_scheme,
             },
             store_name,
             fn_closure_trait,
             fake_call_values,
-            generic_scheme,
         })
     }
 }
@@ -122,9 +120,9 @@ mod tests {
             scheme.common.interface_name.to_string(),
             "GetUserFakeInterface"
         );
+        assert!(scheme.common.generic_scheme.is_none());
         assert_eq!(scheme.store_name.to_string(), "GET_USER_FAKE_STORE");
         assert_eq!(scheme.fake_call_values.len(), 1);
-        assert!(scheme.generic_scheme.is_none());
     }
 
     #[test]
@@ -140,6 +138,7 @@ mod tests {
             .expect("conversion should succeed for a generic function");
 
         let generic_scheme = scheme
+            .common
             .generic_scheme
             .as_ref()
             .expect("expected generic_scheme to be Some");
@@ -167,6 +166,7 @@ mod tests {
             .expect("conversion should succeed for a const-generic function");
 
         let generic_scheme = scheme
+            .common
             .generic_scheme
             .as_ref()
             .expect("expected Some for a generic function, even with only const generics");

@@ -29,21 +29,20 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
 
     fn try_from(value: FunctionFakeScheme) -> Result<Self, Self::Error> {
         let FunctionFakeScheme {
-            common,
+            common:
+                FunctionCommonScheme {
+                    vis,
+                    original,
+                    module_name,
+                    display_name,
+                    accessor_name,
+                    interface_name,
+                    generic_scheme,
+                },
             store_name,
             fn_closure_trait,
             fake_call_values,
-            generic_scheme,
         } = value;
-
-        let FunctionCommonScheme {
-            vis,
-            original,
-            module_name,
-            display_name,
-            accessor_name,
-            interface_name,
-        } = common;
 
         let accessor_generic_params = generic_scheme
             .as_ref()

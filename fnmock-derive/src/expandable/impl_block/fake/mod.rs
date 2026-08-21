@@ -55,15 +55,15 @@ fn create_impl_method_expandable(scheme: ImplFakeMethodScheme) -> ImplMethodExpa
                 vis,
                 method_name: _,
                 accessor_name,
-                method_generic_params,
                 module_name,
                 display_name,
                 interface_name,
+                generic_scheme,
+                method_generic_params,
             },
         store_name,
         fn_closure_trait,
         fake_call_values,
-        generic_scheme,
     } = scheme;
 
     let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
@@ -128,11 +128,11 @@ mod tests {
                 module_name,
                 display_name: "my_method".to_string(),
                 interface_name: interface_name.clone(),
+                generic_scheme: None,
             },
             store_name,
             fn_closure_trait: parse_quote!(Fn() -> i32),
             fake_call_values: vec![],
-            generic_scheme: None,
         }
     }
 
@@ -179,7 +179,7 @@ mod tests {
             parse_quote!(MY_METHOD_STORE),
             parse_quote!(MyMethodInterface),
         );
-        scheme.generic_scheme = Some(GenericScheme {
+        scheme.common.generic_scheme = Some(GenericScheme {
             params: vec![parse_quote!(S: 'static)],
             idents: vec![parse_quote!(S)],
             idents_without_const_generics: vec![parse_quote!(S)],

@@ -1,5 +1,3 @@
-use syn::parse_quote;
-
 use crate::{
     item_info::{
         call_value::CallValue,
@@ -7,10 +5,7 @@ use crate::{
         impl_block::{ImplBlockInfo, ImplMethodInfo},
     },
     scheme::{
-        common::{
-            fn_closure_trait::build_fn_closure_trait,
-            generic_scheme::{GenericScheme, build_generic_scheme},
-        },
+        common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::build_generic_scheme},
         impl_block::{
             common::{ImplCommonMethodScheme, ImplCommonScheme},
             fake::names::{
@@ -37,9 +32,6 @@ pub struct ImplFakeMethodScheme {
     pub fn_closure_trait: syn::TraitBound,
 
     pub fake_call_values: Vec<CallValue>,
-
-    /// The struct's and method's generics, combined.
-    pub generic_scheme: Option<GenericScheme>,
 }
 
 impl TryFrom<ImplBlockInfo> for ImplFakeScheme {
@@ -115,18 +107,18 @@ fn build_method_scheme(
             module_name,
             display_name,
             interface_name,
+            generic_scheme,
             method_generic_params,
         },
         store_name,
         fn_closure_trait,
         fake_call_values,
-        generic_scheme,
     })
 }
 
 #[cfg(test)]
 mod tests {
-    use quote::ToTokens;
+    use syn::parse_quote;
 
     use super::*;
 
@@ -153,6 +145,7 @@ mod tests {
         assert_eq!(method.common.display_name, "get_user");
         assert_eq!(method.common.accessor_name.to_string(), "get_user_fake");
         assert!(method.common.method_generic_params.is_empty());
+        assert!(method.common.generic_scheme.is_none());
         assert_eq!(
             method.common.interface_name.to_string(),
             "UserServiceGetUserFakeInterface"
@@ -163,7 +156,6 @@ mod tests {
         );
         // The receiver (`self`) plus the one declared parameter.
         assert_eq!(method.fake_call_values.len(), 2);
-        assert!(method.generic_scheme.is_none());
     }
 
     #[test]
@@ -201,6 +193,7 @@ mod tests {
 
         let method = &scheme.methods[0];
         let generic_scheme = method
+            .common
             .generic_scheme
             .as_ref()
             .expect("expected generic_scheme to be Some");
@@ -232,6 +225,7 @@ mod tests {
 
         let method = &scheme.methods[0];
         let generic_scheme = method
+            .common
             .generic_scheme
             .as_ref()
             .expect("expected generic_scheme to be Some");
@@ -260,6 +254,7 @@ mod tests {
 
         let method = &scheme.methods[0];
         let generic_scheme = method
+            .common
             .generic_scheme
             .as_ref()
             .expect("expected generic_scheme to be Some");
@@ -291,6 +286,7 @@ mod tests {
 
         let method = &scheme.methods[0];
         let generic_scheme = method
+            .common
             .generic_scheme
             .as_ref()
             .expect("expected Some for a generic method, even with only const generics");
