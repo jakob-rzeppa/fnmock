@@ -345,9 +345,12 @@ mod tests {
 
         let scheme = FunctionSpyScheme::try_from(info).expect("conversion should succeed");
 
+        // `Ref<>` (angle brackets kept, empty) not bare `Ref`: rustfmt normalizes an empty
+        // `<>` away inside `quote!`/`parse_quote!` calls, so the expected value is written as
+        // a plain string here rather than `quote::quote!(Ref<>).to_string()`.
         assert_eq!(
             scheme.param_types[0].to_token_stream().to_string(),
-            quote::quote!(Ref).to_string()
+            "Ref < >"
         );
         assert_eq!(
             scheme.params_tuple_types[0].to_token_stream().to_string(),

@@ -1,9 +1,3 @@
-//! References nested inside containers (`Option<&T>`, `Vec<&T>`, `&[T]`, tuples of
-//! references), as parameters and return values. Bare/lifetime'd references (`&str`) are
-//! covered by `reference.rs` + the lifetime generics; these pin the container-nested cases,
-//! whose behavior was previously untested. The elided lifetimes make the generated closure
-//! trait higher-ranked (e.g. `for<'a> Fn(Option<&'a str>) -> String`).
-
 #[fnmock::fakeable]
 fn option_ref_param(a: Option<&str>) -> String {
     format!("Real {}", a.unwrap_or("none"))
