@@ -11,8 +11,6 @@ pub struct FunctionExpandable {
 
     pub accessor_name: syn::Ident,
     pub accessor_generic_params: Vec<syn::GenericParam>,
-
-    /// The type with generics
     pub interface_type: syn::Type,
 
     pub module_name: syn::Ident,

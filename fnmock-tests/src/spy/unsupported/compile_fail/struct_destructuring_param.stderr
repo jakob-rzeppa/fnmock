@@ -1,0 +1,5 @@
+error: Struct destructuring patterns are not supported for call values
+  --> src/spy/unsupported/compile_fail/struct_destructuring_param.rs:10:31
+   |
+10 | fn struct_destructuring_param(Point { x, y }: Point) {
+   |                               ^^^^^^^^^^^^^^

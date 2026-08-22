@@ -41,9 +41,12 @@ pub fn extract_generic_param_infos(generics: &syn::Generics) -> syn::Result<Vec<
     // This makes it easier to generate the code, because we don't have to worry about where bounds separately.
     merge_where_bounds_into_type_params(generics, &mut generic_params);
 
-    // Check if any of the type parameters have a lifetime bound. If so, we check if it is static. If not we return an error, because we don't support non-static lifetimes in generic parameters for fakeable functions.
+    // Every type parameter must carry an explicit 'static bound: type parameters are keyed by
+    // `TypeId`, which requires it. A non-static lifetime bound is rejected outright; the absence
+    // of any lifetime bound is rejected too, since it's just as unable to satisfy `TypeId::of`.
     for generic_param in &generic_params {
         if let syn::GenericParam::Type(type_param) = generic_param {
+            let mut has_static_bound = false;
             for bound in &type_param.bounds {
                 if let syn::TypeParamBound::Lifetime(lifetime) = bound {
                     if lifetime.ident != "static" {
@@ -55,7 +58,17 @@ pub fn extract_generic_param_infos(generics: &syn::Generics) -> syn::Result<Vec<
                             ),
                         ));
                     }
+                    has_static_bound = true;
                 }
+            }
+            if !has_static_bound {
+                return Err(syn::Error::new_spanned(
+                    type_param,
+                    format!(
+                        "Generic parameter '{}' has no 'static bound. Type parameters are keyed by TypeId, which requires 'static; add an explicit `{}: 'static` bound.",
+                        type_param.ident, type_param.ident
+                    ),
+                ));
             }
         }
     }
@@ -189,7 +202,7 @@ mod tests {
 
     #[test]
     fn test_single_type_param() {
-        let generics: syn::Generics = syn::parse_quote!(<T>);
+        let generics: syn::Generics = syn::parse_quote!(<T: 'static>);
 
         let result = extract_generic_param_infos(&generics).unwrap();
 
@@ -236,7 +249,7 @@ mod tests {
 
     #[test]
     fn test_mixed_type_and_const_params_preserve_order() {
-        let generics: syn::Generics = syn::parse_quote!(<T, const N: usize>);
+        let generics: syn::Generics = syn::parse_quote!(<T: 'static, const N: usize>);
 
         let result = extract_generic_param_infos(&generics).unwrap();
 
@@ -262,7 +275,7 @@ mod tests {
 
     #[test]
     fn test_multiple_type_params_preserve_order() {
-        let generics: syn::Generics = syn::parse_quote!(<A, B>);
+        let generics: syn::Generics = syn::parse_quote!(<A: 'static, B: 'static>);
 
         let result = extract_generic_param_infos(&generics).unwrap();
 
@@ -271,7 +284,7 @@ mod tests {
 
     #[test]
     fn test_skips_lifetime_params() {
-        let generics: syn::Generics = syn::parse_quote!(<'a, T>);
+        let generics: syn::Generics = syn::parse_quote!(<'a, T: 'static>);
 
         let result = extract_generic_param_infos(&generics).unwrap();
 
@@ -281,6 +294,24 @@ mod tests {
     #[test]
     fn test_non_static_lifetime_bound_is_rejected() {
         let generics: syn::Generics = syn::parse_quote!(<'a, T: 'a>);
+
+        let result = extract_generic_param_infos(&generics);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_type_param_without_a_static_bound_is_rejected() {
+        let generics: syn::Generics = syn::parse_quote!(<T>);
+
+        let result = extract_generic_param_infos(&generics);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_type_param_with_only_a_trait_bound_is_rejected() {
+        let generics: syn::Generics = syn::parse_quote!(<T: Clone>);
 
         let result = extract_generic_param_infos(&generics);
 

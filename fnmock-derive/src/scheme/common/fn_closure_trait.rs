@@ -34,7 +34,10 @@ pub fn build_fn_closure_trait(
 }
 
 /// Reject types that cannot appear in a fake's closure trait.
-fn check_type_is_supported(ty: &syn::Type) -> syn::Result<()> {
+///
+/// Also reused by a spy's matcher: `impl Trait` and the inferred type `_` cannot be named in a
+/// `Predicate<..>` bound or a `Fn(..) -> bool` signature either, for the same reason.
+pub(crate) fn check_type_is_supported(ty: &syn::Type) -> syn::Result<()> {
     match ty {
         syn::Type::ImplTrait(_) => Err(syn::Error::new_spanned(
             ty,

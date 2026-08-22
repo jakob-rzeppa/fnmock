@@ -1,0 +1,5 @@
+error: Generic parameter 'T' has no 'static bound. Type parameters are keyed by TypeId, which requires 'static; add an explicit `T: 'static` bound.
+ --> src/spy/unsupported/compile_fail/non_static_type_param.rs:6:26
+  |
+6 | fn non_static_type_param<T>(a: T) {
+  |                          ^

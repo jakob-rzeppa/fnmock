@@ -1,0 +1,5 @@
+error: `impl Trait` is not supported. Please use a generic type parameter instead.
+ --> src/spy/unsupported/compile_fail/impl_trait_param.rs:8:28
+  |
+8 | fn impl_trait_param(value: impl std::fmt::Display) {
+  |                            ^^^^^^^^^^^^^^^^^^^^^^

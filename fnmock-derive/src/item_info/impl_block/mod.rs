@@ -267,7 +267,7 @@ mod tests {
     #[test]
     fn test_struct_generics_are_extracted_once_not_once_per_method() {
         let item_impl: syn::ItemImpl = syn::parse_quote! {
-            impl<S> Foo<S> {
+            impl<S: 'static> Foo<S> {
                 fn bar(&self, x: S) {}
                 fn baz(&self, x: S) {}
             }
@@ -289,7 +289,7 @@ mod tests {
     fn test_method_only_generics_do_not_populate_struct_generic_param_infos() {
         let item_impl: syn::ItemImpl = syn::parse_quote! {
             impl Foo {
-                fn bar<M>(&self, x: M) {}
+                fn bar<M: 'static>(&self, x: M) {}
             }
         };
 

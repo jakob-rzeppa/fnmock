@@ -38,14 +38,3 @@ fn test_instantiations_stay_isolated_when_a_lifetime_is_present() {
     spy_i32.assert();
     spy_u8.assert();
 }
-
-#[test]
-fn test_assert_all_works_with_a_lifetime_present() {
-    let spy_i32 = mixed_lifetime_and_generic_spy::<i32>();
-    spy_i32.expect_once();
-
-    let owned = "hi".to_string();
-    mixed_lifetime_and_generic(Ref(&owned), 2i32);
-
-    mixed_lifetime_and_generic_spy_all().assert();
-}

@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 mod fake;
 #[allow(dead_code)]
-// mod spy;
+mod spy;
 
 fn main() {
     println!("=== fnmock Example Project ===");

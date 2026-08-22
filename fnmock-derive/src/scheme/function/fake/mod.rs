@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn test_generic_function_carries_generic_info_through() {
         let item_fn: syn::ItemFn = parse_quote! {
-            fn foo<T>(x: T) -> T {
+            fn foo<T: 'static>(x: T) -> T {
                 x
             }
         };

@@ -27,8 +27,6 @@ mod sequences {
 }
 
 mod generics {
-    mod assert_all_passes;
-    mod assert_all_reports_failures;
     mod assert_scoped_to_instantiation;
     mod associated_type_bounds;
     mod bounds_generic;

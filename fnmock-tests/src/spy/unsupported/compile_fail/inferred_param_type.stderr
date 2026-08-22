@@ -1,0 +1,5 @@
+error: The inferred type `_` is not supported. Please specify the type explicitly.
+ --> src/spy/unsupported/compile_fail/inferred_param_type.rs:4:31
+  |
+4 | fn inferred_param_type(value: _) {
+  |                               ^

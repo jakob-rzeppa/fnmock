@@ -1,0 +1,5 @@
+error: Wildcard patterns are not supported for call values
+ --> src/spy/unsupported/compile_fail/wildcard_param.rs:5:19
+  |
+5 | fn wildcard_param(_: String) {}
+  |                   ^
