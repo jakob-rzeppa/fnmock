@@ -1,4 +1,4 @@
-error: The `#[fakeable]` attribute found a `self` receiver on a free function. `self` receivers are only supported on methods inside an inherent impl block.
+error: The macro found a `self` receiver on a free function. `self` receivers are only supported on methods inside an inherent impl block.
  --> src/fake/unsupported/compile_fail/self_in_free_function.rs:5:18
   |
 5 | fn free_function(self) -> i32 {

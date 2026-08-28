@@ -4,6 +4,8 @@ mod common;
 mod fake;
 #[allow(dead_code)]
 mod spy;
+#[allow(dead_code)]
+mod unsupported;
 
 fn main() {
     println!("=== fnmock Example Project ===");

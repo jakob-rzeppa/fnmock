@@ -1,4 +1,4 @@
-error: The #[fakeable] attribute does not support `impl Trait` in a function signature. Please use a concrete type or a generic type parameter instead.
+error: `impl Trait` is not supported. Please use a generic type parameter instead.
  --> src/fake/unsupported/compile_fail/impl_trait_return.rs:6:38
   |
 6 | fn returns_impl_trait(value: i32) -> impl std::fmt::Display {

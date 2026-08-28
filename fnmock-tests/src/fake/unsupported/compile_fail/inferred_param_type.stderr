@@ -1,4 +1,4 @@
-error: The #[fakeable] attribute does not support the inferred type `_` in a function signature. Please specify the type explicitly.
+error: The inferred type `_` is not supported. Please specify the type explicitly.
  --> src/fake/unsupported/compile_fail/inferred_param_type.rs:5:26
   |
 5 | fn inferred_param(value: _) -> i32 {

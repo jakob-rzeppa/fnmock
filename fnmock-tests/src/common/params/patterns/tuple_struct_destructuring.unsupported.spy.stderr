@@ -1,0 +1,5 @@
+error: Tuple struct destructuring patterns are not supported for call values
+  --> src/common/params/patterns/tuple_struct_destructuring.unsupported.spy.rs:10:31
+   |
+10 | fn tuple_struct_destructuring(Wrapper(inner): Wrapper) {
+   |                               ^^^^^^^^^^^^^^

@@ -13,6 +13,14 @@ mod params {
     mod slice;
     mod smart_pointers;
     mod zero_args;
+
+    mod patterns {
+        mod mutable;
+        mod mutable_nested;
+        mod slice_destructuring;
+        mod tuple_destructuring;
+        mod tuple_destructuring_nested;
+    }
 }
 
 mod returns {

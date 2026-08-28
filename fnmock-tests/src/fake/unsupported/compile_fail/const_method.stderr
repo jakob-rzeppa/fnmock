@@ -1,4 +1,4 @@
-error: The #[fakeable] attribute does not support const fn. The fake lookup fnmock injects cannot run in a const context.
+error: The macro does not support const fn. The code fnmock injects cannot run in a const context.
  --> src/fake/unsupported/compile_fail/const_method.rs:8:5
   |
 8 |     const fn add(value: i32) -> i32 {

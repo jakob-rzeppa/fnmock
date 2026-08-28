@@ -15,7 +15,7 @@ mod fake {
     fn test_by_ref_and_value_fake() {
         by_ref_and_value_fake().setup(|a, b| format!("Fake {}{}", a, b));
         let res = by_ref_and_value("Test".to_string(), " Case");
-        assert_eq!(res, "Fake Test");
+        assert_eq!(res, "Fake Test Case");
     }
 }
 

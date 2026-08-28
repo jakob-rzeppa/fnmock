@@ -29,12 +29,6 @@ mod generics {
     mod unused_generic;
     mod unused_lifetime;
 }
-mod patterns {
-    mod mutable_patterns;
-    mod nested_tuple_destructuring;
-    mod slice_destructuring;
-    mod tuple_destructuring;
-}
 mod special {
     mod async_function;
     mod async_generic_function;
@@ -106,4 +100,4 @@ mod visibility {
 
 // mod attributes;
 
-// mod unsupported;
+mod unsupported;

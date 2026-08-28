@@ -1,5 +1,5 @@
 error: Tuple struct destructuring patterns are not supported for call values
- --> src/fake/unsupported/compile_fail/tuple_struct_destructuring.rs:8:31
+ --> src/common/params/patterns/tuple_struct_destructuring.unsupported.fake.rs:8:31
   |
 8 | fn tuple_struct_destructuring(Wrapper(inner): Wrapper) -> i32 {
   |                               ^^^^^^^^^^^^^^
