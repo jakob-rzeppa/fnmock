@@ -15,13 +15,6 @@ mod generics {
     mod static_lifetime;
     mod unused_lifetime;
 }
-mod special {
-    mod async_function;
-    mod async_generic_function;
-    mod extern_function;
-    mod futures;
-    mod unsafe_function;
-}
 mod trait_based {
     mod auto_traits;
     mod boxed;

@@ -30,6 +30,14 @@ mod returns {
     mod return_unit;
 }
 
+mod special {
+    mod async_function;
+    mod async_generic_function;
+    mod extern_function;
+    mod futures;
+    mod unsafe_function;
+}
+
 mod generics {
     mod associated_type_bounds;
     mod associated_type_equality;
