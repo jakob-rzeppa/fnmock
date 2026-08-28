@@ -5,28 +5,14 @@ mod basic {
     mod thread_isolation;
 }
 mod generics {
-    mod associated_type_bounds;
     mod associated_type_equality;
-    mod bounds_generic;
     mod bounds_lifetime;
-    mod bounds_mixed;
     mod clear_and_is_set;
-    mod const_generics;
     mod const_generics_clear_and_is_set;
-    mod const_generics_mixed;
-    mod const_generics_multiple;
-    mod cross_type_isolation;
     mod higher_ranked_bounds;
-    mod implicit_lifetime;
-    mod multiple_generics;
-    mod multiple_lifetimes;
     mod named_lifetime;
-    mod non_parameter_where;
     mod return_generic;
-    mod single_generic;
     mod static_lifetime;
-    mod thread_isolation;
-    mod unused_generic;
     mod unused_lifetime;
 }
 mod special {

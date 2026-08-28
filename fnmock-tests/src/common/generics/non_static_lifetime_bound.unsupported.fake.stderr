@@ -1,0 +1,5 @@
+error: Non-static lifetime 'a' found in generic parameter 'T'. Only 'static lifetimes are supported in generic parameters for fakeable functions.
+ --> src/common/generics/non_static_lifetime_bound.unsupported.fake.rs:5:19
+  |
+5 | fn bounded<'a, T: 'a + std::fmt::Display>(value: &'a T) -> String {
+  |                   ^^
