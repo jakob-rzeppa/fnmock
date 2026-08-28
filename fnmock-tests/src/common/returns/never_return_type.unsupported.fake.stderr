@@ -1,5 +1,5 @@
 error: The never type `!` is not supported.
- --> src/fake/unsupported/compile_fail/never_return_type.rs:5:33
+ --> src/common/returns/never_return_type.unsupported.fake.rs:5:33
   |
 5 | fn returns_never(flag: bool) -> ! {
   |                                 ^

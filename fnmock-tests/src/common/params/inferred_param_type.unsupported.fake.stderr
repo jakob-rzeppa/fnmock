@@ -1,0 +1,5 @@
+error: The inferred type `_` is not supported. Please specify the type explicitly.
+ --> src/common/params/inferred_param_type.unsupported.fake.rs:5:26
+  |
+5 | fn inferred_param(value: _) -> i32 {
+  |                          ^

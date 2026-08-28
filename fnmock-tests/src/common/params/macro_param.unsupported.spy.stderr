@@ -1,5 +1,5 @@
 error: Macro patterns are not supported for call values
- --> src/fake/unsupported/compile_fail/macro_param.rs:5:18
+ --> src/common/params/macro_param.unsupported.spy.rs:5:18
   |
 5 | fn macro_pattern(m!(): i32) -> i32 {
   |                  ^^^^

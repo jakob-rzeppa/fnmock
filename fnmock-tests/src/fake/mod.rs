@@ -15,12 +15,6 @@ mod generics {
     mod static_lifetime;
     mod unused_lifetime;
 }
-mod trait_based {
-    mod auto_traits;
-    mod boxed;
-    mod referenced;
-    mod referenced_mut;
-}
 
 mod impl_block {
     mod associated_function;

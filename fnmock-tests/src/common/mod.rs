@@ -25,6 +25,7 @@ mod params {
 }
 
 mod returns {
+    mod never_return_type;
     mod return_option;
     mod return_result;
     mod return_unit;
@@ -36,6 +37,14 @@ mod special {
     mod extern_function;
     mod futures;
     mod unsafe_function;
+}
+
+mod traits {
+    mod auto_traits;
+    mod boxed;
+    mod impl_trait_return;
+    mod referenced;
+    mod referenced_mut;
 }
 
 mod generics {
