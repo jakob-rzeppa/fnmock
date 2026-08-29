@@ -133,10 +133,10 @@ mod generics {
 }
 
 mod visibility {
+    mod pub_crate;
+    mod pub_in_path;
+    mod pub_super;
+    mod public;
     mod same_name_isolation;
-    mod standalone_pub;
-    mod standalone_pub_crate;
-    mod standalone_pub_in_path;
-    mod standalone_pub_super;
     mod thread_isolation;
 }

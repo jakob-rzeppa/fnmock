@@ -2,7 +2,7 @@ mod fake {
     mod definitions {
         pub mod inner {
             #[fnmock::fakeable]
-            pub(in crate::common::visibility::standalone_pub_in_path::fake) fn pub_in_path_fn(
+            pub(in crate::common::visibility::pub_in_path::fake) fn pub_in_path_fn(
                 a: String,
             ) -> String {
                 format!("Real {}", a)
@@ -24,7 +24,7 @@ mod spy {
     mod definitions {
         pub mod inner {
             #[fnmock::spyable]
-            pub(in crate::common::visibility::standalone_pub_in_path::spy) fn pub_in_path_fn(
+            pub(in crate::common::visibility::pub_in_path::spy) fn pub_in_path_fn(
                 a: String,
             ) -> String {
                 format!("Real {}", a)
