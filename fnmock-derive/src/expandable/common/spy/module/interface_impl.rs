@@ -11,6 +11,7 @@ use crate::{
 /// For a generic spy, every method is scoped to one combination of generic arguments — the ones
 /// the interface value was obtained with, via `#interface_name::<T>()` — by routing every store
 /// access through [`GenericSpyStore::with_store_mut`](fnmock::generic_spy_store::GenericSpyStore).
+#[allow(clippy::too_many_arguments)]
 pub fn build_interface_impl(
     interface_name: &syn::Ident,
     store_name: &syn::Ident,

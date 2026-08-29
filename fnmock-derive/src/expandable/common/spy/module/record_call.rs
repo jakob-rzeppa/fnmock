@@ -12,6 +12,7 @@ use crate::{
 /// `#params_name` wrapper itself: constructing that wrapper is only legal from inside this
 /// module (its fields aren't `pub`; see [`build_matcher`](super::matcher::build_matcher)'s doc
 /// comment for why), and this is the one place that needs to.
+#[allow(clippy::too_many_arguments)]
 pub fn build_record_call(
     store_name: &syn::Ident,
     matcher_name: &syn::Ident,
