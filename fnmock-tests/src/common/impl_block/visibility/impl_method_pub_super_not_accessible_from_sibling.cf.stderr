@@ -1,0 +1,15 @@
+error[E0599]: no function or associated item named `parent_visible_method_fake` found for struct `MyStruct` in the current scope
+  --> src/common/impl_block/visibility/impl_method_pub_super_not_accessible_from_sibling.cf.rs:21:19
+   |
+ 5 |     pub struct MyStruct;
+   |     ------------------- function or associated item `parent_visible_method_fake` not found for this struct
+...
+21 |         MyStruct::parent_visible_method_fake().setup(|_, a| format!("Fake {}", a));
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `MyStruct`
+   |
+help: there is a method `parent_visible_method` with a similar name, but with different arguments
+  --> src/common/impl_block/visibility/impl_method_pub_super_not_accessible_from_sibling.cf.rs:7:5
+   |
+ 7 |     #[fnmock::fakeable]
+   |     ^^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `fnmock::fakeable` (in Nightly builds, run with -Z macro-backtrace for more info)

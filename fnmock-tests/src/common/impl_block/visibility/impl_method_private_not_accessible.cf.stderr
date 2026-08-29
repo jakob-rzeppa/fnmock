@@ -1,0 +1,8 @@
+error[E0599]: no function or associated item named `private_method_fake` found for struct `MyStruct` in the current scope
+  --> src/common/impl_block/visibility/impl_method_private_not_accessible.cf.rs:20:19
+   |
+ 5 |     pub struct MyStruct;
+   |     ------------------- function or associated item `private_method_fake` not found for this struct
+...
+20 |         MyStruct::private_method_fake().setup(|_, a| format!("Fake {}", a));
+   |                   ^^^^^^^^^^^^^^^^^^^ function or associated item not found in `MyStruct`

@@ -1,0 +1,20 @@
+error[E0425]: cannot find function `private_fn_fake` in module `super::definitions`
+  --> src/common/visibility/standalone_private_not_accessible.cf.rs:14:29
+   |
+ 5 |     #[fnmock::fakeable]
+   |     ------------------- similarly named function `private_fn` defined here
+...
+14 |         super::definitions::private_fn_fake().setup(|a| format!("Fake {}", a));
+   |                             ^^^^^^^^^^^^^^^
+   |
+note: found an item that was configured out
+  --> src/common/visibility/standalone_private_not_accessible.cf.rs:5:5
+   |
+ 5 |     #[fnmock::fakeable]
+   |     ^^^^^^^^^^^^^^^^^^^ the item is gated here
+   = note: this error originates in the attribute macro `fnmock::fakeable` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: a function with a similar name exists
+   |
+14 -         super::definitions::private_fn_fake().setup(|a| format!("Fake {}", a));
+14 +         super::definitions::private_fn().setup(|a| format!("Fake {}", a));
+   |
