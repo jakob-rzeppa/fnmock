@@ -1,5 +1,5 @@
 error: The macro does not support const fn. The code fnmock injects cannot run in a const context.
- --> src/fake/unsupported/compile_fail/const_method.rs:8:5
+ --> src/common/impl_block/special/unsupported_const_method_fake.cf.rs:8:5
   |
 8 |     const fn add(value: i32) -> i32 {
   |     ^^^^^

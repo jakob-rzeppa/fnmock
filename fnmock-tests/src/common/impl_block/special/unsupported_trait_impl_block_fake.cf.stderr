@@ -1,5 +1,5 @@
 error: The macro does not support trait impl blocks (`impl Trait for Type`). Only inherent impl blocks (`impl Type {{ ... }}`) are supported.
-  --> src/fake/unsupported/compile_fail/trait_impl_block.rs:11:6
+  --> src/common/impl_block/special/unsupported_trait_impl_block_fake.cf.rs:11:6
    |
 11 | impl Greet for Greeter {
    |      ^^^^^
