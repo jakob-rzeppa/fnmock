@@ -80,3 +80,12 @@ mod generics {
         mod unused_lifetime;
     }
 }
+
+mod visibility {
+    mod same_name_isolation;
+    mod standalone_pub;
+    mod standalone_pub_crate;
+    mod standalone_pub_in_path;
+    mod standalone_pub_super;
+    mod thread_isolation;
+}
