@@ -66,6 +66,13 @@ mod impl_block {
         mod lifetimes_and_generics;
         mod lifetimes_combined;
     }
+
+    mod visibility {
+        mod impl_method_pub;
+        mod impl_method_pub_crate;
+        mod impl_method_pub_in_path;
+        mod impl_method_pub_super;
+    }
 }
 
 mod returns {
