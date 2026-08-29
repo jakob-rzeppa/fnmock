@@ -1,5 +1,5 @@
 error: Non-static lifetime 'a' found in generic parameter 'T'. Only 'static lifetimes are supported in generic parameters for fakeable functions.
- --> src/common/generics/non_static_lifetime_bound_on_type_param.unsupported.spy.rs:6:51
+ --> src/common/generics/unsupported_non_static_lifetime_bound_on_type_param_spy.cf.rs:6:51
   |
 6 | fn non_static_lifetime_bound_on_type_param<'a, T: 'a>(a: T) {
   |                                                   ^^

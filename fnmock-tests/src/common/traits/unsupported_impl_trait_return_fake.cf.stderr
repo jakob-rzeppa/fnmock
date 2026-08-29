@@ -1,5 +1,5 @@
 error: `impl Trait` is not supported. Please use a generic type parameter instead.
- --> src/common/traits/impl_trait_return.unsupported.fake.rs:6:38
+ --> src/common/traits/unsupported_impl_trait_return_fake.cf.rs:6:38
   |
 6 | fn returns_impl_trait(value: i32) -> impl std::fmt::Display {
   |                                      ^^^^^^^^^^^^^^^^^^^^^^

@@ -1,5 +1,5 @@
 error: `impl Trait` is not supported. Please use a generic type parameter instead.
- --> src/common/traits/impl_trait_param.unsupported.fake.rs:6:28
+ --> src/common/traits/unsupported_impl_trait_param_fake.cf.rs:6:28
   |
 6 | fn takes_impl_trait(value: impl std::fmt::Display) -> String {
   |                            ^^^^^^^^^^^^^^^^^^^^^^

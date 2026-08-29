@@ -1,5 +1,5 @@
 error: Struct destructuring patterns are not supported for call values
-  --> src/common/params/patterns/struct_destructuring_param.unsupported.spy.rs:10:31
+  --> src/common/params/patterns/unsupported_struct_destructuring_param_spy.cf.rs:10:31
    |
 10 | fn struct_destructuring_param(Point { x, y }: Point) {
    |                               ^^^^^^^^^^^^^^

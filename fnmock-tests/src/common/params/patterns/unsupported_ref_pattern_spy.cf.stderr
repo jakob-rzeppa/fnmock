@@ -1,5 +1,5 @@
 error: The `ref` keyword is not supported for call values. Please use the identifier directly without `ref` (e.g. `ident` instead of `ref ident`).
- --> src/common/params/patterns/ref_pattern.unsupported.spy.rs:8:22
+ --> src/common/params/patterns/unsupported_ref_pattern_spy.cf.rs:8:22
   |
 8 | fn reference_pattern(ref value: i32) {
   |                      ^^^^^^^^^
