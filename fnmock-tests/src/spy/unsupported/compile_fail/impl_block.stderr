@@ -1,5 +1,0 @@
-error: The #[spyable] attribute does not support impl blocks yet. Only free functions can be spied on.
- --> src/spy/unsupported/compile_fail/impl_block.rs:6:6
-  |
-6 | impl UserService {
-  |      ^^^^^^^^^^^
