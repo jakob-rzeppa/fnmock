@@ -1,10 +1,9 @@
-//! `#[must_use]` above `#[fnmock::fakeable]` must survive expansion, exercising the same
-//! attribute-preservation path as `deprecated_before_fakeable.rs` for a different attribute.
+//! `#[must_use]` written after `#[fnmock::fakeable]` must survive expansion.
 
 #![deny(unused_must_use)]
 
-#[must_use]
 #[fnmock::fakeable]
+#[must_use]
 fn compute(a: i32) -> i32 {
     a + 1
 }
