@@ -1,9 +1,8 @@
 use syn::parse_quote;
 
 use crate::{
-    expandable::function::{
-        FunctionExpandable,
-        spy::{
+    expandable::{
+        common::spy::{
             inline_call::build_inline_call,
             module::{
                 interface_getter::build_interface_getter, interface_impl::build_interface_impl,
@@ -11,19 +10,10 @@ use crate::{
                 record_call::build_record_call, spy_store::build_spy_store,
             },
         },
+        function::FunctionExpandable,
     },
     scheme::function::{common::FunctionCommonScheme, spy::FunctionSpyScheme},
 };
-
-mod inline_call;
-mod module {
-    pub mod interface_getter;
-    pub mod interface_impl;
-    pub mod interface_struct;
-    pub mod matcher;
-    pub mod record_call;
-    pub mod spy_store;
-}
 
 impl TryFrom<FunctionSpyScheme> for FunctionExpandable {
     type Error = syn::Error;

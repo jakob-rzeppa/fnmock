@@ -1,7 +1,7 @@
 use quote::quote;
 
 use crate::{
-    expandable::function::spy::module::matcher::build_marker_construct,
+    expandable::common::spy::module::matcher::build_marker_construct,
     scheme::common::generic_scheme::GenericScheme,
 };
 
@@ -327,8 +327,7 @@ mod tests {
         assert!(rendered.contains("_marker : :: std :: marker :: PhantomData ,"));
         assert!(rendered.contains("assert_for"));
         assert!(
-            rendered
-                .contains("GenericKeyPart :: Type (:: std :: any :: TypeId :: of :: < T > ())")
+            rendered.contains("GenericKeyPart :: Type (:: std :: any :: TypeId :: of :: < T > ())")
         );
     }
 

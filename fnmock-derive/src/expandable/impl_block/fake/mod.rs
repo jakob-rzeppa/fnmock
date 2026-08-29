@@ -1,9 +1,8 @@
 use syn::parse_quote;
 
 use crate::{
-    expandable::impl_block::{
-        ImplExpandable, ImplMethodExpandable,
-        fake::{
+    expandable::{
+        common::fake::{
             inline_call::build_inline_call,
             module::{
                 fake_store::build_fake_store, implementation_getter::build_implementation_getter,
@@ -11,21 +10,13 @@ use crate::{
                 interface_struct::build_interface_struct,
             },
         },
+        impl_block::{ImplExpandable, ImplMethodExpandable},
     },
     scheme::impl_block::{
         common::{ImplCommonMethodScheme, ImplCommonScheme},
         fake::{ImplFakeMethodScheme, ImplFakeScheme},
     },
 };
-
-mod inline_call;
-mod module {
-    pub mod fake_store;
-    pub mod implementation_getter;
-    pub mod interface_getter;
-    pub mod interface_impl;
-    pub mod interface_struct;
-}
 
 impl TryFrom<ImplFakeScheme> for ImplExpandable {
     type Error = syn::Error;

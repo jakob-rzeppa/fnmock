@@ -1,3 +1,5 @@
+use crate::scheme::common::names::snake_to_pascal_case;
+
 /// Builds the spy module name, e.g. `get_user` -> `get_user_spy_module`.
 pub fn build_module_name(fn_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
@@ -45,18 +47,6 @@ pub fn build_params_name(fn_name: &syn::Ident) -> syn::Ident {
         ),
         proc_macro2::Span::mixed_site(),
     )
-}
-
-fn snake_to_pascal_case(s: &str) -> String {
-    s.split('_')
-        .map(|part| {
-            let mut chars = part.chars();
-            match chars.next() {
-                None => String::new(),
-                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-            }
-        })
-        .collect()
 }
 
 #[cfg(test)]

@@ -41,3 +41,16 @@ pub fn build_generic_scheme(generic_params: &[GenericParamInfo]) -> Option<Gener
         keys,
     })
 }
+
+/// Builds the expression that renders one generic parameter into an instantiation's display
+/// name: the full type name for a type parameter (e.g. `"alloc::string::String"`), or the value
+/// itself for a const parameter (e.g. `"5"`).
+pub fn build_generic_display_fragment(info: &GenericParamInfo) -> syn::Expr {
+    let ident = &info.ident;
+    match &info.param {
+        syn::GenericParam::Const(_) => syn::parse_quote! { #ident.to_string() },
+        // Type params, and lifetimes (which `extract_generic_param_infos` never produces a
+        // `GenericParamInfo` for in the first place).
+        _ => syn::parse_quote! { ::std::any::type_name::<#ident>().to_string() },
+    }
+}

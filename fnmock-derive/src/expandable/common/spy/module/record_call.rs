@@ -1,7 +1,7 @@
 use quote::quote;
 
 use crate::{
-    expandable::function::spy::module::matcher::build_params_marker_construct,
+    expandable::common::spy::module::matcher::build_params_marker_construct,
     scheme::common::generic_scheme::GenericScheme,
 };
 

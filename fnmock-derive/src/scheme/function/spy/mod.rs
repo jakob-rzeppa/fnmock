@@ -1,27 +1,25 @@
 use crate::{
-    item_info::{
-        call_value::CallValue, function::FunctionInfo, generic_param_info::GenericParamInfo,
-    },
+    item_info::{call_value::CallValue, function::FunctionInfo},
     scheme::{
-        common::{fn_closure_trait::check_type_is_supported, generic_scheme::build_generic_scheme},
+        common::{
+            fn_closure_trait::check_type_is_supported,
+            generic_scheme::{build_generic_display_fragment, build_generic_scheme},
+            spy_param::{
+                build_reference_call_value, spy_param_type_for_params_tuple,
+                spy_param_type_with_lifetime_info,
+            },
+        },
         function::{
             common::FunctionCommonScheme,
-            spy::{
-                names::{
-                    build_accessor_name, build_interface_name, build_matcher_name,
-                    build_module_name, build_params_name, build_store_name,
-                },
-                param::{
-                    build_reference_call_value, spy_param_type_for_params_tuple,
-                    spy_param_type_with_lifetime_info,
-                },
+            spy::names::{
+                build_accessor_name, build_interface_name, build_matcher_name, build_module_name,
+                build_params_name, build_store_name,
             },
         },
     },
 };
 
 mod names;
-mod param;
 
 pub struct FunctionSpyScheme {
     pub common: FunctionCommonScheme,
@@ -134,19 +132,6 @@ impl TryFrom<FunctionInfo> for FunctionSpyScheme {
             generic_display_fragments,
             supports_expect,
         })
-    }
-}
-
-/// Builds the expression that renders one generic parameter into an instantiation's display
-/// name: the full type name for a type parameter (e.g. `"alloc::string::String"`), or the value
-/// itself for a const parameter (e.g. `"5"`).
-fn build_generic_display_fragment(info: &GenericParamInfo) -> syn::Expr {
-    let ident = &info.ident;
-    match &info.param {
-        syn::GenericParam::Const(_) => syn::parse_quote! { #ident.to_string() },
-        // Type params, and lifetimes (which `extract_generic_param_infos` never produces a
-        // `GenericParamInfo` for in the first place).
-        _ => syn::parse_quote! { ::std::any::type_name::<#ident>().to_string() },
     }
 }
 
