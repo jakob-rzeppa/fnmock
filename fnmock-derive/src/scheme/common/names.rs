@@ -70,3 +70,36 @@ pub fn pascal_to_snake_case(s: &str) -> String {
     }
     snake
 }
+
+/// Builds a PascalCase name of the form `{Struct}{Method}{suffix}` from the struct path's last
+/// segment and the method name, e.g. `UserService` + `get_user` + `Matcher` ->
+/// `UserServiceGetUserMatcher`.
+///
+/// Only the last segment is used: these names are all emitted inside the method's own module, so
+/// the leading path segments that [`snake_case_path`] needs for collision avoidance would only add
+/// noise here.
+///
+/// # Errors
+///
+/// Returns a spanned error if the struct path has no segments.
+pub fn build_pascal_case_name(
+    struct_name: &syn::TypePath,
+    method_name: &syn::Ident,
+    suffix: &str,
+) -> syn::Result<syn::Ident> {
+    let last_segment = struct_name.path.segments.last().ok_or_else(|| {
+        syn::Error::new_spanned(
+            struct_name,
+            "Struct path has no segments. This is an error in fnmock. Please report this bug.",
+        )
+    })?;
+
+    Ok(syn::Ident::new(
+        &format!(
+            "{}{}{suffix}",
+            last_segment.ident,
+            snake_to_pascal_case(&method_name.to_string())
+        ),
+        proc_macro2::Span::mixed_site(),
+    ))
+}

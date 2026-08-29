@@ -1,20 +1,15 @@
 use crate::{
     item_info::{
-        call_value::CallValue,
         generic_param_info::GenericParamInfo,
         impl_block::{ImplBlockInfo, ImplMethodInfo},
     },
     scheme::{
         common::{
-            fn_closure_trait::check_type_is_supported,
             generic_scheme::{build_generic_display_fragment, build_generic_scheme},
-            spy_param::{
-                build_reference_call_value, spy_param_type_for_params_tuple,
-                spy_param_type_with_lifetime_info,
-            },
+            spy_param::build_spy_params,
         },
         impl_block::{
-            common::{ImplCommonMethodScheme, ImplCommonScheme},
+            common::{ImplCommonMethodScheme, ImplCommonScheme, combine_generic_param_infos},
             spy::names::{
                 build_accessor_name, build_interface_name, build_matcher_name, build_module_name,
                 build_params_name, build_store_name,
@@ -39,7 +34,7 @@ pub struct ImplSpyMethodScheme {
     pub store_name: syn::Ident,
     pub matcher_name: syn::Ident,
     /// The name of the wrapper struct `Params<'a>` is set to; see
-    /// [`build_params_name`](names::build_params_name) for why it exists.
+    /// [`build_params_name`] for why it exists.
     pub params_name: syn::Ident,
 
     /// One identifier per non-receiver parameter, in declaration order. The `self` receiver is
@@ -111,55 +106,10 @@ fn build_method_scheme(
     let params_name = build_params_name(struct_name, &method_name)?;
     let display_name = method_name.to_string();
 
-    let mut param_idents = Vec::with_capacity(param_infos.len());
-    let mut param_types = Vec::with_capacity(param_infos.len());
-    let mut params_tuple_types = Vec::with_capacity(param_infos.len());
-    let mut reference_call_values = Vec::with_capacity(param_infos.len());
-    let mut supports_expect = true;
-    let params_tuple_lifetime: syn::Lifetime = syn::parse_quote!('a);
+    let params = build_spy_params(&param_infos)?;
 
-    for param in &param_infos {
-        let ident = match CallValue::try_from(&param.pat)? {
-            CallValue::Ident(ident) => ident,
-            CallValue::Tuple(_) | CallValue::Slice(_) => {
-                return Err(syn::Error::new_spanned(
-                    &param.pat,
-                    "The #[spyable] attribute only supports plain identifier parameters. This parameter destructures its value, so there is no name to match it under.",
-                ));
-            }
-        };
-
-        // The receiver is not recorded: `self` is not a legal closure-parameter or field name,
-        // and its type (`&Self`, `Pin<&mut Self>`, ...) usually carries a lifetime that would
-        // disable `expect` for the whole method. Only a receiver can be named `self`.
-        if ident == "self" {
-            continue;
-        }
-
-        let (param_type, needs_lifetime) = spy_param_type_with_lifetime_info(&param.ty);
-        check_type_is_supported(&param_type)?;
-        if needs_lifetime {
-            supports_expect = false;
-        }
-
-        reference_call_values.push(build_reference_call_value(&ident, &param.ty));
-        params_tuple_types.push(spy_param_type_for_params_tuple(
-            &param.ty,
-            &params_tuple_lifetime,
-        ));
-        param_idents.push(ident);
-        param_types.push(param_type);
-    }
-
-    let method_generic_params = method_generic_param_infos
-        .iter()
-        .map(|g| g.param.clone())
-        .collect::<Vec<_>>();
-
-    let mut combined_generic_param_infos = struct_generic_param_infos.to_vec();
-    for method_generic_param_info in method_generic_param_infos {
-        combined_generic_param_infos.push(method_generic_param_info);
-    }
+    let (method_generic_params, combined_generic_param_infos) =
+        combine_generic_param_infos(struct_generic_param_infos, method_generic_param_infos);
 
     let generic_scheme = build_generic_scheme(&combined_generic_param_infos);
     let generic_display_fragments = combined_generic_param_infos
@@ -182,12 +132,12 @@ fn build_method_scheme(
             store_name,
             matcher_name,
             params_name,
-            param_idents,
-            param_types,
-            params_tuple_types,
-            reference_call_values,
+            param_idents: params.idents,
+            param_types: params.types,
+            params_tuple_types: params.params_tuple_types,
+            reference_call_values: params.reference_call_values,
             generic_display_fragments,
-            supports_expect,
+            supports_expect: params.supports_expect,
         },
     ))
 }

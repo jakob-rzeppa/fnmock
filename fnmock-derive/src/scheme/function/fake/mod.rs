@@ -1,8 +1,7 @@
-
 use crate::{
     item_info::{call_value::CallValue, function::FunctionInfo},
     scheme::{
-        common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::GenericScheme},
+        common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::build_generic_scheme},
         function::{
             common::FunctionCommonScheme,
             fake::names::{
@@ -48,33 +47,7 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
             .map(|p| CallValue::try_from(&p.pat))
             .collect::<Result<Vec<_>, _>>()?;
 
-        let generic_scheme = if value.generic_params.is_empty() {
-            None
-        } else {
-            let idents_without_const_generics = value
-                .generic_params
-                .iter()
-                .filter_map(|g| match &g.param {
-                    syn::GenericParam::Type(type_param) => Some(type_param.ident.clone()),
-                    _ => None,
-                })
-                .collect::<Vec<_>>();
-
-            Some(GenericScheme {
-                params: value
-                    .generic_params
-                    .iter()
-                    .map(|g| g.param.clone())
-                    .collect(),
-                idents: value
-                    .generic_params
-                    .iter()
-                    .map(|g| g.ident.clone())
-                    .collect(),
-                idents_without_const_generics,
-                keys: value.generic_params.iter().map(|g| g.key.clone()).collect(),
-            })
-        };
+        let generic_scheme = build_generic_scheme(&value.generic_params);
 
         Ok(FunctionFakeScheme {
             common: FunctionCommonScheme {

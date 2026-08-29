@@ -2,6 +2,8 @@
 
 use quote::quote;
 
+use crate::scheme::common::supported_type::check_type_is_supported;
+
 /// Builds a function closure trait (e.g. `Fn(i32, &str) -> bool`) from a list of parameter types
 /// and a return type.
 ///
@@ -31,32 +33,6 @@ pub fn build_fn_closure_trait(
         quote! { for<#(#lifetimes),*> Fn(#(#params),*) #output }
     };
     syn::parse2(fn_trait_tokens)
-}
-
-/// Reject types that cannot appear in a fake's closure trait.
-///
-/// Also reused by a spy's matcher: `impl Trait` and the inferred type `_` cannot be named in a
-/// `Predicate<..>` bound or a `Fn(..) -> bool` signature either, for the same reason.
-pub(crate) fn check_type_is_supported(ty: &syn::Type) -> syn::Result<()> {
-    match ty {
-        syn::Type::ImplTrait(_) => Err(syn::Error::new_spanned(
-            ty,
-            "`impl Trait` is not supported. Please use a generic type parameter instead.",
-        )),
-        syn::Type::Infer(_) => Err(syn::Error::new_spanned(
-            ty,
-            "The inferred type `_` is not supported. Please specify the type explicitly.",
-        )),
-        syn::Type::Macro(_) => Err(syn::Error::new_spanned(
-            ty,
-            "Macros in the function signiture are not supported.",
-        )),
-        syn::Type::Never(_) => Err(syn::Error::new_spanned(
-            ty,
-            "The never type `!` is not supported.",
-        )),
-        _ => Ok(()),
-    }
 }
 
 #[cfg(test)]

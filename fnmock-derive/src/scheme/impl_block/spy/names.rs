@@ -1,4 +1,4 @@
-use crate::scheme::common::names::{snake_case_path, snake_to_pascal_case};
+use crate::scheme::common::names::{build_pascal_case_name, snake_case_path};
 
 /// Builds the spy module name, e.g. `UserService` + `get_user` -> `user_service__get_user_spy_module`.
 pub fn build_module_name(struct_name: &syn::TypePath, method_name: &syn::Ident) -> syn::Ident {
@@ -51,30 +51,6 @@ pub fn build_params_name(
     method_name: &syn::Ident,
 ) -> syn::Result<syn::Ident> {
     build_pascal_case_name(struct_name, method_name, "MatcherParams")
-}
-
-/// Builds a PascalCase name of the form `{Struct}{Method}{suffix}` from the struct path's last
-/// segment and the method name.
-fn build_pascal_case_name(
-    struct_name: &syn::TypePath,
-    method_name: &syn::Ident,
-    suffix: &str,
-) -> syn::Result<syn::Ident> {
-    let last_segment = struct_name.path.segments.last().ok_or_else(|| {
-        syn::Error::new_spanned(
-            struct_name,
-            "Struct path has no segments. This is an error in fnmock. Please report this bug.",
-        )
-    })?;
-
-    Ok(syn::Ident::new(
-        &format!(
-            "{}{}{suffix}",
-            last_segment.ident,
-            snake_to_pascal_case(&method_name.to_string())
-        ),
-        proc_macro2::Span::mixed_site(),
-    ))
 }
 
 #[cfg(test)]

@@ -7,7 +7,7 @@ use crate::{
     scheme::{
         common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::build_generic_scheme},
         impl_block::{
-            common::{ImplCommonMethodScheme, ImplCommonScheme},
+            common::{ImplCommonMethodScheme, ImplCommonScheme, combine_generic_param_infos},
             fake::names::{
                 build_accessor_name, build_interface_name, build_module_name, build_store_name,
             },
@@ -88,15 +88,8 @@ fn build_method_scheme(
         .map(|p| CallValue::try_from(&p.pat))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let method_generic_params = method_generic_param_infos
-        .iter()
-        .map(|g| g.param.clone())
-        .collect::<Vec<_>>();
-
-    let mut combined_generic_param_infos = struct_generic_param_infos.to_vec();
-    for method_generic_param_info in method_generic_param_infos {
-        combined_generic_param_infos.push(method_generic_param_info);
-    }
+    let (method_generic_params, combined_generic_param_infos) =
+        combine_generic_param_infos(struct_generic_param_infos, method_generic_param_infos);
 
     let generic_scheme = build_generic_scheme(&combined_generic_param_infos);
 
