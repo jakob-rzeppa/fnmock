@@ -1,5 +1,6 @@
 mod expectations {
     mod describe;
+    mod expect_availability;
     mod expectf;
     mod global_times;
     mod multiple_independent_expectations;

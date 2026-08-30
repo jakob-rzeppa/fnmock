@@ -44,8 +44,8 @@ pub fn build_interface_impl(
         let instantiation_name = quote! {
             format!("{}::<{}>", #display_name, [#(#generic_display_fragments),*].join(", "))
         };
-        let expect_method = expect_method.map(|(expect_params, expect_construct_fields)| {
-            quote! {
+        let expect_method = match expect_method {
+            Some((expect_params, expect_construct_fields)) => quote! {
                 /// Expect calls whose arguments satisfy one predicate per parameter, for this
                 /// combination of generic arguments.
                 pub fn expect(
@@ -57,8 +57,22 @@ pub fn build_interface_impl(
                         #marker_construct
                     })
                 }
-            }
-        });
+            },
+            None => quote! {
+                #[deprecated(
+                    note = "`.expect()` isn't available on this spy: a parameter's type carries a lifetime \
+                            that can't be matched by a `'static` predicate. Use `.expectf(...)` instead."
+                )]
+                /// Not available on this spy. A parameter's type carries a
+                /// lifetime that can't be matched by a `'static` predicate.
+                /// Use `.expectf(...)` instead.
+                pub fn expect(&self)
+                    -> ::fnmock::expectation_handle::ExpectationHandle<#matcher_type>
+                {
+                    unimplemented!("`.expect()` is not available on this spy; use `.expectf()` instead")
+                }
+            },
+        };
 
         quote! {
             impl<#(#generic_params),*> #interface_name<#(#generic_idents),*> {
@@ -137,8 +151,8 @@ pub fn build_interface_impl(
             }
         }
     } else {
-        let expect_method = expect_method.map(|(expect_params, expect_construct_fields)| {
-            quote! {
+        let expect_method = match expect_method {
+            Some((expect_params, expect_construct_fields)) => quote! {
                 /// Expect calls whose arguments satisfy one predicate per parameter.
                 pub fn expect(
                     &self,
@@ -148,8 +162,22 @@ pub fn build_interface_impl(
                         #(#expect_construct_fields)*
                     })
                 }
-            }
-        });
+            },
+            None => quote! {
+                #[deprecated(
+                    note = "`.expect()` isn't available on this spy: a parameter's type carries a lifetime \
+                            that can't be matched by a `'static` predicate. Use `.expectf(...)` instead."
+                )]
+                /// Not available on this spy. A parameter's type carries a
+                /// lifetime that can't be matched by a `'static` predicate.
+                /// Use `.expectf(...)` instead.
+                pub fn expect(&self)
+                    -> ::fnmock::expectation_handle::ExpectationHandle<#matcher_name>
+                {
+                    unimplemented!("`.expect()` is not available on this spy; use `.expectf()` instead")
+                }
+            },
+        };
 
         quote! {
             impl #interface_name {
