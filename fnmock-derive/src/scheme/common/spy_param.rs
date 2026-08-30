@@ -58,17 +58,34 @@ impl VisitMut for SubstituteLifetimes<'_> {
     }
 }
 
-/// Whether a (post-stripping, pre-elision) type still needs a lifetime
-/// argument once elided — i.e. whether it names a lifetime anywhere other than `'static`.
+/// Whether a (post-stripping, pre-elision) type still needs a lifetime argument once elided —
+/// i.e. whether it names a non-`'static` lifetime, or borrows a trait object whose default
+/// lifetime bound can't safely become `'static`.
 ///
-/// Eliding a lifetime by omission (`Ref<'a>` -> `Ref<>`) only actually works directly inside a
-/// `Fn(..) -> ..` trait's own argument list — that specific position has its own implicit
-/// higher-ranked elision built into the language. Everywhere else a matcher needs to name the
-/// type (a struct field, an associated type, a plain generic argument like `Predicate<Ref<>>`),
-/// an omitted lifetime is a hard error. So a parameter whose type still needs one after
-/// elision can only ever be matched by `expectf` — `expect`'s `Predicate<..>`-based matching has
-/// no lifetime to give it, and is left off the matcher entirely for that function.
+/// Eliding a lifetime by omission (`Ref<'a>` -> `Ref<>`) only works directly inside a
+/// `Fn(..) -> ..` trait's own argument list, which has its own implicit higher-ranked elision
+/// built into the language. Everywhere else a matcher needs to name the type (a struct field, an
+/// associated type, a generic argument like `Predicate<Ref<>>`), an omitted lifetime is a hard
+/// error. So a parameter whose type still needs one after elision can only be matched by
+/// `expectf` — `expect`'s `Predicate<..>`-based matching has no lifetime to give it, and is left
+/// off the matcher entirely for that function.
+///
+/// A bare trait object reference (`&dyn Trait`) has the same problem in disguise: its default
+/// object lifetime bound ties it to the enclosing reference wherever it appears, so a matcher's
+/// `Params<'a>` field legitimately holds a non-`'static` `dyn Trait + 'a`. But `expect`'s
+/// `Predicate<Item>` names `Item` bare, with no enclosing reference to inherit a bound from, so
+/// its default there is `'static` — a bound the borrowed value can't meet. `Box<dyn Trait>` and
+/// friends don't have this problem: with no reference wrapping them, their trait object already
+/// defaults to `'static` wherever it's named, so there's no mismatch to route around.
 pub fn type_needs_a_lifetime_outside_fn_sugar(ty: &syn::Type) -> bool {
+    if is_trait_object_without_explicit_lifetime(ty) {
+        // The type itself is the stripped element of what was, before stripping, a bare
+        // `&dyn Trait`/`&mut dyn Trait` parameter: once re-wrapped in the matcher's own `&'a`,
+        // that outer reference is exactly the enclosing reference this trait object's default
+        // bound would tie itself to.
+        return true;
+    }
+
     struct HasNonStaticLifetime(bool);
 
     impl<'ast> Visit<'ast> for HasNonStaticLifetime {
@@ -77,11 +94,31 @@ pub fn type_needs_a_lifetime_outside_fn_sugar(ty: &syn::Type) -> bool {
                 self.0 = true;
             }
         }
+
+        fn visit_type_reference(&mut self, type_reference: &'ast syn::TypeReference) {
+            if is_trait_object_without_explicit_lifetime(&type_reference.elem) {
+                self.0 = true;
+            }
+            syn::visit::visit_type_reference(self, type_reference);
+        }
     }
 
     let mut visitor = HasNonStaticLifetime(false);
     visitor.visit_type(ty);
     visitor.0
+}
+
+/// Whether `ty` is a `dyn Trait` with no explicit lifetime bound (`dyn Trait`, not
+/// `dyn Trait + 'a`/`dyn Trait + 'static`) — the shape whose default object lifetime bound
+/// depends on where it sits, rather than always being `'static`.
+fn is_trait_object_without_explicit_lifetime(ty: &syn::Type) -> bool {
+    let syn::Type::TraitObject(trait_object) = ty else {
+        return false;
+    };
+    !trait_object
+        .bounds
+        .iter()
+        .any(|bound| matches!(bound, syn::TypeParamBound::Lifetime(_)))
 }
 
 /// Builds the expression that passes a parameter on by shared reference to `internal_record_call`,
@@ -295,6 +332,34 @@ mod tests {
             let ty: syn::Type = syn::parse_quote!([&'a str]);
 
             assert!(type_needs_a_lifetime_outside_fn_sugar(&ty));
+        }
+
+        #[test]
+        fn test_bare_trait_object_without_a_lifetime_bound_needs_one() {
+            let ty: syn::Type = syn::parse_quote!(dyn Describe);
+
+            assert!(type_needs_a_lifetime_outside_fn_sugar(&ty));
+        }
+
+        #[test]
+        fn test_trait_object_reference_nested_in_a_container_needs_one() {
+            let ty: syn::Type = syn::parse_quote!(Vec<&dyn Describe>);
+
+            assert!(type_needs_a_lifetime_outside_fn_sugar(&ty));
+        }
+
+        #[test]
+        fn test_trait_object_with_an_explicit_static_bound_does_not_need_one() {
+            let ty: syn::Type = syn::parse_quote!(dyn Describe + 'static);
+
+            assert!(!type_needs_a_lifetime_outside_fn_sugar(&ty));
+        }
+
+        #[test]
+        fn test_trait_object_wrapped_in_box_does_not_need_one() {
+            let ty: syn::Type = syn::parse_quote!(Box<dyn Describe>);
+
+            assert!(!type_needs_a_lifetime_outside_fn_sugar(&ty));
         }
 
         #[test]

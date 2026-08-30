@@ -43,25 +43,24 @@ mod fake {
     }
 }
 
-// TODO
-// mod spy {
-//     use crate::common::traits::referenced_mut::MutDescribe;
+mod spy {
+    use crate::common::traits::referenced_mut::MutDescribe;
 
-//     #[fnmock::spyable]
-//     fn referenced_mut(value: &mut dyn MutDescribe) -> String {
-//         value.push_suffix(" Real");
-//         value.describe()
-//     }
+    #[fnmock::spyable]
+    fn referenced_mut(value: &mut dyn MutDescribe) -> String {
+        value.push_suffix(" Real");
+        value.describe()
+    }
 
-//     #[test]
-//     fn test_referenced_mut_spy() {
-//         let spy = referenced_mut_spy();
-//         let mut value = "Test".to_string();
-//         spy.expectf(|d| d.describe() == "Test");
+    #[test]
+    fn test_referenced_mut_spy() {
+        let spy = referenced_mut_spy();
+        let mut value = "Test".to_string();
+        spy.expectf(|d| d.describe() == "Test");
 
-//         let result = referenced_mut(&mut value);
-//         assert_eq!(result, "Test Real");
+        let result = referenced_mut(&mut value);
+        assert_eq!(result, "Test Real");
 
-//         spy.assert();
-//     }
-// }
+        spy.assert();
+    }
+}

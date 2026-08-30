@@ -33,24 +33,23 @@ mod fake {
     }
 }
 
-// TODO
-// mod spy {
-//     use crate::common::traits::referenced::Describe;
+mod spy {
+    use crate::common::traits::referenced::Describe;
 
-//     #[fnmock::spyable]
-//     fn referenced(value: &dyn Describe) -> String {
-//         format!("Real {}", value.describe())
-//     }
+    #[fnmock::spyable]
+    fn referenced(value: &dyn Describe) -> String {
+        format!("Real {}", value.describe())
+    }
 
-//     #[test]
-//     fn test_referenced_spy() {
-//         let spy = referenced_spy();
-//         let value = "Test".to_string();
-//         spy.expectf(|d| d.describe() == "Test");
+    #[test]
+    fn test_referenced_spy() {
+        let spy = referenced_spy();
+        let value = "Test".to_string();
+        spy.expectf(|d| d.describe() == "Test");
 
-//         let result = referenced(&value);
-//         assert_eq!(result, "Real Test");
+        let result = referenced(&value);
+        assert_eq!(result, "Real Test");
 
-//         spy.assert();
-//     }
-// }
+        spy.assert();
+    }
+}
