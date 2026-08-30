@@ -1,5 +1,0 @@
-error: The #[fakeable] attribute does not support trait impl blocks (`impl Trait for Type`). Only inherent impl blocks (`impl Type { ... }`) are supported.
-  --> src/fake/unsupported/compile_fail/trait_impl_block.rs:11:6
-   |
-11 | impl Greet for Greeter {
-   |      ^^^^^

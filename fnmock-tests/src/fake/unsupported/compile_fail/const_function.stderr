@@ -1,5 +1,0 @@
-error: The #[fakeable] attribute does not support const fn. The fake lookup fnmock injects cannot run in a const context.
- --> src/fake/unsupported/compile_fail/const_function.rs:5:1
-  |
-5 | const fn const_function(value: i32) -> i32 {
-  | ^^^^^

@@ -1,0 +1,215 @@
+use crate::{
+    expandable::impl_block::ImplExpandable,
+    expanded::impl_block::{
+        ImplExpanded,
+        from::{
+            accessors::{AccessorMethodInfo, build_accessor_impl},
+            modules::build_modules,
+        },
+    },
+};
+
+mod accessors;
+mod modules;
+
+impl TryFrom<ImplExpandable> for ImplExpanded {
+    type Error = syn::Error;
+
+    fn try_from(value: ImplExpandable) -> Result<Self, Self::Error> {
+        let ImplExpandable {
+            original,
+            ref methods,
+        } = value;
+
+        let mut inline_calls: Vec<(syn::Ident, syn::Block)> = Vec::new();
+        for (method_name, method) in methods {
+            inline_calls.push((method_name.clone(), method.inline_call.clone()));
+        }
+        let item_impl = original.into_impl_with_inline_calls(&inline_calls)?;
+
+        let accessor_method_infos = methods
+            .iter()
+            .map(|(_, method)| AccessorMethodInfo {
+                vis: &method.vis,
+                name: &method.accessor_name,
+                method_generic_params: &method.method_generic_params,
+                module_name: &method.module_name,
+                interface_type: &method.interface_type,
+            })
+            .collect::<Vec<AccessorMethodInfo>>();
+        let accessor = build_accessor_impl(
+            &item_impl.generics,
+            &item_impl.self_ty,
+            &accessor_method_infos,
+        );
+
+        let modules_info = methods
+            .iter()
+            .map(|(_, method)| modules::ModuleInfo {
+                vis: &method.vis,
+                name: &method.module_name,
+                parts: &method.module_parts,
+            })
+            .collect::<Vec<modules::ModuleInfo>>();
+        let modules = build_modules(&modules_info);
+
+        Ok(ImplExpanded {
+            impl_with_inline_calls: item_impl,
+            accessor_impl_block: accessor,
+            modules,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use quote::{ToTokens, quote};
+    use syn::parse_quote;
+
+    use super::*;
+    use crate::{expandable::impl_block::ImplMethodExpandable, item_info::original::OriginalImpl};
+
+    #[test]
+    fn test_try_from_impl_expandable_multiple_methods_with_generics() {
+        let item_impl: syn::ItemImpl = parse_quote! {
+            impl<S: Display + 'static> MyStruct<S> {
+                fn method_one(&self) -> i32 {
+                    1
+                }
+
+                pub fn method_two<T: Display + 'static>(&self, t: T) -> String {
+                    format!("{} {}", self.0, t)
+                }
+            }
+        };
+
+        let mut methods = Vec::new();
+        methods.push((
+            parse_quote!(method_one),
+            ImplMethodExpandable {
+                vis: syn::Visibility::Inherited,
+                inline_call: parse_quote!({
+                    inline_call();
+                }),
+                accessor_name: parse_quote!(method_one_fake),
+                method_generic_params: vec![],
+                interface_type: parse_quote!(InterfaceOne<S>),
+                module_name: parse_quote!(method_one_module),
+                module_parts: vec![quote! {
+                    pub fn interface() -> InterfaceOne<S> {
+                        InterfaceOne {}
+                    }
+                }],
+            },
+        ));
+        methods.push((
+            parse_quote!(method_two),
+            ImplMethodExpandable {
+                vis: parse_quote!(pub),
+                inline_call: parse_quote!({
+                    inline_call();
+                }),
+                accessor_name: parse_quote!(method_two_fake),
+                method_generic_params: vec![parse_quote!(T: Display + 'static)],
+                interface_type: parse_quote!(InterfaceTwo<S, T>),
+                module_name: parse_quote!(method_two_module),
+                module_parts: vec![quote! {
+                    pub fn interface() -> InterfaceTwo<S, T> {
+                        InterfaceTwo {}
+                    }
+                }],
+            },
+        ));
+
+        let expandable = ImplExpandable {
+            original: OriginalImpl::new(item_impl),
+            methods,
+        };
+
+        let expanded = ImplExpanded::try_from(expandable).unwrap();
+
+        // The methods are copied in-place, so this order is deterministic.
+        let expected_impl_with_inline_calls: syn::ItemImpl = parse_quote! {
+            impl<S: Display + 'static> MyStruct<S> {
+                fn method_one(&self) -> i32 {
+                    #[cfg(test)]
+                    {
+                        inline_call();
+                    }
+
+                    {
+                        1
+                    }
+                }
+
+                pub fn method_two<T: Display + 'static>(&self, t: T) -> String {
+                    #[cfg(test)]
+                    {
+                        inline_call();
+                    }
+
+                    {
+                        format!("{} {}", self.0, t)
+                    }
+                }
+            }
+        };
+        assert_eq!(
+            expanded
+                .impl_with_inline_calls
+                .to_token_stream()
+                .to_string(),
+            expected_impl_with_inline_calls
+                .to_token_stream()
+                .to_string()
+        );
+
+        let expected_accessor_impl_block: syn::ItemImpl = parse_quote! {
+            #[cfg(test)]
+            impl<S: Display + 'static> MyStruct<S> {
+                fn method_one_fake() -> self::method_one_module::InterfaceOne<S> {
+                    self::method_one_module::interface()
+                }
+
+                pub fn method_two_fake<T: Display + 'static>() -> self::method_two_module::InterfaceTwo<S, T> {
+                    self::method_two_module::interface()
+                }
+            }
+        };
+        assert_eq!(
+            expanded.accessor_impl_block.to_token_stream().to_string(),
+            expected_accessor_impl_block.to_token_stream().to_string()
+        );
+
+        let expected_module_one: syn::ItemMod = parse_quote! {
+            #[cfg(test)]
+            mod method_one_module {
+                use super::*;
+
+                pub fn interface() -> InterfaceOne<S> {
+                    InterfaceOne {}
+                }
+            }
+        };
+        let expected_module_two: syn::ItemMod = parse_quote! {
+            #[cfg(test)]
+            pub mod method_two_module {
+                use super::*;
+
+                pub fn interface() -> InterfaceTwo<S, T> {
+                    InterfaceTwo {}
+                }
+            }
+        };
+        let actual_modules: Vec<String> = expanded
+            .modules
+            .iter()
+            .map(|m| m.to_token_stream().to_string())
+            .collect();
+        let expected_modules = vec![
+            expected_module_one.to_token_stream().to_string(),
+            expected_module_two.to_token_stream().to_string(),
+        ];
+        assert_eq!(actual_modules, expected_modules);
+    }
+}

@@ -1,0 +1,7 @@
+error: The #[fakeable] attribute can only be applied to functions and impl blocks.
+ --> src/common/impl_block/special/unsupported_on_struct_fake.cf.rs:5:1
+  |
+5 | / pub struct NotAFunction {
+6 | |     pub value: i32,
+7 | | }
+  | |_^

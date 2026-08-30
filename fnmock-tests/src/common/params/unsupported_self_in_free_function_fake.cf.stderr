@@ -1,0 +1,5 @@
+error: The macro found a `self` receiver on a free function. `self` receivers are only supported on methods inside an inherent impl block.
+ --> src/common/params/unsupported_self_in_free_function_fake.cf.rs:5:18
+  |
+5 | fn free_function(self) -> i32 {
+  |                  ^^^^

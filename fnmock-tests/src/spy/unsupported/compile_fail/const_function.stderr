@@ -1,0 +1,5 @@
+error: The macro does not support const fn. The code fnmock injects cannot run in a const context.
+ --> src/spy/unsupported/compile_fail/const_function.rs:5:1
+  |
+5 | const fn const_function(a: i32) -> i32 {
+  | ^^^^^

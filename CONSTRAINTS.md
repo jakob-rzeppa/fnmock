@@ -2,7 +2,8 @@
 
 What can and can't be faked with `#[fnmock::fakeable]`, and the rules fakes operate under. For the
 API you use to install and manage fakes — the attribute, the `_fake()` accessor, and
-`setup`/`clear`/`is_set` — see [FEATURES.md](FEATURES.md).
+`setup`/`clear`/`is_set` — see [FEATURES.md](FEATURES.md). Spies have their own, much narrower set
+of constraints; see [Spies](#spies) below.
 
 Every supported case below is backed by a test in [fnmock-tests/src/fake/](fnmock-tests/src/fake/);
 unsupported cases are backed by `trybuild` snapshots in
@@ -112,13 +113,35 @@ on the type, method generics on the accessor (`GenericCombined::<String>::combin
 - **No automatic reset.** A fake stays installed for the rest of the thread's life unless you call
   `clear()`.
 
+## Spies
+
+`#[fnmock::spyable]` is newer than `#[fnmock::fakeable]` and supports much less. It observes calls
+rather than replacing them, so it matches every argument by shared reference and needs a *name* for
+each one — which is where most of its extra constraints come from.
+
+| Not supported by `#[fnmock::spyable]` | Reason given |
+| --- | --- |
+| Impl blocks | Only free functions can be spied on, for now. |
+| Generic type or const parameters | A spy keeps a single store per function, which is not keyed by generic arguments. |
+| Any parameter pattern but a plain identifier | A destructuring parameter has no name to match it under. |
+
+Lifetime parameters are fine — the matcher borrows its arguments under a lifetime of its own, and a
+spy does not key on lifetimes. The one sharp edge is a parameter whose type *names* an explicit
+lifetime without itself being a reference (`x: Foo<'a>`): the generated module refers to `'a`
+without it being in scope there, so it fails to compile inside generated code rather than being
+rejected up front.
+
+Everything a spy does share with a fake — the parameter and return types it accepts, `async`/
+`unsafe`/`extern` modifiers, the per-thread isolation, the `#[cfg(test)]` gating — follows the
+rules above.
+
 ## Not supported
 
 Each of these fails at compile time with a dedicated error message.
 
 | Not supported | Reason given |
 | --- | --- |
-| `const fn` / `const` methods | The fake lookup fnmock injects cannot run in a const context. |
+| `const fn` / `const` methods | The code fnmock injects cannot run in a const context. |
 | Trait impl blocks (`impl Trait for Type`) | Only inherent impl blocks are supported. |
 | Impl blocks on non-path types | Only simple paths (+generics) are supported. |
 | The attribute on anything but a function or impl block | Can only be applied to functions and impl blocks. |
@@ -127,7 +150,7 @@ Each of these fails at compile time with a dedicated error message.
 | The never type `!` | — |
 | Non-`'static` lifetime bounds on generic parameters | Only `'static` is supported in generic parameters. |
 | `self` receiver on a free function | Only supported on methods inside an inherent impl block. |
-| Wildcard parameter patterns (`_: i32`) | Fake call values need a name to forward. |
+| Wildcard parameter patterns (`_: i32`) | Call values need a name to forward. |
 | Reference patterns (`&x: &i32`) | Use a plain binding (`x: &i32`) instead. |
 | `ref` bindings (`ref x`) | Use the identifier directly without `ref`. |
 | Struct and tuple-struct destructuring patterns | Struct destructuring would require reassembling the struct to pass it to the fake, which is not always possible. |

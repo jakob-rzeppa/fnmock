@@ -1,0 +1,8 @@
+error[E0599]: no function or associated item named `path_restricted_method_fake` found for struct `MyStruct` in the current scope
+  --> src/common/impl_block/visibility/impl_method_pub_in_path_not_accessible_from_outside.cf.rs:22:19
+   |
+ 6 |         pub struct MyStruct;
+   |         ------------------- function or associated item `path_restricted_method_fake` not found for this struct
+...
+22 |         MyStruct::path_restricted_method_fake().setup(|_, a| format!("Fake {}", a));
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ function or associated item not found in `MyStruct`

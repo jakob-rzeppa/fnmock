@@ -1,5 +1,0 @@
-error: The #[fakeable] attribute does not support the never type `!` in a function signature.
- --> src/fake/unsupported/compile_fail/never_return_type.rs:5:33
-  |
-5 | fn returns_never(flag: bool) -> ! {
-  |                                 ^
