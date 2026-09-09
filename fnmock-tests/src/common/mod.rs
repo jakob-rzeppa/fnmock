@@ -140,3 +140,7 @@ mod visibility {
     mod same_name_isolation;
     mod thread_isolation;
 }
+
+mod attributes {
+    mod doc_comments;
+}
