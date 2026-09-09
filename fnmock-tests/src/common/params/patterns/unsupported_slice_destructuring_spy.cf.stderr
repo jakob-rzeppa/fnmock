@@ -1,0 +1,5 @@
+error: The #[spyable] attribute only supports plain identifier parameters. This parameter destructures its value, so there is no name to match it under.
+ --> src/common/params/patterns/unsupported_slice_destructuring_spy.cf.rs:6:24
+  |
+6 | fn slice_destructuring([first, second]: [i32; 2]) -> i32 {
+  |                        ^^^^^^^^^^^^^^^

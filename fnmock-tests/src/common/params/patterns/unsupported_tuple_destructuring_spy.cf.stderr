@@ -1,0 +1,5 @@
+error: The #[spyable] attribute only supports plain identifier parameters. This parameter destructures its value, so there is no name to match it under.
+ --> src/common/params/patterns/unsupported_tuple_destructuring_spy.cf.rs:7:24
+  |
+7 | fn tuple_destructuring((left, right): (String, String)) -> String {
+  |                        ^^^^^^^^^^^^^

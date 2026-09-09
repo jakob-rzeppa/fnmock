@@ -57,7 +57,7 @@ mod strategy;
 /// # Errors
 ///
 /// The macro can return a compile error if something went wrong or an unsupported construct was used.
-/// See `CONSTRAINTS.md` for the full list of unsupported constructs.
+/// See `docs/FAKE_FEATURES.md` for the full list of unsupported constructs.
 #[proc_macro_attribute]
 pub fn fakeable(
     attr: proc_macro::TokenStream,
@@ -121,9 +121,9 @@ pub fn fakeable(
 ///
 /// # Errors
 ///
-/// Only free functions can be spied on so far: impl blocks, generic type and const parameters, and
-/// parameters that are not plain identifiers are all rejected with a compile error. See
-/// `CONSTRAINTS.md` for the full list.
+/// Parameters that are not plain identifiers are rejected with a compile error, as are `const fn`,
+/// trait impl blocks and types the matcher cannot name. See `docs/SPY_FEATURES.md` for the full
+/// list.
 #[proc_macro_attribute]
 pub fn spyable(
     attr: proc_macro::TokenStream,
