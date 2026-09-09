@@ -303,7 +303,7 @@ mod tests {
         );
         assert_eq!(
             scheme.params_tuple_types[0].to_token_stream().to_string(),
-            quote::quote!(Ref<'a>).to_string()
+            quote::quote!(Ref<'__fnmock_params>).to_string()
         );
     }
 

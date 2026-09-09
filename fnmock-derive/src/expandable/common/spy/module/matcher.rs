@@ -78,7 +78,7 @@ pub fn build_matcher(
     });
     let function_signature = quote! { Fn(#(&#param_types),*) -> bool };
 
-    let params_fields = params_tuple_types.iter().map(|ty| quote! { &'a #ty, });
+    let params_fields = params_tuple_types.iter().map(|ty| quote! { &'__fnmock_params #ty, });
     let params_generics_decl = build_params_generics_decl(generic_scheme);
     let params_generics_use = build_params_generics_use(generic_scheme);
     let params_marker_field =
@@ -91,10 +91,10 @@ pub fn build_matcher(
         let evals = param_idents
             .iter()
             .zip(indices.clone())
-            .map(|(ident, index)| quote! { #ident.eval(params.#index) });
+            .map(|(ident, index)| quote! { #ident.eval(__fnmock_params.#index) });
         quote! { #(#evals)&&* }
     };
-    let function_matches_args = indices.map(|index| quote! { params.#index });
+    let function_matches_args = indices.map(|index| quote! { __fnmock_params.#index });
     let predicates_matches_arm = supports_expect.then(|| {
         quote! {
             Self::Predicates { #(#predicates_pattern_fields),* } => #predicates_matches_expr,
@@ -109,7 +109,7 @@ pub fn build_matcher(
     let predicates_display_arm = supports_expect.then(|| {
         quote! {
             Self::Predicates { #(#predicates_pattern_fields),* } => {
-                write!(f, #format_str, #(#display_args),*)
+                write!(__fnmock_fmt, #format_str, #(#display_args),*)
             },
         }
     });
@@ -176,9 +176,9 @@ pub fn build_matcher(
         );
 
         impl #generics_decl ::fnmock::matcher::Matcher for #matcher_name #generics_use {
-            type Params<'a> = #params_name #params_generics_use;
+            type Params<'__fnmock_params> = #params_name #params_generics_use;
 
-            fn matches(&self, params: &Self::Params<'_>) -> bool {
+            fn matches(&self, __fnmock_params: &Self::Params<'_>) -> bool {
                 match self {
                     #predicates_matches_arm
                     Self::Function { #(#function_pattern_fields),* } => function(#(#function_matches_args),*),
@@ -187,11 +187,11 @@ pub fn build_matcher(
         }
 
         impl #generics_decl ::std::fmt::Display for #matcher_name #generics_use {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+            fn fmt(&self, __fnmock_fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                 match self {
                     #predicates_display_arm
                     Self::Function { .. } => {
-                        write!(f, "a function predicate")
+                        write!(__fnmock_fmt, "a function predicate")
                     }
                 }
             }
@@ -242,31 +242,31 @@ pub fn build_marker_construct(generic_scheme: Option<&GenericScheme>) -> proc_ma
     }
 }
 
-/// Builds the params wrapper struct's own generic declaration, e.g. `<'a>` or `<'a, T: 'static>`:
-/// like [`build_generics_decl`], but the wrapper always has the `'a` from `Matcher::Params<'a>`
+/// Builds the params wrapper struct's own generic declaration, e.g. `<'__fnmock_params>` or `<'__fnmock_params, T: 'static>`:
+/// like [`build_generics_decl`], but the wrapper always has the lifetime from `Matcher::Params<'a>`
 /// in addition to the function's own generics, so it needs angle brackets even when the function
 /// isn't generic.
 fn build_params_generics_decl(generic_scheme: Option<&GenericScheme>) -> proc_macro2::TokenStream {
     let Some(generic_scheme) = generic_scheme else {
-        return quote! { <'a> };
+        return quote! { <'__fnmock_params> };
     };
     let params = &generic_scheme.params;
-    quote! { <'a, #(#params),*> }
+    quote! { <'__fnmock_params, #(#params),*> }
 }
 
-/// Builds the params wrapper struct's own generic use, e.g. `<'a>` or `<'a, T>`; see
+/// Builds the params wrapper struct's own generic use, e.g. `<'__fnmock_params>` or `<'__fnmock_params, T>`; see
 /// [`build_params_generics_decl`].
 fn build_params_generics_use(generic_scheme: Option<&GenericScheme>) -> proc_macro2::TokenStream {
     let Some(generic_scheme) = generic_scheme else {
-        return quote! { <'a> };
+        return quote! { <'__fnmock_params> };
     };
     let idents = &generic_scheme.idents;
-    quote! { <'a, #(#idents),*> }
+    quote! { <'__fnmock_params, #(#idents),*> }
 }
 
 /// Whether the params wrapper struct needs a trailing `PhantomData` field/value at all: either
 /// because the spied function takes no parameters, so there are no other fields left to use the
-/// wrapper's `'a` (a hard error, `E0392`, independent of whether the function is generic), or
+/// wrapper's lifetime (a hard error, `E0392`, independent of whether the function is generic), or
 /// because some non-const generic parameter isn't otherwise mentioned by a parameter type (e.g. a
 /// generic that appears only in the return type). Const generics don't count: unlike type
 /// parameters, an unused const generic on a struct isn't an error.
@@ -284,9 +284,9 @@ fn params_needs_marker(generic_scheme: Option<&GenericScheme>, has_params: bool)
 /// Builds the params wrapper struct's trailing `PhantomData<(..)>,` field, empty when
 /// [`params_needs_marker`] says it isn't needed: like [`build_marker_field`], but unnamed to fit
 /// the wrapper's tuple-struct shape (its other fields are positional, indexed by
-/// [`matches`](Matcher::matches) as `params.0`, `params.1`, ...). Folds a `&'a ()` into the same
+/// [`matches`](Matcher::matches) as `params.0`, `params.1`, ...). Folds a `&'__fnmock_params ()` into the same
 /// `PhantomData` that already carries any unused generic parameters, when the function takes no
-/// parameters to use `'a` through some other field.
+/// parameters to use that lifetime through some other field.
 fn build_params_marker_field(
     generic_scheme: Option<&GenericScheme>,
     has_params: bool,
@@ -297,7 +297,7 @@ fn build_params_marker_field(
     let generic_idents = generic_scheme
         .map(|g| g.idents_without_const_generics.as_slice())
         .unwrap_or_default();
-    let lifetime_marker = (!has_params).then(|| quote! { &'a (), });
+    let lifetime_marker = (!has_params).then(|| quote! { &'__fnmock_params (), });
     quote! { ::std::marker::PhantomData<(#lifetime_marker #(#generic_idents),*)>, }
 }
 
@@ -355,35 +355,35 @@ mod tests {
                 },
             }
 
-            pub struct GetUserMatcherParams<'a>(
-                &'a String,
-                &'a str,
+            pub struct GetUserMatcherParams<'__fnmock_params>(
+                &'__fnmock_params String,
+                &'__fnmock_params str,
             );
 
             impl ::fnmock::matcher::Matcher for GetUserMatcher {
-                type Params<'a> = GetUserMatcherParams<'a>;
+                type Params<'__fnmock_params> = GetUserMatcherParams<'__fnmock_params>;
 
-                fn matches(&self, params: &Self::Params<'_>) -> bool {
+                fn matches(&self, __fnmock_params: &Self::Params<'_>) -> bool {
                     match self {
-                        Self::Predicates { id, uuid } => id.eval(params.0) && uuid.eval(params.1),
-                        Self::Function { function } => function(params.0, params.1),
+                        Self::Predicates { id, uuid } => id.eval(__fnmock_params.0) && uuid.eval(__fnmock_params.1),
+                        Self::Function { function } => function(__fnmock_params.0, __fnmock_params.1),
                     }
                 }
             }
 
             impl ::std::fmt::Display for GetUserMatcher {
-                fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                fn fmt(&self, __fnmock_fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                     match self {
                         Self::Predicates { id, uuid } => {
                             write!(
-                                f,
+                                __fnmock_fmt,
                                 "{} && {}",
                                 id.to_string().replacen("var", "id", 1),
                                 uuid.to_string().replacen("var", "uuid", 1)
                             )
                         },
                         Self::Function { .. } => {
-                            write!(f, "a function predicate")
+                            write!(__fnmock_fmt, "a function predicate")
                         }
                     }
                 }
@@ -409,14 +409,14 @@ mod tests {
                 },
             }
 
-            pub struct PingMatcherParams<'a>(
-                ::std::marker::PhantomData<(&'a (),)>,
+            pub struct PingMatcherParams<'__fnmock_params>(
+                ::std::marker::PhantomData<(&'__fnmock_params (),)>,
             );
 
             impl ::fnmock::matcher::Matcher for PingMatcher {
-                type Params<'a> = PingMatcherParams<'a>;
+                type Params<'__fnmock_params> = PingMatcherParams<'__fnmock_params>;
 
-                fn matches(&self, params: &Self::Params<'_>) -> bool {
+                fn matches(&self, __fnmock_params: &Self::Params<'_>) -> bool {
                     match self {
                         Self::Predicates {} => true,
                         Self::Function { function } => function(),
@@ -425,13 +425,13 @@ mod tests {
             }
 
             impl ::std::fmt::Display for PingMatcher {
-                fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                fn fmt(&self, __fnmock_fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                     match self {
                         Self::Predicates {} => {
-                            write!(f, "",)
+                            write!(__fnmock_fmt, "",)
                         },
                         Self::Function { .. } => {
-                            write!(f, "a function predicate")
+                            write!(__fnmock_fmt, "a function predicate")
                         }
                     }
                 }
@@ -491,30 +491,30 @@ mod tests {
                 }
             }
 
-            pub struct FooMatcherParams<'a, T: 'static>(
-                &'a T,
+            pub struct FooMatcherParams<'__fnmock_params, T: 'static>(
+                &'__fnmock_params T,
                 ::std::marker::PhantomData<(T)>,
             );
 
             impl<T: 'static> ::fnmock::matcher::Matcher for FooMatcher<T> {
-                type Params<'a> = FooMatcherParams<'a, T>;
+                type Params<'__fnmock_params> = FooMatcherParams<'__fnmock_params, T>;
 
-                fn matches(&self, params: &Self::Params<'_>) -> bool {
+                fn matches(&self, __fnmock_params: &Self::Params<'_>) -> bool {
                     match self {
-                        Self::Predicates { a, .. } => a.eval(params.0),
-                        Self::Function { function, .. } => function(params.0),
+                        Self::Predicates { a, .. } => a.eval(__fnmock_params.0),
+                        Self::Function { function, .. } => function(__fnmock_params.0),
                     }
                 }
             }
 
             impl<T: 'static> ::std::fmt::Display for FooMatcher<T> {
-                fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                fn fmt(&self, __fnmock_fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                     match self {
                         Self::Predicates { a, .. } => {
-                            write!(f, "{}", a.to_string().replacen("var", "a", 1))
+                            write!(__fnmock_fmt, "{}", a.to_string().replacen("var", "a", 1))
                         },
                         Self::Function { .. } => {
-                            write!(f, "a function predicate")
+                            write!(__fnmock_fmt, "a function predicate")
                         }
                     }
                 }
@@ -524,13 +524,58 @@ mod tests {
         assert_eq!(res.to_string(), expected.to_string());
     }
 
+
+    /// A function whose generics carry a higher-ranked bound already binds a lifetime name in
+    /// the same scope the params wrapper declares its own in, so the wrapper's lifetime has to
+    /// be one no user-written `for<..>` binder can plausibly shadow (`E0496`).
+    #[test]
+    fn test_params_lifetime_does_not_collide_with_a_higher_ranked_bound() {
+        let matcher_name: syn::Ident = parse_quote!(FooMatcher);
+        let params_name: syn::Ident = parse_quote!(FooMatcherParams);
+        let param_idents: Vec<syn::Ident> = vec![parse_quote!(a)];
+        let param_types: Vec<syn::Type> = vec![parse_quote!(F)];
+        let generic_scheme = GenericScheme {
+            params: vec![parse_quote!(F: for<'a> Fn(&'a str) -> String + 'static)],
+            idents: vec![parse_quote!(F)],
+            idents_without_const_generics: vec![parse_quote!(F)],
+            keys: vec![parse_quote!(::std::any::TypeId::of::<F>())],
+        };
+
+        let res = build_matcher(
+            &matcher_name,
+            &params_name,
+            &param_idents,
+            &param_types,
+            &param_types,
+            Some(&generic_scheme),
+            true,
+        );
+
+        let expected_params_struct = quote! {
+            pub struct FooMatcherParams<
+                '__fnmock_params,
+                F: for<'a> Fn(&'a str) -> String + 'static
+            >(
+                &'__fnmock_params F,
+                ::std::marker::PhantomData<(F)>,
+            );
+        };
+
+        assert!(
+            res.to_string()
+                .contains(&expected_params_struct.to_string()),
+            "expected the params wrapper to declare its own lifetime, got: {}",
+            res
+        );
+    }
+
     #[test]
     fn test_supports_expect_false_omits_predicates_variant_entirely() {
         let matcher_name: syn::Ident = parse_quote!(LifetimeParamTypeMatcher);
         let params_name: syn::Ident = parse_quote!(LifetimeParamTypeMatcherParams);
         let param_idents: Vec<syn::Ident> = vec![parse_quote!(r)];
         let param_types: Vec<syn::Type> = vec![parse_quote!(Ref<>)];
-        let params_tuple_types: Vec<syn::Type> = vec![parse_quote!(Ref<'a>)];
+        let params_tuple_types: Vec<syn::Type> = vec![parse_quote!(Ref<'__fnmock_params>)];
 
         let res = build_matcher(
             &matcher_name,
@@ -550,25 +595,25 @@ mod tests {
                 },
             }
 
-            pub struct LifetimeParamTypeMatcherParams<'a>(
-                &'a Ref<'a>,
+            pub struct LifetimeParamTypeMatcherParams<'__fnmock_params>(
+                &'__fnmock_params Ref<'__fnmock_params>,
             );
 
             impl ::fnmock::matcher::Matcher for LifetimeParamTypeMatcher {
-                type Params<'a> = LifetimeParamTypeMatcherParams<'a>;
+                type Params<'__fnmock_params> = LifetimeParamTypeMatcherParams<'__fnmock_params>;
 
-                fn matches(&self, params: &Self::Params<'_>) -> bool {
+                fn matches(&self, __fnmock_params: &Self::Params<'_>) -> bool {
                     match self {
-                        Self::Function { function } => function(params.0),
+                        Self::Function { function } => function(__fnmock_params.0),
                     }
                 }
             }
 
             impl ::std::fmt::Display for LifetimeParamTypeMatcher {
-                fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                fn fmt(&self, __fnmock_fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                     match self {
                         Self::Function { .. } => {
-                            write!(f, "a function predicate")
+                            write!(__fnmock_fmt, "a function predicate")
                         }
                     }
                 }

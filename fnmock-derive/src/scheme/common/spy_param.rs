@@ -176,7 +176,7 @@ pub fn build_spy_params(params: &[ParamInfo]) -> syn::Result<SpyParams> {
     let mut params_tuple_types = Vec::with_capacity(params.len());
     let mut reference_call_values = Vec::with_capacity(params.len());
     let mut supports_expect = true;
-    let params_tuple_lifetime: syn::Lifetime = syn::parse_quote!('a);
+    let params_tuple_lifetime: syn::Lifetime = syn::parse_quote!('__fnmock_params);
 
     for param in params {
         let ident = match CallValue::try_from(&param.pat)? {

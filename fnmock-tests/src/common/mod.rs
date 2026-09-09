@@ -4,6 +4,7 @@ mod params {
     mod implicit_lifetime;
     mod interior_mutability;
     mod mut_reference;
+    mod names_shadowing_generated_idents;
     mod raw_const_pointers;
     mod raw_mut_pointers;
     mod reference;
