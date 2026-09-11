@@ -13,7 +13,10 @@ mod sequences {
     mod basic_order;
     mod chaining_order;
     mod cross_function;
+    mod greedy_matching;
+    mod last_step_stays_current;
     mod multiple_independent_sequences;
+    mod never_step;
     mod out_of_order_lenient;
     mod strict_sequence_in_order;
     mod unsequenced_expectation_independent;
