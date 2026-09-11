@@ -18,7 +18,7 @@ pub mod key;
 /// This leads to the closures being stored as Rc<Box<dyn Fn(...) -> ...>> in the store. This is a workaround for the fact that we cannot store `Rc<dyn Fn(...) -> ...>` directly in the store, because `dyn Fn(...) -> ...` is not `Sized`, and therefore cannot be used as a parameter on its own.
 pub struct GenericFakeStore<const GENERIC_COUNT: usize> {
     /// A name for the fake store, used in error messages to make it clear which function's fake store is being referred to.
-    name: &'static str,
+    _name: &'static str,
     /// Keyed by generic key parts (TypeId for type parameters, value for const parameters); value is erased to `dyn Any` and downcast when retrieved.
     /// We use Rc to allow cloning the function pointer for multiple calls.
     impls: HashMap<[GenericKeyPart; GENERIC_COUNT], Rc<dyn Any>>,
@@ -30,7 +30,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     /// The name is only used to identify the function in panic messages.
     pub fn new(name: &'static str) -> Self {
         Self {
-            name,
+            _name: name,
             impls: HashMap::new(),
         }
     }
@@ -69,34 +69,14 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
     ///
     /// The `WrappedClosure` type parameter should be a boxed closure that matches the signature of the faked function for the given combination of generic types.
     /// It needs to match the generic that was passed to `setup_for` for the same combination of generic types exactly.
-    ///
-    /// # Panics
-    ///
-    /// Panics if no implementation is set for the given types or if the stored implementation cannot be downcast to the expected function type.
     pub fn get_for<WrappedClosure: 'static>(
         &self,
         generic_keys: [GenericKeyPart; GENERIC_COUNT],
-    ) -> Rc<WrappedClosure> {
+    ) -> Option<Rc<WrappedClosure>> {
         self.impls
             .get(&generic_keys)
             .cloned()
-            .unwrap_or_else(|| {
-                // When using the macro API, the macro ensures that get is only called when is_set_for is true, so this should never happen if the API is used correctly.
-                panic!(
-                    "Generic fake {} for {:#?} should only be called with initialized types, since is_set_for is checked before calling. This should never happen if the API is used correctly.",
-                    self.name,
-                    generic_keys
-                )
-            })
-            .downcast::<WrappedClosure>()
-            .unwrap_or_else(|_| {
-                // When using the macro API, the macro ensures that the type of get_for and setup_for match, so this should never happen if the API is used correctly.
-                panic!(
-                    "Downcast of generic fake {} for {:#?} failed. This should never happen if the API is used correctly. Expected function type does not match the type of the provided implementation.",
-                    self.name,
-                    generic_keys
-                );
-            })
+            .and_then(|c| c.downcast::<WrappedClosure>().ok())
     }
 }
 
@@ -140,9 +120,9 @@ mod tests {
         let f2 = store.get_for::<Box<dyn Fn(u32, String) -> String>>(u32_string_key.clone());
 
         println!("Calling f1:");
-        println!("{}", f1(42, "Alice".into()));
+        println!("{}", f1.unwrap()(42, "Alice".into()));
         println!("Calling f2:");
-        println!("{}", f2(42, "Bob".into()));
+        println!("{}", f2.unwrap()(42, "Bob".into()));
 
         store.clear_for(i32_string_key.clone());
         store.clear_for(u32_string_key.clone());

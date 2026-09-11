@@ -1,0 +1,11 @@
+error: use of deprecated function `old_function`
+  --> src/common/attributes/deprecated_before_spy.cf.rs:12:5
+   |
+12 |     old_function(1);
+   |     ^^^^^^^^^^^^
+   |
+note: the lint level is defined here
+  --> src/common/attributes/deprecated_before_spy.cf.rs:3:9
+   |
+ 3 | #![deny(deprecated)]
+   |         ^^^^^^^^^^

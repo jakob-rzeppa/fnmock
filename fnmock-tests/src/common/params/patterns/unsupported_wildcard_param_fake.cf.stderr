@@ -1,0 +1,5 @@
+error: Wildcard patterns are not supported for call values
+ --> src/common/params/patterns/unsupported_wildcard_param_fake.cf.rs:6:12
+  |
+6 | fn ignored(_: String, value: String) -> String {
+  |            ^
