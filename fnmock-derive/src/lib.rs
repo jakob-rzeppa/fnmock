@@ -57,7 +57,7 @@ mod strategy;
 /// # Errors
 ///
 /// The macro can return a compile error if something went wrong or an unsupported construct was used.
-/// See `docs/FAKE_FEATURES.md` for the full list of unsupported constructs.
+/// See `docs/LIMITATIONS.md` for the full list of unsupported constructs.
 #[proc_macro_attribute]
 pub fn fakeable(
     attr: proc_macro::TokenStream,
@@ -92,7 +92,7 @@ pub fn fakeable(
 ///
 /// `expect` and `expectf` hand back a handle that refines the expectation by chaining —
 /// `times(2)`, `once()`, `never()`, `in_sequence(&mut seq)`. See
-/// [EXPECTATIONS.md](https://github.com/jakob-rzeppa/fnmock/blob/master/docs/EXPECTATIONS.md).
+/// [SPY_FEATURES.md](https://github.com/jakob-rzeppa/fnmock/blob/master/docs/SPY_FEATURES.md).
 ///
 /// ```ignore
 /// #[fnmock::spyable]
@@ -122,7 +122,7 @@ pub fn fakeable(
 /// # Errors
 ///
 /// Parameters that are not plain identifiers are rejected with a compile error, as are `const fn`,
-/// trait impl blocks and types the matcher cannot name. See `docs/SPY_FEATURES.md` for the full
+/// trait impl blocks and types the matcher cannot name. See `docs/LIMITATIONS.md` for the full
 /// list.
 #[proc_macro_attribute]
 pub fn spyable(
