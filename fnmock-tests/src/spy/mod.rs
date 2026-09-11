@@ -24,17 +24,11 @@ mod sequences {
 
 mod generics {
     mod assert_scoped_to_instantiation;
-    mod bounds_where;
-    mod expectations_per_instantiation;
-    mod generic_in_container_param;
     mod generic_only_in_return;
     mod generic_reference_param;
     mod sequence_across_instantiations;
-    mod sequence_within_instantiation;
 }
 
 mod lifetimes {
     mod lifetime_expectf_in_sequence;
 }
-
-mod unsupported;

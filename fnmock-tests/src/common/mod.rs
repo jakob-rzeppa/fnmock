@@ -104,6 +104,7 @@ mod generics {
     mod associated_type_equality;
     mod cross_type_isolation;
     mod cross_type_isolation_mixed;
+    mod generic_in_container_param;
     mod higher_ranked_bounds;
     mod mixed_generics;
     mod multiple_generics;
