@@ -18,10 +18,7 @@ mod fake {
         multiple_generics_fake::<String, String>()
             .setup(|a, b| (format!("Fake {}", a), format!("Fake {}", b)));
         let res = multiple_generics("Test".to_string(), "Another".to_string());
-        assert_eq!(
-            res,
-            ("Fake Test".to_string(), "Fake Another".to_string())
-        );
+        assert_eq!(res, ("Fake Test".to_string(), "Fake Another".to_string()));
     }
 }
 

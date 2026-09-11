@@ -34,7 +34,7 @@ use crate::{
 /// sequence. The order is still enforced, just at the end: a step that was passed over never
 /// got its calls, so the assert fails.
 ///
-/// A [`Sequence::strict`] sequence does not let the second case pass. A call matching a later
+/// A [`Sequence::new_strict`] sequence does not let the second case pass. A call matching a later
 /// step while an earlier one is unfinished panics right there, which pins down calls in the
 /// wrong order more reliably.
 #[derive(Clone)]
@@ -80,7 +80,7 @@ impl Sequence {
     ///
     /// # Panics
     ///
-    /// A [`Sequence::strict`] sequence panics if the call belongs to a later step while an
+    /// A [`Sequence::new_strict`] sequence panics if the call belongs to a later step while an
     /// earlier one has not reached the minimum of its call range yet.
     pub fn record_call<M: Matcher>(&self, params: &M::Params<'_>) {
         let mut state = self.0.borrow_mut();

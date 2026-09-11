@@ -78,7 +78,9 @@ pub fn build_matcher(
     });
     let function_signature = quote! { Fn(#(&#param_types),*) -> bool };
 
-    let params_fields = params_tuple_types.iter().map(|ty| quote! { &'__fnmock_params #ty, });
+    let params_fields = params_tuple_types
+        .iter()
+        .map(|ty| quote! { &'__fnmock_params #ty, });
     let params_generics_decl = build_params_generics_decl(generic_scheme);
     let params_generics_use = build_params_generics_use(generic_scheme);
     let params_marker_field =
@@ -524,7 +526,6 @@ mod tests {
         assert_eq!(res.to_string(), expected.to_string());
     }
 
-
     /// A function whose generics carry a higher-ranked bound already binds a lifetime name in
     /// the same scope the params wrapper declares its own in, so the wrapper's lifetime has to
     /// be one no user-written `for<..>` binder can plausibly shadow (`E0496`).
@@ -570,6 +571,7 @@ mod tests {
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_supports_expect_false_omits_predicates_variant_entirely() {
         let matcher_name: syn::Ident = parse_quote!(LifetimeParamTypeMatcher);
         let params_name: syn::Ident = parse_quote!(LifetimeParamTypeMatcherParams);

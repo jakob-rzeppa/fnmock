@@ -115,7 +115,7 @@ impl<M: Matcher> Display for Expectation<M> {
             write!(f, "{}", name)?;
         } else {
             // Fallback to matcher
-            write!(f, "{}", &self.matcher)?;
+            write!(f, "{}", self.matcher)?;
         }
         Ok(())
     }
@@ -131,9 +131,9 @@ pub trait DynExpectation: Any {
     fn call_count(&self) -> usize;
     /// See [`Expectation::call_range`].
     fn call_range(&self) -> CallRange;
-    /// See [`Expectation::is_advancable`].
+    /// See `Expectation::is_advancable`.
     fn is_advancable(&self) -> bool;
-    /// See [`Expectation::record_match`].
+    /// See `Expectation::record_match`.
     fn record_match(&mut self);
     /// Borrow this expectation as [`Any`], to attempt a downcast to a concrete `Expectation<M>`.
     fn as_any(&self) -> &dyn Any;

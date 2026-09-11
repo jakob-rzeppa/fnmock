@@ -3,7 +3,11 @@ mod fake {
 
     #[fnmock::fakeable]
     impl LifetimesAndGenerics {
-        fn describe<'a, T: std::fmt::Display + 'static>(&self, prefix: &'a str, value: T) -> String {
+        fn describe<'a, T: std::fmt::Display + 'static>(
+            &self,
+            prefix: &'a str,
+            value: T,
+        ) -> String {
             format!("{}: {}", prefix, value)
         }
     }
@@ -29,7 +33,11 @@ mod spy {
 
     #[fnmock::spyable]
     impl LifetimesAndGenerics {
-        fn describe<'a, T: std::fmt::Display + 'static>(&self, prefix: &'a str, value: T) -> String {
+        fn describe<'a, T: std::fmt::Display + 'static>(
+            &self,
+            prefix: &'a str,
+            value: T,
+        ) -> String {
             format!("{}: {}", prefix, value)
         }
     }

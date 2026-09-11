@@ -71,6 +71,7 @@ mod tests {
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_named_lifetime_argument_in_a_path_is_dropped_from_the_argument_list() {
         let ty: syn::Type = syn::parse_quote!(Ref<'a>);
 
@@ -78,6 +79,7 @@ mod tests {
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_anonymous_lifetime_argument_in_a_path_is_dropped_from_the_argument_list() {
         let ty: syn::Type = syn::parse_quote!(Ref<'_>);
 
@@ -113,6 +115,7 @@ mod tests {
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_multiple_distinct_lifetimes_are_all_dropped() {
         let ty: syn::Type = syn::parse_quote!((Ref<'a>, Ref<'b>));
 

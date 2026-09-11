@@ -9,14 +9,10 @@ pub fn handle_fakeable(
     match syn::parse2::<syn::Item>(item.clone()) {
         Ok(syn::Item::Fn(item_fn)) => execute::<FunctionFakeStrategy>(item_fn),
         Ok(syn::Item::Impl(item_impl)) => execute::<ImplFakeStrategy>(item_impl),
-        Ok(item) => {
-            Err(syn::Error::new_spanned(
-                item,
-                "The #[fakeable] attribute can only be applied to functions and impl blocks.",
-            ))
-        }
-        Err(e) => {
-            Err(e)
-        }
+        Ok(item) => Err(syn::Error::new_spanned(
+            item,
+            "The #[fakeable] attribute can only be applied to functions and impl blocks.",
+        )),
+        Err(e) => Err(e),
     }
 }

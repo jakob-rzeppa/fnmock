@@ -15,7 +15,7 @@ use crate::{generic_fake_store::key::GenericKeyPart, matcher::Matcher, spy_store
 pub trait DynSpyStore: Any {
     /// See [`SpyStore::name`].
     fn name(&self) -> &str;
-    /// See [`SpyStore::assert_failures`].
+    /// See [`SpyStore::check_for_failures`].
     fn check_for_failures(&self) -> Vec<String>;
     /// Borrow this store as [`Any`], to downcast to a concrete `SpyStore<M>`.
     fn as_any_mut(&mut self) -> &mut dyn Any;

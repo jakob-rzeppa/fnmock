@@ -5,7 +5,7 @@ use crate::{Sequence, call_range::CallRange, expectation::Expectation, matcher::
 /// Dropping the handle leaves the expectation in place with whatever was configured on it;
 /// `spy.expect(..)` on its own is a complete expectation of "at least one matching call".
 pub struct ExpectationHandle<M: Matcher + 'static> {
-    /// We use a option, since we need to take Expectation<M> in drop out of the struct,
+    /// We use a option, since we need to take `Expectation<M>` in drop out of the struct,
     /// but drop only gives us a &mut self
     expectation: Option<Expectation<M>>,
     sequences: Option<Vec<Sequence>>,
