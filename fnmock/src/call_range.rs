@@ -5,6 +5,10 @@ use std::{
 
 /// A call-count range, converted from any concrete `RangeBounds<usize>` impl.
 ///
+/// This is what [`ExpectationHandle::times`](crate::ExpectationHandle::times) takes, so an
+/// expectation can be given a count (`3`) or any range (`1..=3`, `2..`, `..3`, `..`) without
+/// naming this type.
+///
 /// `Expectation` can't stay generic over the range type it was built with,
 /// since that would give every concrete range (`Range<usize>`,
 /// `RangeInclusive<usize>`, ...) its own `Expectation<Range>` type, and a
@@ -22,6 +26,7 @@ pub struct CallRange {
 }
 
 impl CallRange {
+    #[doc(hidden)]
     pub fn contains(&self, value: &usize) -> bool {
         self.min_reached(value) && !self.max_exceeded(value)
     }
@@ -30,6 +35,7 @@ impl CallRange {
     ///
     /// This is what makes an expectation inside a sequence advancable: the minimum has to be
     /// satisfied before the sequence moves on, while further calls may still be accepted.
+    #[doc(hidden)]
     pub fn min_reached(&self, value: &usize) -> bool {
         match self.start {
             Bound::Included(start) => *value >= start,
@@ -38,6 +44,7 @@ impl CallRange {
         }
     }
 
+    #[doc(hidden)]
     pub fn max_exceeded(&self, value: &usize) -> bool {
         match self.end {
             Bound::Unbounded => false,

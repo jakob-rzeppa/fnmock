@@ -22,6 +22,7 @@ impl<M: Matcher> ExpectationHandle<M> {
     /// `function_name` is the spied function this expectation belongs to, so panics raised on
     /// it (directly, or through a [`Sequence`] spanning several functions) can always say which
     /// function they came from.
+    #[doc(hidden)]
     pub fn new(
         matcher: M,
         function_name: impl Into<String>,

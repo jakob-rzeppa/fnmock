@@ -50,6 +50,9 @@ pub mod sequence;
 #[doc(hidden)]
 pub mod spy_store;
 
+// Re-export the public API to make doc-comments visible.
+pub use call_range::CallRange;
+pub use expectation_handle::ExpectationHandle;
 pub use sequence::Sequence;
 
 pub use predicates::{
