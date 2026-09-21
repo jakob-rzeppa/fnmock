@@ -6,7 +6,7 @@ CI only verifies the code. This document is the checklist for cutting a release.
 ## Overview
 
 - The workspace uses a **single shared version** (`workspace.package.version` in
-  the root [`Cargo.toml`](../Cargo.toml)). All crates release together in
+  the root [`Cargo.toml`](../../Cargo.toml)). All crates release together in
   lockstep.
 - Two crates are published, in a **forced order** because `fnmock` depends on
   `fnmock-derive`:
@@ -47,8 +47,8 @@ git checkout -b release/vX.Y.Z
 The version lives in **one** place, but a dependency pin must be updated in
 lockstep:
 
-- Root [`Cargo.toml`](../Cargo.toml) → `[workspace.package]` → `version = "X.Y.Z"`
-- [`fnmock/Cargo.toml`](../fnmock/Cargo.toml) → the `fnmock-derive` dependency
+- Root [`Cargo.toml`](../../Cargo.toml) → `[workspace.package]` → `version = "X.Y.Z"`
+- [`fnmock/Cargo.toml`](../../fnmock/Cargo.toml) → the `fnmock-derive` dependency
   `version = "X.Y.Z"` (this is what crates.io uses once the path is stripped, so
   it **must** match the new version).
 
@@ -62,7 +62,7 @@ git commit -m "release: vX.Y.Z"
 
 ### 3. Update the changelog
 
-In [`CHANGELOG.md`](../CHANGELOG.md):
+In [`CHANGELOG.md`](../../CHANGELOG.md):
 
 - Move the items under `[Unreleased]` into a new `## [X.Y.Z] - YYYY-MM-DD`
   section.
@@ -127,7 +127,7 @@ git push origin vX.Y.Z
 - Confirm the docs built on [docs.rs/fnmock](https://docs.rs/fnmock) and
   [docs.rs/fnmock-derive](https://docs.rs/fnmock-derive).
 - Delete the release branch.
-- Add a fresh `## [Unreleased]` heading to [`CHANGELOG.md`](../CHANGELOG.md) for
+- Add a fresh `## [Unreleased]` heading to [`CHANGELOG.md`](../../CHANGELOG.md) for
   the next cycle (typically as part of the next change, not a separate commit).
 
 ## Troubleshooting
@@ -137,7 +137,7 @@ git push origin vX.Y.Z
   fnmock`.
 - **Version pin mismatch.** If publishing `fnmock` complains about the
   `fnmock-derive` version, check that the dependency `version` in
-  [`fnmock/Cargo.toml`](../fnmock/Cargo.toml) matches the released version.
+  [`fnmock/Cargo.toml`](../../fnmock/Cargo.toml) matches the released version.
 - **Published a broken release.** You cannot overwrite a published version.
   Yank it so new projects don't pick it up, then release a fixed patch version:
   ```
