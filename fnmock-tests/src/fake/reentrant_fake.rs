@@ -1,7 +1,4 @@
-//! A fake closure that calls back into its own accessor (`is_set`, `setup`, `clear`) must not
-//! panic. The generated `is_set`/`get` both scope their `RefCell` borrow to a single
-//! `store.with(|store| ...)` call and hand back an owned value (a `bool`, or a cloned `Rc`), so the
-//! borrow is released before the fake closure itself ever runs.
+//! A fake closure that calls back into its own accessor (`is_set`, `setup`, `clear`).
 
 #[fnmock::fakeable]
 fn reentrant_fake(a: i32) -> i32 {

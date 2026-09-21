@@ -61,9 +61,9 @@ item:
 
 | Method | Behaviour | Test |
 | --- | --- | --- |
-| `setup(closure)` | Install a fake. Calling it again overwrites the previous one. | [clear_and_is_set.rs](../fnmock-tests/src/fake/basic/clear_and_is_set.rs) |
-| `clear()` | Remove the fake; later calls run the real implementation again. | [clear_and_is_set.rs](../fnmock-tests/src/fake/basic/clear_and_is_set.rs) |
-| `is_set()` | Whether a fake is currently installed. | [clear_and_is_set.rs](../fnmock-tests/src/fake/basic/clear_and_is_set.rs) |
+| `setup(closure)` | Install a fake. Calling it again overwrites the previous one. | [clear_and_is_set.rs](../fnmock-tests/src/fake/clear_and_is_set.rs) |
+| `clear()` | Remove the fake; later calls run the real implementation again. | [clear_and_is_set.rs](../fnmock-tests/src/fake/clear_and_is_set.rs) |
+| `is_set()` | Whether a fake is currently installed. | [clear_and_is_set.rs](../fnmock-tests/src/fake/clear_and_is_set.rs) |
 
 All three take `&self` and return `()`/`bool`, so they do not chain. There is no automatic reset: a
 fake stays installed for the rest of the thread's life unless you call `clear()`. In practice the
@@ -73,7 +73,7 @@ outside a test body.
 A fake closure may call back into its own accessor (`is_set`/`setup`/`clear`) without panicking on a
 double borrow — the generated code scopes each `RefCell` borrow to a single lookup and hands back an
 owned value before the closure runs
-([reentrant_fake.rs](../fnmock-tests/src/fake/basic/reentrant_fake.rs)).
+([reentrant_fake.rs](../fnmock-tests/src/fake/reentrant_fake.rs)).
 
 ## The fake closure
 
