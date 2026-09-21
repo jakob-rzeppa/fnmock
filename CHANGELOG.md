@@ -10,6 +10,10 @@ together.
 
 ## [Unreleased]
 
+### Added
+
+- `fnmock` now supports spying on functions and methods by the `spyable` attribute.
+
 ### Changed
 
 - Fakes match the visibility of the faked function, instead of being always `pub(crate)`.
