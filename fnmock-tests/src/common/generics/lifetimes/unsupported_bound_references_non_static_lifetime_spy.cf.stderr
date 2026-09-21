@@ -1,0 +1,5 @@
+error: Non-static lifetime 'a' found in a bound of generic parameter 'T'. fnmock redeclares this bound on the items it generates, where 'a is not in scope. Only 'static lifetimes are supported in the bounds of a generic parameter.
+ --> src/common/generics/lifetimes/unsupported_bound_references_non_static_lifetime_spy.cf.rs:2:54
+  |
+2 | fn bound_references_non_static_lifetime<'a, T: Into<&'a str> + 'static>(value: T) -> usize {
+  |                                                      ^^

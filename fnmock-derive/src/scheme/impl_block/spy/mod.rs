@@ -1,6 +1,6 @@
 use crate::{
     item_info::{
-        generic_param_info::GenericParamInfo,
+        generics::GenericParamInfo,
         impl_block::{ImplBlockInfo, ImplMethodInfo},
     },
     scheme::{

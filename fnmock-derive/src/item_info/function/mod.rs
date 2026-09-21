@@ -1,8 +1,7 @@
 //! The information extracted from a free function's signature.
 
 use crate::item_info::{
-    generic_param_info::{GenericParamInfo, extract_generic_param_infos},
-    lifetimes::extract_lifetimes_from_generics,
+    generics::{GenericParamInfo, normalize_generics},
     original::OriginalFn,
     param_info::{ParamInfo, extract_params},
 };
@@ -48,18 +47,17 @@ impl TryFrom<syn::ItemFn> for FunctionInfo {
         let visibility = item_fn.vis.clone();
         let fn_args = item_fn.sig.inputs.iter().cloned().collect::<Vec<_>>();
         let params = extract_params(&fn_args, None)?;
-        let lifetimes = extract_lifetimes_from_generics(&item_fn.sig.generics);
         let return_type = item_fn.sig.output.clone();
-        let generic_params = extract_generic_param_infos(&item_fn.sig.generics)?;
+        let generics = normalize_generics(&item_fn.sig.generics, &Default::default())?;
 
         Ok(FunctionInfo {
             original: OriginalFn::new(item_fn),
             name,
             visibility,
             params,
-            lifetimes,
+            lifetimes: generics.lifetimes,
             return_type,
-            generic_params,
+            generic_params: generics.params,
         })
     }
 }

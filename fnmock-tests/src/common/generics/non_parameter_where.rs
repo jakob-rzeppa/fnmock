@@ -2,7 +2,7 @@ mod fake {
     #[fnmock::fakeable]
     fn non_parameter_where<T>(a: T) -> Vec<T>
     where
-        T: 'static,
+        T: Clone + 'static,
         Vec<T>: Clone,
     {
         vec![a].clone()

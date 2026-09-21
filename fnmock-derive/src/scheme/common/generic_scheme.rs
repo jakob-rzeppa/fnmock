@@ -1,4 +1,4 @@
-use crate::item_info::generic_param_info::GenericParamInfo;
+use crate::item_info::generics::GenericParamInfo;
 
 pub struct GenericScheme {
     /// The parameters including their bounds (e.g. `T: Display + 'static`), for redeclaring them
@@ -49,7 +49,7 @@ pub fn build_generic_display_fragment(info: &GenericParamInfo) -> syn::Expr {
     let ident = &info.ident;
     match &info.param {
         syn::GenericParam::Const(_) => syn::parse_quote! { #ident.to_string() },
-        // Type params, and lifetimes (which `extract_generic_param_infos` never produces a
+        // Type params, and lifetimes (which `normalize_generics` never produces a
         // `GenericParamInfo` for in the first place).
         _ => syn::parse_quote! { ::std::any::type_name::<#ident>().to_string() },
     }

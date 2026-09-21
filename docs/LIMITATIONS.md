@@ -152,6 +152,10 @@ by value for const parameters, so the accessor takes a turbofish.
 | Associated type bounds and equality (`I: Iterator<Item = u8>`) | ✅ [bounds](../fnmock-tests/src/common/generics/associated_type_bounds.rs), [equality](../fnmock-tests/src/common/generics/associated_type_equality.rs) | ✅ [bounds](../fnmock-tests/src/common/generics/associated_type_bounds.rs), [equality](../fnmock-tests/src/common/generics/associated_type_equality.rs) | — |
 | Higher-ranked bounds (`for<'a> Fn(&'a str) -> &'a str`) | ✅ [test](../fnmock-tests/src/common/generics/higher_ranked_bounds.rs) | ✅ [test](../fnmock-tests/src/common/generics/higher_ranked_bounds.rs) | — |
 | A `'static` bound written as a named lifetime | ✅ [test](../fnmock-tests/src/common/generics/static_generic_via_named_lifetime.rs) | ✅ [test](../fnmock-tests/src/common/generics/static_generic_via_named_lifetime.rs) | — |
+| A `'static` bound reached through `<'a: 'static>`, a chain of lifetimes, or a `where` clause (`where T: 'a, 'a: 'static`) | ✅ [declaration](../fnmock-tests/src/common/generics/lifetimes/static_bound_via_lifetime_param_declaration.rs), [chain](../fnmock-tests/src/common/generics/lifetimes/static_bound_via_transitive_lifetime.rs), [where](../fnmock-tests/src/common/generics/lifetimes/static_bound_via_where_predicates.rs) | ✅ [declaration](../fnmock-tests/src/common/generics/lifetimes/static_bound_via_lifetime_param_declaration.rs), [chain](../fnmock-tests/src/common/generics/lifetimes/static_bound_via_transitive_lifetime.rs), [where](../fnmock-tests/src/common/generics/lifetimes/static_bound_via_where_predicates.rs) | — |
+| A trait bound naming a `'static` lifetime (`T: Into<&'a str>` with `'a: 'static`) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/bound_referencing_a_static_lifetime.rs) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/bound_referencing_a_static_lifetime.rs) | — |
+| A higher-ranked bound with the binder on the `where` predicate (`where for<'x> F: Fn(&'x str) -> String`) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/higher_ranked_where_predicate.rs) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/higher_ranked_where_predicate.rs) | — |
+| A trait bound naming a non-`'static` lifetime (`T: Into<&'a str>`) | ❌ [fixture](../fnmock-tests/src/common/generics/lifetimes/unsupported_bound_references_non_static_lifetime_fake.cf.rs) | ❌ [fixture](../fnmock-tests/src/common/generics/lifetimes/unsupported_bound_references_non_static_lifetime_spy.cf.rs) | The bound is redeclared on the generated items, where the lifetime is not in scope. Constrain it with `'a: 'static`. |
 | A non-`'static` lifetime bound on a type parameter (`T: 'a`), or a bare non-`'static` `T` | ❌ [fixture](../fnmock-tests/src/common/generics/unsupported_non_static_lifetime_bound_fake.cf.rs) | ❌ [fixture](../fnmock-tests/src/common/generics/unsupported_non_static_lifetime_bound_on_type_param_spy.cf.rs) | Both stores are keyed by `TypeId`, which requires `'static`; the spy's `Expectation<M>` also requires `M: Any`. |
 
 ### Lifetimes
@@ -170,6 +174,12 @@ in favour of `.expectf()`; see
 | Lifetimes mixed with type parameters | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/mixed_lifetime_and_generic.rs) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/mixed_lifetime_and_generic.rs) |
 | A lifetime nested inside a container | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/nested_lifetime_in_container.rs) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/nested_lifetime_in_container.rs) |
 | Unused lifetime parameters | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/unused_lifetime.rs) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/unused_lifetime.rs) |
+| A return type borrowing from a parameter (`-> &'a str`) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/borrowed_return.rs) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/borrowed_return.rs) |
+| An explicit `'static` on a parameter type | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/static_reference_param.rs) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/static_reference_param.rs) |
+| A `'static` type parameter behind a reference with its own lifetime | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/generic_behind_reference.rs) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/generic_behind_reference.rs) |
+| An outlives relation between two of the item's own lifetimes (`<'a, 'b: 'a>`) | ✅ ⚠️ [test](../fnmock-tests/src/common/generics/lifetimes/lifetime_outlives_relation.rs) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/lifetime_outlives_relation.rs) |
+
+⚠️ For a **fake**, an outlives relation between two of the item's own lifetimes is not carried into the closure's bound. With `-> &'a str`, the closure therefore cannot return data borrowed from the `'b` parameter; returning the `'a` parameter or a `'static` value works.
 
 ### Const generics
 
@@ -178,6 +188,7 @@ in favour of `.expectf()`; see
 | A single const parameter | ✅ ⚠️ [test](../fnmock-tests/src/common/generics/const_generics/single_const_generic.rs) | ✅ [test](../fnmock-tests/src/common/generics/const_generics/single_const_generic.rs) |
 | Multiple const parameters | ✅ [test](../fnmock-tests/src/common/generics/const_generics/multiple_const_generics.rs) | ✅ [test](../fnmock-tests/src/common/generics/const_generics/multiple_const_generics.rs) |
 | Unused const parameters | ✅ [test](../fnmock-tests/src/common/generics/const_generics/unused_const_generic.rs) | ✅ [test](../fnmock-tests/src/common/generics/const_generics/unused_const_generic.rs) |
+| A const parameter next to a lifetime | ✅ ⚠️ [test](../fnmock-tests/src/common/generics/lifetimes/const_generic_with_lifetime.rs) | ✅ [test](../fnmock-tests/src/common/generics/lifetimes/const_generic_with_lifetime.rs) |
 
 Const parameters are keyed by **value**, so `foo_fake::<5>()` / `foo_spy::<5>()` does not affect a
 call to `foo::<7>()`

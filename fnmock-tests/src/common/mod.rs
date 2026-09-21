@@ -64,8 +64,13 @@ mod impl_block {
         mod generic_method_where;
         mod generic_struct;
         mod generic_struct_where;
+        mod higher_ranked_where_predicate;
         mod lifetimes_and_generics;
+        mod lifetimes_borrowed_return;
         mod lifetimes_combined;
+        mod lifetimes_param_type;
+        mod static_bound_via_impl_lifetime;
+        mod static_bound_via_where_lifetime;
     }
 
     mod visibility {
@@ -124,12 +129,24 @@ mod generics {
     }
 
     mod lifetimes {
+        mod borrowed_return;
+        mod bound_referencing_a_static_lifetime;
+        mod const_generic_with_lifetime;
+        mod generic_behind_reference;
+        mod higher_ranked_where_predicate;
+        mod higher_ranked_where_predicate_borrowed_return;
         mod infered_lifetime_param_type;
+        mod lifetime_outlives_relation;
         mod lifetime_param_type;
         mod mixed_lifetime_and_generic;
         mod multiple_lifetimes;
         mod nested_lifetime_in_container;
+        mod non_parameter_where_with_lifetime;
         mod reference_with_named_lifetime;
+        mod static_bound_via_lifetime_param_declaration;
+        mod static_bound_via_transitive_lifetime;
+        mod static_bound_via_where_predicates;
+        mod static_reference_param;
         mod unused_lifetime;
     }
 }

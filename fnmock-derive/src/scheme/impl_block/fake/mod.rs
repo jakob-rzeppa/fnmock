@@ -1,7 +1,7 @@
 use crate::{
     item_info::{
         call_value::CallValue,
-        generic_param_info::GenericParamInfo,
+        generics::GenericParamInfo,
         impl_block::{ImplBlockInfo, ImplMethodInfo},
     },
     scheme::{

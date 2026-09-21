@@ -3,8 +3,7 @@
 use syn::spanned::Spanned;
 
 use crate::item_info::{
-    generic_param_info::{GenericParamInfo, extract_generic_param_infos},
-    lifetimes::extract_lifetimes_from_generics,
+    generics::{GenericParamInfo, NormalizedGenerics, normalize_generics},
     original::OriginalImpl,
     param_info::{ParamInfo, extract_params},
 };
@@ -66,12 +65,13 @@ impl TryFrom<syn::ItemImpl> for ImplBlockInfo {
         }
 
         let struct_name = extract_struct_path(&item_impl.self_ty)?;
-        let generic_param_infos = extract_generic_param_infos(&item_impl.generics)?;
+        let struct_generics = normalize_generics(&item_impl.generics, &Default::default())?;
 
         let mut functions = Vec::new();
         for item in &item_impl.items {
             if let syn::ImplItem::Fn(method) = item {
-                let method_info = extract_single_item_impl_info_for_method(&item_impl, method)?;
+                let method_info =
+                    extract_single_item_impl_info_for_method(&item_impl, method, &struct_generics)?;
                 functions.push(method_info);
             }
         }
@@ -79,7 +79,7 @@ impl TryFrom<syn::ItemImpl> for ImplBlockInfo {
         Ok(ImplBlockInfo {
             original: OriginalImpl::new(item_impl),
             struct_name,
-            generic_param_infos,
+            generic_param_infos: struct_generics.params,
             functions,
         })
     }
@@ -89,6 +89,7 @@ impl TryFrom<syn::ItemImpl> for ImplBlockInfo {
 fn extract_single_item_impl_info_for_method(
     item_impl: &syn::ItemImpl,
     method: &syn::ImplItemFn,
+    struct_generics: &NormalizedGenerics,
 ) -> syn::Result<ImplMethodInfo> {
     if let Some(const_token) = &method.sig.constness {
         return Err(syn::Error::new_spanned(
@@ -100,14 +101,18 @@ fn extract_single_item_impl_info_for_method(
     let method_name = method.sig.ident.clone();
     let visibility = method.vis.clone();
 
-    let generic_param_infos = extract_generic_param_infos(&method.sig.generics)?;
-    let struct_lifetimes = extract_lifetimes_from_generics(&item_impl.generics);
-    let method_lifetimes = extract_lifetimes_from_generics(&method.sig.generics);
+    // The impl block's provably-'static lifetimes are handed down, because the method's own
+    // generics do not redeclare them: `impl<'a, T: 'a> Foo<T> where 'a: 'static` has to reach a
+    // method that writes `U: 'a`.
+    let method_generics =
+        normalize_generics(&method.sig.generics, &struct_generics.static_lifetimes)?;
     // We know, there can be no duplicate lifetimes between the struct and method, because Rust would not allow that in the first place.
     // Therefore, we can safely combine the lifetimes from the struct and method into a single list of lifetimes for the function pointer type.
-    let lifetimes = struct_lifetimes
-        .into_iter()
-        .chain(method_lifetimes)
+    let lifetimes = struct_generics
+        .lifetimes
+        .iter()
+        .cloned()
+        .chain(method_generics.lifetimes)
         .collect::<Vec<_>>();
 
     let fn_args = method.sig.inputs.iter().cloned().collect::<Vec<_>>();
@@ -121,7 +126,7 @@ fn extract_single_item_impl_info_for_method(
         param_infos: params,
         lifetimes,
         return_type,
-        generic_param_infos,
+        generic_param_infos: method_generics.params,
     })
 }
 

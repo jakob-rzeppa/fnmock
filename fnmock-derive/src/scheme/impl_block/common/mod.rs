@@ -1,5 +1,5 @@
 use crate::{
-    item_info::{generic_param_info::GenericParamInfo, original::OriginalImpl},
+    item_info::{generics::GenericParamInfo, original::OriginalImpl},
     scheme::common::generic_scheme::GenericScheme,
 };
 
