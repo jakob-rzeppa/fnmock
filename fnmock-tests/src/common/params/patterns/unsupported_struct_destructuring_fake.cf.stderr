@@ -1,0 +1,5 @@
+error: Struct destructuring patterns are not supported for call values
+  --> src/common/params/patterns/unsupported_struct_destructuring_fake.cf.rs:11:25
+   |
+11 | fn struct_destructuring(Point { x, y }: Point) -> i32 {
+   |                         ^^^^^^^^^^^^^^

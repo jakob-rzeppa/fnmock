@@ -32,9 +32,30 @@
 //! a walkthrough and the current limitations.
 
 #[doc(hidden)]
+pub mod call_range;
+#[doc(hidden)]
+pub mod expectation;
+#[doc(hidden)]
+pub mod expectation_handle;
+#[doc(hidden)]
 pub mod fake_store;
 #[doc(hidden)]
 pub mod generic_fake_store;
+#[doc(hidden)]
+pub mod generic_spy_store;
+#[doc(hidden)]
+pub mod matcher;
+#[doc(hidden)]
+pub mod sequence;
+#[doc(hidden)]
+pub mod spy_store;
+
+pub use sequence::Sequence;
+
+pub use predicates::{
+    boolean::PredicateBooleanExt,
+    prelude::{Predicate, PredicateBoxExt, PredicateFileContentExt, PredicateStrExt, predicate},
+};
 
 /// Re-export the derive macro so that users of the library can just use `fnmock::fakeable` instead of having to depend on `fnmock-derive` directly.
 pub use fnmock_derive::*;

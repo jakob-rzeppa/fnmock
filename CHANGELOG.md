@@ -10,7 +10,26 @@ together.
 
 ## [Unreleased]
 
+### Added
+
+- `fnmock` now supports spying on functions and methods by the `spyable` attribute.
+
+### Changed
+
 - Fakes match the visibility of the faked function, instead of being always `pub(crate)`.
+- Fake interface methods `setup` and `clear` use `&self` instead of `self`, so they can't be chained anymore and `let fake = fake.clear()` doesn't work anymore.
+
+### Removed
+
+- Fake interface method `get` is removed, as it was a internal implementation detail and not part of the public API.
+
+### Fixed
+
+- `a::Struct` and `b::Struct` impls in the same module no longer collide, even if they have the same name.
+- `Struct<u8>` and `Struct<u16>` impls in the same module no longer collide, even if they have the same function names.
+- A type parameter's `'static` bound is now recognised when it is reached through a named lifetime (`T: 'a` with `'a: 'static`), including through a chain of lifetimes and when either half is written in the `where` clause.
+- A `where` predicate's `for<..>` binder is no longer dropped when the predicate is merged into its parameter, so `where for<'x> F: Fn(&'x str) -> String` compiles.
+- A bound that names a lifetime which will not be in scope on the generated items is now rejected with a spanned error instead of expanding to a bare `use of undeclared lifetime name`.
 
 ## [0.1.0] - 2026-07-22
 

@@ -1,5 +1,11 @@
 #[allow(dead_code)]
+mod common;
+#[allow(dead_code)]
+mod compile_fail;
+#[allow(dead_code)]
 mod fake;
+#[allow(dead_code)]
+mod spy;
 
 fn main() {
     println!("=== fnmock Example Project ===");
