@@ -89,3 +89,41 @@ fn test_fewer_calls_than_times_requires_fails_assert() {
 
     spy.assert();
 }
+
+#[test]
+fn test_times_range_includes_its_start() {
+    let spy = times_target_spy();
+    spy.expect(fnmock::predicate::eq(2)).times(2..5);
+
+    times_target(2);
+    times_target(2);
+
+    spy.assert();
+}
+
+#[test]
+#[should_panic(expected = "Too many calls of the spied function")]
+fn test_times_range_panics_at_its_exclusive_end() {
+    let spy = times_target_spy();
+    spy.expect(fnmock::predicate::eq(2)).times(2..4);
+
+    times_target(2);
+    times_target(2);
+    times_target(2);
+    times_target(2);
+}
+
+#[test]
+fn test_times_range_full_accepts_any_number_of_calls() {
+    let spy = times_target_spy();
+    spy.expect(fnmock::predicate::eq(2)).times(..);
+
+    // Unbounded on both ends, so zero calls already satisfies it...
+    spy.assert();
+
+    times_target(2);
+    times_target(2);
+
+    // ...and no amount of further calls can exceed it.
+    spy.assert();
+}

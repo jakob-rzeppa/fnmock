@@ -4,6 +4,7 @@ mod expectations {
     mod expectf;
     mod global_times;
     mod multiple_independent_expectations;
+    mod predicates;
     mod times;
     mod unexpected_call_is_not_an_error;
 }
@@ -13,11 +14,13 @@ mod sequences {
     mod basic_order;
     mod chaining_order;
     mod cross_function;
+    mod expectation_in_multiple_sequences;
     mod greedy_matching;
     mod last_step_stays_current;
     mod multiple_independent_sequences;
     mod never_step;
     mod out_of_order_lenient;
+    mod sequence_default;
     mod strict_sequence_in_order;
     mod unsequenced_expectation_independent;
 }
