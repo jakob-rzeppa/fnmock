@@ -2,7 +2,7 @@
 
 use std::{any::Any, fmt::Display};
 
-use crate::{call_range::CallRange, matcher::Matcher};
+use crate::spy::{call_range::CallRange, matcher::Matcher};
 
 /// One expectation set on a spy: which calls it accepts, and how many of them.
 ///
@@ -15,7 +15,7 @@ pub struct Expectation<M: Matcher> {
     name: Option<String>,
 
     /// The spied function this expectation belongs to, so panics can name it even when the
-    /// caller (e.g. a [`Sequence`](crate::sequence::Sequence) spanning several functions) has
+    /// caller (e.g. a [`Sequence`](crate::Sequence) spanning several functions) has
     /// no other way to know.
     function_name: String,
 
@@ -122,7 +122,7 @@ impl<M: Matcher> Display for Expectation<M> {
 }
 
 /// Dyn-safe view of an [`Expectation<M>`], for storing expectations of different `M` alongside
-/// each other (e.g. the steps of a [`Sequence`](crate::sequence::Sequence)).
+/// each other (e.g. the steps of a [`Sequence`](crate::Sequence)).
 ///
 /// [`DynExpectation::as_any`] is the escape hatch back to the concrete type, needed wherever a
 /// caller does know which `M` it is looking for (e.g. to check [`Expectation::matches`]).
@@ -138,7 +138,7 @@ pub trait DynExpectation: Any {
     /// Borrow this expectation as [`Any`], to attempt a downcast to a concrete `Expectation<M>`.
     fn as_any(&self) -> &dyn Any;
     /// Name this expectation together with the spied function it belongs to, for panics raised
-    /// by a caller (e.g. [`Sequence`](crate::sequence::Sequence)) that only sees the dyn-safe
+    /// by a caller (e.g. [`Sequence`](crate::Sequence)) that only sees the dyn-safe
     /// view and so has no other way to name the function.
     fn describe(&self) -> String;
 }

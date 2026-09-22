@@ -5,7 +5,10 @@
 
 use std::{any::Any, collections::HashMap};
 
-use crate::{generic_fake_store::key::GenericKeyPart, matcher::Matcher, spy_store::SpyStore};
+use crate::{
+    common::generic_key::GenericKeyPart,
+    spy::{matcher::Matcher, spy_store::SpyStore},
+};
 
 /// Dyn-safe view of a [`SpyStore<M>`], for holding the stores of different instantiations of one
 /// generic function alongside each other.
@@ -155,7 +158,7 @@ impl<const GENERIC_COUNT: usize> GenericSpyStore<GENERIC_COUNT> {
 mod tests {
     use std::{any::TypeId, fmt::Display, marker::PhantomData};
 
-    use crate::{expectation::Expectation, generic_fake_store::key::ConstValue};
+    use crate::{common::generic_key::ConstValue, spy::expectation::Expectation};
 
     use super::*;
 

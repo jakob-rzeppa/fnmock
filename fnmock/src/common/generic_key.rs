@@ -1,4 +1,4 @@
-//! The key type a [`GenericFakeStore`](super::GenericFakeStore) uses to tell one combination of
+//! The key type a store uses to tell one combination of
 //! generic arguments from another.
 
 use std::{

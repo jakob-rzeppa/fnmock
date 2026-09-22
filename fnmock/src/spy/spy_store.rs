@@ -2,7 +2,9 @@
 //!
 //! This is a fnmock internal. You should not interact with it directly.
 
-use crate::{Sequence, call_range::CallRange, expectation::Expectation, matcher::Matcher};
+use crate::spy::{
+    call_range::CallRange, expectation::Expectation, matcher::Matcher, sequence::Sequence,
+};
 
 pub struct SpyStore<M: Matcher> {
     /// How the spied function is named in panic messages.

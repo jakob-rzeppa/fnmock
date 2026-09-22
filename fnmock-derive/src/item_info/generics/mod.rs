@@ -28,7 +28,7 @@ pub struct GenericParamInfo {
     /// The `GenericKeyPart` expression that keys a store by this parameter.
     ///
     /// Type parameters are keyed by their `TypeId`. Const parameters are keyed by their actual
-    /// value (via `fnmock::generic_fake_store::ConstValue::new`), not just the `TypeId` of their
+    /// value (via `fnmock::fake::generic_fake_store::ConstValue::new`), not just the `TypeId` of their
     /// type — otherwise every value of e.g. `const C: usize` would collapse onto the single key
     /// `TypeId::of::<usize>()`.
     ///
@@ -100,15 +100,15 @@ fn build_param_info(param: syn::GenericParam) -> syn::Result<GenericParamInfo> {
         syn::GenericParam::Type(type_param) => {
             let ident = type_param.ident.clone();
             let key_tokens = quote! {
-                ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<#ident>())
+                ::fnmock::common::generic_key::GenericKeyPart::Type(::std::any::TypeId::of::<#ident>())
             };
             (ident, key_tokens)
         }
         syn::GenericParam::Const(const_param) => {
             let ident = const_param.ident.clone();
             let key_tokens = quote! {
-                ::fnmock::generic_fake_store::key::GenericKeyPart::Const(
-                    ::fnmock::generic_fake_store::key::ConstValue::new(#ident)
+                ::fnmock::common::generic_key::GenericKeyPart::Const(
+                    ::fnmock::common::generic_key::ConstValue::new(#ident)
                 )
             };
             (ident, key_tokens)
@@ -179,7 +179,7 @@ mod tests {
         assert_eq!(
             normalized.params[0].key.to_token_stream().to_string(),
             quote! {
-                ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())
+                ::fnmock::common::generic_key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())
             }
             .to_string()
         );
@@ -193,8 +193,8 @@ mod tests {
         assert_eq!(
             normalized.params[0].key.to_token_stream().to_string(),
             quote! {
-                ::fnmock::generic_fake_store::key::GenericKeyPart::Const(
-                    ::fnmock::generic_fake_store::key::ConstValue::new(N)
+                ::fnmock::common::generic_key::GenericKeyPart::Const(
+                    ::fnmock::common::generic_key::ConstValue::new(N)
                 )
             }
             .to_string()

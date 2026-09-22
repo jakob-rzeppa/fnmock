@@ -177,7 +177,7 @@ pub fn build_matcher(
             #params_marker_field
         );
 
-        impl #generics_decl ::fnmock::matcher::Matcher for #matcher_name #generics_use {
+        impl #generics_decl ::fnmock::spy::matcher::Matcher for #matcher_name #generics_use {
             type Params<'__fnmock_params> = #params_name #params_generics_use;
 
             fn matches(&self, __fnmock_params: &Self::Params<'_>) -> bool {
@@ -362,7 +362,7 @@ mod tests {
                 &'__fnmock_params str,
             );
 
-            impl ::fnmock::matcher::Matcher for GetUserMatcher {
+            impl ::fnmock::spy::matcher::Matcher for GetUserMatcher {
                 type Params<'__fnmock_params> = GetUserMatcherParams<'__fnmock_params>;
 
                 fn matches(&self, __fnmock_params: &Self::Params<'_>) -> bool {
@@ -415,7 +415,7 @@ mod tests {
                 ::std::marker::PhantomData<(&'__fnmock_params (),)>,
             );
 
-            impl ::fnmock::matcher::Matcher for PingMatcher {
+            impl ::fnmock::spy::matcher::Matcher for PingMatcher {
                 type Params<'__fnmock_params> = PingMatcherParams<'__fnmock_params>;
 
                 fn matches(&self, __fnmock_params: &Self::Params<'_>) -> bool {
@@ -498,7 +498,7 @@ mod tests {
                 ::std::marker::PhantomData<(T)>,
             );
 
-            impl<T: 'static> ::fnmock::matcher::Matcher for FooMatcher<T> {
+            impl<T: 'static> ::fnmock::spy::matcher::Matcher for FooMatcher<T> {
                 type Params<'__fnmock_params> = FooMatcherParams<'__fnmock_params, T>;
 
                 fn matches(&self, __fnmock_params: &Self::Params<'_>) -> bool {
@@ -601,7 +601,7 @@ mod tests {
                 &'__fnmock_params Ref<'__fnmock_params>,
             );
 
-            impl ::fnmock::matcher::Matcher for LifetimeParamTypeMatcher {
+            impl ::fnmock::spy::matcher::Matcher for LifetimeParamTypeMatcher {
                 type Params<'__fnmock_params> = LifetimeParamTypeMatcherParams<'__fnmock_params>;
 
                 fn matches(&self, __fnmock_params: &Self::Params<'_>) -> bool {

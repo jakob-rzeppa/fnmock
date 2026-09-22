@@ -9,17 +9,17 @@ pub fn build_spy_store(
     if let Some(generic_count) = generic_count {
         quote! {
             thread_local! {
-                static #store_name: ::std::cell::RefCell<::fnmock::generic_spy_store::GenericSpyStore<#generic_count>> =
+                static #store_name: ::std::cell::RefCell<::fnmock::spy::generic_spy_store::GenericSpyStore<#generic_count>> =
                     ::std::cell::RefCell::new(
-                        ::fnmock::generic_spy_store::GenericSpyStore::new(#display_name)
+                        ::fnmock::spy::generic_spy_store::GenericSpyStore::new(#display_name)
                     );
             }
         }
     } else {
         quote! {
             thread_local! {
-                static #store_name: ::std::cell::RefCell<::fnmock::spy_store::SpyStore<#matcher_type>> =
-                    ::std::cell::RefCell::new(::fnmock::spy_store::SpyStore::new(#display_name));
+                static #store_name: ::std::cell::RefCell<::fnmock::spy::spy_store::SpyStore<#matcher_type>> =
+                    ::std::cell::RefCell::new(::fnmock::spy::spy_store::SpyStore::new(#display_name));
             }
         }
     }
@@ -41,8 +41,8 @@ mod tests {
 
         let expected = quote! {
             thread_local! {
-                static MY_FUNCTION_SPY_STORE: ::std::cell::RefCell<::fnmock::spy_store::SpyStore<MyFunctionMatcher>> =
-                    ::std::cell::RefCell::new(::fnmock::spy_store::SpyStore::new("my_function"));
+                static MY_FUNCTION_SPY_STORE: ::std::cell::RefCell<::fnmock::spy::spy_store::SpyStore<MyFunctionMatcher>> =
+                    ::std::cell::RefCell::new(::fnmock::spy::spy_store::SpyStore::new("my_function"));
             }
         };
 
@@ -59,9 +59,9 @@ mod tests {
 
         let expected = quote! {
             thread_local! {
-                static MY_FUNCTION_SPY_STORE: ::std::cell::RefCell<::fnmock::generic_spy_store::GenericSpyStore<2usize>> =
+                static MY_FUNCTION_SPY_STORE: ::std::cell::RefCell<::fnmock::spy::generic_spy_store::GenericSpyStore<2usize>> =
                     ::std::cell::RefCell::new(
-                        ::fnmock::generic_spy_store::GenericSpyStore::new("my_function")
+                        ::fnmock::spy::generic_spy_store::GenericSpyStore::new("my_function")
                     );
             }
         };

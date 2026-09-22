@@ -9,17 +9,17 @@ pub fn build_fake_store(
     if let Some(generic_count) = generic_count {
         quote! {
             thread_local! {
-                static #store_name: ::std::cell::RefCell<::fnmock::generic_fake_store::GenericFakeStore<#generic_count>> =
+                static #store_name: ::std::cell::RefCell<::fnmock::fake::generic_fake_store::GenericFakeStore<#generic_count>> =
                     ::std::cell::RefCell::new(
-                        ::fnmock::generic_fake_store::GenericFakeStore::new(#display_name)
+                        ::fnmock::fake::generic_fake_store::GenericFakeStore::new(#display_name)
                     );
             }
         }
     } else {
         quote! {
             thread_local! {
-                static #store_name: ::std::cell::RefCell<::fnmock::fake_store::FakeStore<::std::rc::Rc<dyn #fn_closure_trait>>> =
-                    ::std::cell::RefCell::new(::fnmock::fake_store::FakeStore::new(#display_name));
+                static #store_name: ::std::cell::RefCell<::fnmock::fake::fake_store::FakeStore<::std::rc::Rc<dyn #fn_closure_trait>>> =
+                    ::std::cell::RefCell::new(::fnmock::fake::fake_store::FakeStore::new(#display_name));
             }
         }
     }
@@ -41,8 +41,8 @@ mod tests {
 
         let expected = quote! {
             thread_local! {
-                static MY_FUNCTION_STORE: ::std::cell::RefCell<::fnmock::fake_store::FakeStore<::std::rc::Rc<dyn Fn(i32) -> bool>>> =
-                    ::std::cell::RefCell::new(::fnmock::fake_store::FakeStore::new("my_function"));
+                static MY_FUNCTION_STORE: ::std::cell::RefCell<::fnmock::fake::fake_store::FakeStore<::std::rc::Rc<dyn Fn(i32) -> bool>>> =
+                    ::std::cell::RefCell::new(::fnmock::fake::fake_store::FakeStore::new("my_function"));
             }
         };
 
@@ -59,9 +59,9 @@ mod tests {
 
         let expected = quote! {
             thread_local! {
-                static MY_FUNCTION_STORE: ::std::cell::RefCell<::fnmock::generic_fake_store::GenericFakeStore<2usize>> =
+                static MY_FUNCTION_STORE: ::std::cell::RefCell<::fnmock::fake::generic_fake_store::GenericFakeStore<2usize>> =
                     ::std::cell::RefCell::new(
-                        ::fnmock::generic_fake_store::GenericFakeStore::new("my_function")
+                        ::fnmock::fake::generic_fake_store::GenericFakeStore::new("my_function")
                     );
             }
         };
