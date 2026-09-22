@@ -50,3 +50,24 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    use crate::common::traits::boxed::Describe;
+
+    #[fnmock::mockable]
+    fn boxed(value: Box<dyn Describe>) -> String {
+        format!("Real {}", value.describe())
+    }
+
+    #[test]
+    fn test_boxed() {
+        let mock = boxed_mock();
+        mock.setup(|value| format!("Fake {}", value.describe()));
+        mock.expectf(|d| d.describe() == "Test").once();
+
+        let result = boxed(Box::new("Test".to_string()));
+
+        assert_eq!(result, "Fake Test");
+        mock.assert();
+    }
+}

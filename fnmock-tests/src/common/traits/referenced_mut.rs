@@ -64,3 +64,29 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    use crate::common::traits::referenced_mut::MutDescribe;
+
+    #[fnmock::mockable]
+    fn referenced_mut(value: &mut dyn MutDescribe) -> String {
+        value.push_suffix(" Real");
+        value.describe()
+    }
+
+    #[test]
+    fn test_referenced_mut() {
+        let mock = referenced_mut_mock();
+        mock.setup(|value| {
+            value.push_suffix(" Fake");
+            value.describe()
+        });
+        mock.expectf(|d| d.describe() == "Test").once();
+
+        let mut value = "Test".to_string();
+        let result = referenced_mut(&mut value);
+
+        assert_eq!(result, "Test Fake");
+        mock.assert();
+    }
+}

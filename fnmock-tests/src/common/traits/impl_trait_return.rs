@@ -8,3 +8,8 @@ mod spy {
         value
     }
 }
+
+// No `mod mock` here: a mock is the intersection of fake and spy, and fake
+// rejects `impl Trait` in return position (its closure bound has to name the
+// return type), see docs/LIMITATIONS.md#return-types and
+// unsupported_impl_trait_return_mock.cf.rs.
