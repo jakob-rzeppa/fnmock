@@ -10,7 +10,7 @@ use crate::{
 ///
 /// For a generic spy, every method is scoped to one combination of generic arguments — the ones
 /// the interface value was obtained with, via `#interface_name::<T>()` — by routing every store
-/// access through [`GenericSpyStore::with_store_mut`](fnmock::generic_spy_store::GenericSpyStore).
+/// access through [`GenericSpyStore::with_store_mut`](fnmock::spy::generic_spy_store::GenericSpyStore).
 #[allow(clippy::too_many_arguments)]
 pub fn build_interface_impl(
     interface_name: &syn::Ident,
@@ -51,7 +51,7 @@ pub fn build_interface_impl(
                 pub fn expect(
                     &self,
                     #(#expect_params)*
-                ) -> ::fnmock::expectation_handle::ExpectationHandle<#matcher_type> {
+                ) -> ::fnmock::ExpectationHandle<#matcher_type> {
                     self.set_expectation(#matcher_name::Predicates {
                         #(#expect_construct_fields)*
                         #marker_construct
@@ -67,7 +67,7 @@ pub fn build_interface_impl(
                 /// lifetime that can't be matched by a `'static` predicate.
                 /// Use `.expectf(...)` instead.
                 pub fn expect(&self)
-                    -> ::fnmock::expectation_handle::ExpectationHandle<#matcher_type>
+                    -> ::fnmock::ExpectationHandle<#matcher_type>
                 {
                     unimplemented!("`.expect()` is not available on this spy; use `.expectf()` instead")
                 }
@@ -83,7 +83,7 @@ pub fn build_interface_impl(
                 pub fn expectf(
                     &self,
                     function: impl #expectf_signature + 'static,
-                ) -> ::fnmock::expectation_handle::ExpectationHandle<#matcher_type> {
+                ) -> ::fnmock::ExpectationHandle<#matcher_type> {
                     self.set_expectation(#matcher_name::Function {
                         function: ::std::rc::Rc::new(function),
                         #marker_construct
@@ -92,7 +92,7 @@ pub fn build_interface_impl(
 
                 /// Expect this many calls of this combination of generic arguments, whatever
                 /// their arguments.
-                pub fn expect_times(&self, call_range: impl Into<::fnmock::call_range::CallRange>) {
+                pub fn expect_times(&self, call_range: impl Into<::fnmock::spy::call_range::CallRange>) {
                     #store_name.with_borrow_mut(|store| {
                         store.with_store_mut::<#matcher_type, _>(
                             [#(#generic_keys),*],
@@ -124,8 +124,8 @@ pub fn build_interface_impl(
                 fn set_expectation(
                     &self,
                     matcher: #matcher_type,
-                ) -> ::fnmock::expectation_handle::ExpectationHandle<#matcher_type> {
-                    ::fnmock::expectation_handle::ExpectationHandle::new(
+                ) -> ::fnmock::ExpectationHandle<#matcher_type> {
+                    ::fnmock::ExpectationHandle::new(
                         matcher,
                         #instantiation_name,
                         |expectation| {
@@ -157,7 +157,7 @@ pub fn build_interface_impl(
                 pub fn expect(
                     &self,
                     #(#expect_params)*
-                ) -> ::fnmock::expectation_handle::ExpectationHandle<#matcher_name> {
+                ) -> ::fnmock::ExpectationHandle<#matcher_name> {
                     self.set_expectation(#matcher_name::Predicates {
                         #(#expect_construct_fields)*
                     })
@@ -172,7 +172,7 @@ pub fn build_interface_impl(
                 /// lifetime that can't be matched by a `'static` predicate.
                 /// Use `.expectf(...)` instead.
                 pub fn expect(&self)
-                    -> ::fnmock::expectation_handle::ExpectationHandle<#matcher_name>
+                    -> ::fnmock::ExpectationHandle<#matcher_name>
                 {
                     unimplemented!("`.expect()` is not available on this spy; use `.expectf()` instead")
                 }
@@ -187,14 +187,14 @@ pub fn build_interface_impl(
                 pub fn expectf(
                     &self,
                     function: impl #expectf_signature + 'static,
-                ) -> ::fnmock::expectation_handle::ExpectationHandle<#matcher_name> {
+                ) -> ::fnmock::ExpectationHandle<#matcher_name> {
                     self.set_expectation(#matcher_name::Function {
                         function: ::std::rc::Rc::new(function),
                     })
                 }
 
                 /// Expect this many calls, whatever their arguments.
-                pub fn expect_times(&self, call_range: impl Into<::fnmock::call_range::CallRange>) {
+                pub fn expect_times(&self, call_range: impl Into<::fnmock::spy::call_range::CallRange>) {
                     #store_name.with_borrow_mut(|spy| spy.set_total_call_range(call_range.into()));
                 }
 
@@ -216,8 +216,8 @@ pub fn build_interface_impl(
                 fn set_expectation(
                     &self,
                     matcher: #matcher_name,
-                ) -> ::fnmock::expectation_handle::ExpectationHandle<#matcher_name> {
-                    ::fnmock::expectation_handle::ExpectationHandle::new(
+                ) -> ::fnmock::ExpectationHandle<#matcher_name> {
+                    ::fnmock::ExpectationHandle::new(
                         matcher,
                         #display_name,
                         |expectation| {
@@ -265,7 +265,7 @@ mod tests {
             impl PingSpyInterface {
                 pub fn expect(
                     &self,
-                ) -> ::fnmock::expectation_handle::ExpectationHandle<PingMatcher> {
+                ) -> ::fnmock::ExpectationHandle<PingMatcher> {
                     self.set_expectation(PingMatcher::Predicates {
                     })
                 }
@@ -273,13 +273,13 @@ mod tests {
                 pub fn expectf(
                     &self,
                     function: impl Fn() -> bool + 'static,
-                ) -> ::fnmock::expectation_handle::ExpectationHandle<PingMatcher> {
+                ) -> ::fnmock::ExpectationHandle<PingMatcher> {
                     self.set_expectation(PingMatcher::Function {
                         function: ::std::rc::Rc::new(function),
                     })
                 }
 
-                pub fn expect_times(&self, call_range: impl Into<::fnmock::call_range::CallRange>) {
+                pub fn expect_times(&self, call_range: impl Into<::fnmock::spy::call_range::CallRange>) {
                     PING_SPY_STORE.with_borrow_mut(|spy| spy.set_total_call_range(call_range.into()));
                 }
 
@@ -298,8 +298,8 @@ mod tests {
                 fn set_expectation(
                     &self,
                     matcher: PingMatcher,
-                ) -> ::fnmock::expectation_handle::ExpectationHandle<PingMatcher> {
-                    ::fnmock::expectation_handle::ExpectationHandle::new(
+                ) -> ::fnmock::ExpectationHandle<PingMatcher> {
+                    ::fnmock::ExpectationHandle::new(
                         matcher,
                         "ping",
                         |expectation| {
@@ -332,7 +332,7 @@ mod tests {
             idents: vec![parse_quote!(T)],
             idents_without_const_generics: vec![parse_quote!(T)],
             keys: vec![parse_quote! {
-                ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())
+                ::fnmock::common::generic_key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())
             }],
         };
         let display_fragments: Vec<syn::Expr> =

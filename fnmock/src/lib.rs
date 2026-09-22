@@ -71,33 +71,35 @@
 //! a walkthrough and the current limitations.
 
 #[doc(hidden)]
-pub mod call_range;
+pub mod common {
+    pub mod generic_key;
+}
 #[doc(hidden)]
-pub mod expectation;
+pub mod fake {
+    pub mod fake_store;
+    pub mod generic_fake_store;
+}
 #[doc(hidden)]
-pub mod expectation_handle;
-#[doc(hidden)]
-pub mod fake_store;
-#[doc(hidden)]
-pub mod generic_fake_store;
-#[doc(hidden)]
-pub mod generic_spy_store;
-#[doc(hidden)]
-pub mod matcher;
-#[doc(hidden)]
-pub mod sequence;
-#[doc(hidden)]
-pub mod spy_store;
+pub mod spy {
+    pub mod call_range;
+    pub mod expectation;
+    pub mod expectation_handle;
+    pub mod generic_spy_store;
+    pub mod matcher;
+    pub mod sequence;
+    pub mod spy_store;
+}
 
-// Re-export the public API to make doc-comments visible.
-pub use call_range::CallRange;
-pub use expectation_handle::ExpectationHandle;
-pub use sequence::Sequence;
+// Re-export the types a test touches so that users of the library can just use `fnmock::Sequence` and doc comments are visible.
+pub use spy::call_range::CallRange;
+pub use spy::expectation_handle::ExpectationHandle;
+pub use spy::sequence::Sequence;
 
+/// Re-export the predicate builders so that users of the library can just use `fnmock::predicate` instead of having to depend on `predicates` directly.
 pub use predicates::{
     boolean::PredicateBooleanExt,
     prelude::{Predicate, PredicateBoxExt, PredicateFileContentExt, PredicateStrExt, predicate},
 };
 
-/// Re-export the derive macro so that users of the library can just use `fnmock::fakeable` instead of having to depend on `fnmock-derive` directly.
+/// Re-export the derive macro.
 pub use fnmock_derive::*;

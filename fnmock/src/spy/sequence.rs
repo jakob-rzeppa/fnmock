@@ -2,7 +2,7 @@
 
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{
+use crate::spy::{
     call_range::CallRange,
     expectation::{DynExpectation, Expectation},
     matcher::Matcher,
@@ -68,11 +68,11 @@ impl Sequence {
 
     /// Identity of the shared state, so a spy can tell two clones of one sequence apart from
     /// two different sequences.
-    pub fn id(&self) -> *const () {
+    pub(crate) fn id(&self) -> *const () {
         Rc::as_ptr(&self.0).cast::<()>()
     }
 
-    pub fn append_expectation<M: Matcher>(&mut self, expectation: Expectation<M>) {
+    pub(crate) fn append_expectation<M: Matcher>(&mut self, expectation: Expectation<M>) {
         self.0.borrow_mut().steps.push(Box::new(expectation));
     }
 
@@ -82,7 +82,7 @@ impl Sequence {
     ///
     /// A [`Sequence::new_strict`] sequence panics if the call belongs to a later step while an
     /// earlier one has not reached the minimum of its call range yet.
-    pub fn record_call<M: Matcher>(&self, params: &M::Params<'_>) {
+    pub(crate) fn record_call<M: Matcher>(&self, params: &M::Params<'_>) {
         let mut state = self.0.borrow_mut();
 
         // Greedy: the earliest step from the current one on that accepts the call gets it, even
@@ -159,7 +159,7 @@ impl Sequence {
     ///
     /// Steps of other functions taking part in this sequence are silently skipped, the same
     /// way [`Sequence::record_call`] only ever matches its own function's steps.
-    pub fn unfulfilled_steps<M: Matcher>(&self) -> Vec<(String, usize, CallRange)> {
+    pub(crate) fn unfulfilled_steps<M: Matcher>(&self) -> Vec<(String, usize, CallRange)> {
         self.0
             .borrow()
             .steps

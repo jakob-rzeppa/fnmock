@@ -141,7 +141,7 @@ mod tests {
             idents: vec![parse_quote!(T)],
             idents_without_const_generics: vec![parse_quote!(T)],
             keys: vec![parse_quote! {
-                ::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())
+                ::fnmock::common::generic_key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())
             }],
         };
         let display_fragments: Vec<syn::Expr> =
@@ -163,7 +163,7 @@ mod tests {
                 let params = FooMatcherParams(a, ::std::marker::PhantomData,);
                 FOO_SPY_STORE.with_borrow_mut(|store| {
                     store.with_store_mut::<FooMatcher<T>, _>(
-                        [::fnmock::generic_fake_store::key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())],
+                        [::fnmock::common::generic_key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())],
                         || format!("{}::<{}>", "foo", [::std::any::type_name::<T>().to_string()].join(", ")),
                         |spy| spy.record_call(&params),
                     )

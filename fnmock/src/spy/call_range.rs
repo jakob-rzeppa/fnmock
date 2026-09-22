@@ -26,8 +26,7 @@ pub struct CallRange {
 }
 
 impl CallRange {
-    #[doc(hidden)]
-    pub fn contains(&self, value: &usize) -> bool {
+    pub(crate) fn contains(&self, value: &usize) -> bool {
         self.min_reached(value) && !self.max_exceeded(value)
     }
 
@@ -35,8 +34,7 @@ impl CallRange {
     ///
     /// This is what makes an expectation inside a sequence advancable: the minimum has to be
     /// satisfied before the sequence moves on, while further calls may still be accepted.
-    #[doc(hidden)]
-    pub fn min_reached(&self, value: &usize) -> bool {
+    pub(crate) fn min_reached(&self, value: &usize) -> bool {
         match self.start {
             Bound::Included(start) => *value >= start,
             Bound::Excluded(start) => *value > start,
@@ -44,8 +42,7 @@ impl CallRange {
         }
     }
 
-    #[doc(hidden)]
-    pub fn max_exceeded(&self, value: &usize) -> bool {
+    pub(crate) fn max_exceeded(&self, value: &usize) -> bool {
         match self.end {
             Bound::Unbounded => false,
             Bound::Included(max) => max < *value,

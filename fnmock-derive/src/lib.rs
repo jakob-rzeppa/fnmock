@@ -17,7 +17,7 @@ mod scheme;
 mod spyable;
 mod strategy;
 
-/// Make a function or an inherent impl block fakeable in tests.
+/// Make a function or an impl methods fakeable in tests.
 ///
 /// Applied to a function, the attribute leaves the original body in place and injects a
 /// `#[cfg(test)]`-gated lookup at the top of it: if a fake is installed for this function on the
@@ -75,7 +75,7 @@ pub fn fakeable(
     }
 }
 
-/// Record a free function's calls in tests, and assert on them.
+/// Record a free function's or impl method's calls in tests, and assert on them.
 ///
 /// Where [`macro@fakeable`] replaces a function's body, a spy leaves it alone: the attribute
 /// injects a `#[cfg(test)]`-gated statement at the top of the body that hands the call's arguments

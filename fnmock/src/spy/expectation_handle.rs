@@ -1,4 +1,6 @@
-use crate::{Sequence, call_range::CallRange, expectation::Expectation, matcher::Matcher};
+use crate::spy::{
+    call_range::CallRange, expectation::Expectation, matcher::Matcher, sequence::Sequence,
+};
 
 /// What `expect` hands back to the test, so the expectation can be refined by chaining.
 ///

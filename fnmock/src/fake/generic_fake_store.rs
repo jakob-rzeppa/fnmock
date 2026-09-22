@@ -2,9 +2,7 @@
 
 use std::{any::Any, collections::HashMap, rc::Rc};
 
-use crate::generic_fake_store::key::GenericKeyPart;
-
-pub mod key;
+use crate::common::generic_key::GenericKeyPart;
 
 /// A store for fake implementations of generic functions, keyed by `GenericKeyPart`s built from their generic parameters.
 /// This allows faking generic functions with different type parameters without needing a separate static variable for each combination of types.
@@ -84,7 +82,7 @@ impl<const GENERIC_COUNT: usize> GenericFakeStore<GENERIC_COUNT> {
 mod tests {
     use std::any::TypeId;
 
-    use crate::generic_fake_store::key::ConstValue;
+    use crate::common::generic_key::ConstValue;
 
     use super::*;
 

@@ -17,7 +17,7 @@ use std::fmt::Display;
 /// a different lifetime on every call. Erasing that tuple behind [`Any`](std::any::Any) is
 /// therefore impossible, since `Any` is bounded `'static`.
 ///
-/// Making `Params` a generic associated type instead lets [`SpyStore`](crate::spy_store::SpyStore)
+/// Making `Params` a generic associated type instead lets the store
 /// name the parameter type without pinning down its lifetime: the lifetime is chosen at each
 /// call site, so borrowed arguments never have to outlive the call.
 pub trait Matcher: Clone + Display + 'static {
