@@ -13,10 +13,10 @@ use crate::{
         impl_block::{ImplExpandable, ImplMethodExpandable},
     },
     scheme::{
-        function::fake::FakeScheme,
-        impl_block::{
-            common::{ImplCommonMethodScheme, ImplCommonScheme},
-            fake::{ImplFakeMethodScheme, ImplFakeScheme},
+        common::impl_block::{ImplCommonMethodScheme, ImplCommonScheme},
+        fake::{
+            FakeScheme,
+            impl_block::{ImplFakeMethodScheme, ImplFakeScheme},
         },
     },
 };

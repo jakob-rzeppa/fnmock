@@ -5,11 +5,14 @@ use crate::{
         impl_block::{ImplBlockInfo, ImplMethodInfo},
     },
     scheme::{
-        common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::build_generic_scheme},
-        function::fake::FakeScheme,
-        impl_block::{
-            common::{ImplCommonMethodScheme, ImplCommonScheme, combine_generic_param_infos},
-            fake::names::{
+        common::{
+            fn_closure_trait::build_fn_closure_trait,
+            generic_scheme::build_generic_scheme,
+            impl_block::{ImplCommonMethodScheme, ImplCommonScheme, combine_generic_param_infos},
+        },
+        fake::{
+            FakeScheme,
+            impl_block::names::{
                 build_accessor_name, build_interface_name, build_module_name, build_store_name,
             },
         },

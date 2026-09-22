@@ -12,9 +12,9 @@ use crate::{
         },
         function::FunctionExpandable,
     },
-    scheme::function::{
-        common::FunctionCommonScheme,
-        spy::{FunctionSpyScheme, SpyScheme},
+    scheme::{
+        common::function::FunctionCommonScheme,
+        spy::function::{FunctionSpyScheme, SpyScheme},
     },
 };
 

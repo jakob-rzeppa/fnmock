@@ -13,10 +13,10 @@ use crate::{
         impl_block::{ImplExpandable, ImplMethodExpandable},
     },
     scheme::{
-        function::spy::SpyScheme,
-        impl_block::{
-            common::{ImplCommonMethodScheme, ImplCommonScheme},
-            spy::{ImplSpyMethodScheme, ImplSpyScheme},
+        common::impl_block::{ImplCommonMethodScheme, ImplCommonScheme},
+        spy::{
+            SpyScheme,
+            impl_block::{ImplSpyMethodScheme, ImplSpyScheme},
         },
     },
 };
@@ -141,17 +141,7 @@ mod tests {
     use syn::parse_quote;
 
     use super::*;
-    use crate::{
-        item_info::original::OriginalImpl,
-        scheme::{
-            common::generic_scheme::GenericScheme,
-            function::spy::SpyScheme,
-            impl_block::{
-                common::{ImplCommonMethodScheme, ImplCommonScheme},
-                spy::ImplSpyMethodScheme,
-            },
-        },
-    };
+    use crate::{item_info::original::OriginalImpl, scheme::common::generic_scheme::GenericScheme};
 
     fn non_generic_method_scheme(
         accessor_name: syn::Ident,

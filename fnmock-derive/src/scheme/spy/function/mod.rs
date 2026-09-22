@@ -2,15 +2,13 @@ use crate::{
     item_info::function::FunctionInfo,
     scheme::{
         common::{
+            function::FunctionCommonScheme,
             generic_scheme::{build_generic_display_fragment, build_generic_scheme},
             spy_param::build_spy_params,
         },
-        function::{
-            common::FunctionCommonScheme,
-            spy::names::{
-                build_accessor_name, build_interface_name, build_matcher_name, build_module_name,
-                build_params_name, build_store_name,
-            },
+        spy::function::names::{
+            build_accessor_name, build_interface_name, build_matcher_name, build_module_name,
+            build_params_name, build_store_name,
         },
     },
 };

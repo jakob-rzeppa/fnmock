@@ -12,9 +12,9 @@ use crate::{
         },
         function::FunctionExpandable,
     },
-    scheme::function::{
-        common::FunctionCommonScheme,
-        fake::{FakeScheme, FunctionFakeScheme},
+    scheme::{
+        common::function::FunctionCommonScheme,
+        fake::{FakeScheme, function::FunctionFakeScheme},
     },
 };
 

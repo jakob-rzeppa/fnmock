@@ -1,6 +1,6 @@
 use crate::{
     expandable::impl_block::ImplExpandable, expanded::impl_block::ImplExpanded,
-    item_info::impl_block::ImplBlockInfo, scheme::impl_block::fake::ImplFakeScheme,
+    item_info::impl_block::ImplBlockInfo, scheme::fake::impl_block::ImplFakeScheme,
     strategy::Strategy,
 };
 

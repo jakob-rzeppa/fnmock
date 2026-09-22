@@ -1,10 +1,13 @@
 use crate::{
     item_info::{call_value::CallValue, function::FunctionInfo},
     scheme::{
-        common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::build_generic_scheme},
-        function::{
-            common::FunctionCommonScheme,
-            fake::names::{
+        common::{
+            fn_closure_trait::build_fn_closure_trait, function::FunctionCommonScheme,
+            generic_scheme::build_generic_scheme,
+        },
+        fake::{
+            FakeScheme,
+            function::names::{
                 build_accessor_name, build_interface_name, build_module_name, build_store_name,
             },
         },
@@ -12,14 +15,6 @@ use crate::{
 };
 
 mod names;
-
-pub struct FakeScheme {
-    pub store_name: syn::Ident,
-
-    pub fn_closure_trait: syn::TraitBound,
-
-    pub fake_call_values: Vec<CallValue>,
-}
 
 pub fn build_fake_scheme(value: &FunctionInfo) -> syn::Result<FakeScheme> {
     let store_name = build_store_name(&value.name);

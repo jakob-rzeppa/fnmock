@@ -7,12 +7,12 @@ use crate::{
     scheme::{
         common::{
             generic_scheme::{build_generic_display_fragment, build_generic_scheme},
+            impl_block::{ImplCommonMethodScheme, ImplCommonScheme, combine_generic_param_infos},
             spy_param::build_spy_params,
         },
-        function::spy::SpyScheme,
-        impl_block::{
-            common::{ImplCommonMethodScheme, ImplCommonScheme, combine_generic_param_infos},
-            spy::names::{
+        spy::{
+            SpyScheme,
+            impl_block::names::{
                 build_accessor_name, build_interface_name, build_matcher_name, build_module_name,
                 build_params_name, build_store_name,
             },
