@@ -2,12 +2,17 @@ use syn::parse_quote;
 
 use crate::{
     expandable::{
-        common::fake::{
-            inline_call::build_inline_call,
-            module::{
-                fake_store::build_fake_store, implementation_getter::build_implementation_getter,
-                interface_getter::build_interface_getter, interface_impl::build_interface_impl,
-                interface_struct::build_interface_struct,
+        common::{
+            fake::{
+                inline_call::build_inline_call,
+                module::{
+                    fake_store::build_fake_store,
+                    implementation_getter::build_implementation_getter,
+                    interface_impl::build_interface_impl,
+                },
+            },
+            interface::{
+                interface_getter::build_interface_getter, interface_struct::build_interface_struct,
             },
         },
         impl_block::{ImplExpandable, ImplMethodExpandable},

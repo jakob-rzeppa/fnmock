@@ -2,6 +2,7 @@ use quote::quote;
 
 use crate::scheme::common::generic_scheme::GenericScheme;
 
+/// Builds the interface struct definition.
 pub fn build_interface_struct(
     interface_struct_name: &syn::Ident,
     generic_scheme: Option<&GenericScheme>,

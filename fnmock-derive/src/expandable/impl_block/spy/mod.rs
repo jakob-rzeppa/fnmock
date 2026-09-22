@@ -2,12 +2,16 @@ use syn::parse_quote;
 
 use crate::{
     expandable::{
-        common::spy::{
-            inline_call::build_inline_call,
-            module::{
-                interface_getter::build_interface_getter, interface_impl::build_interface_impl,
-                interface_struct::build_interface_struct, matcher::build_matcher,
-                record_call::build_record_call, spy_store::build_spy_store,
+        common::{
+            interface::{
+                interface_getter::build_interface_getter, interface_struct::build_interface_struct,
+            },
+            spy::{
+                inline_call::build_inline_call,
+                module::{
+                    interface_impl::build_interface_impl, matcher::build_matcher,
+                    record_call::build_record_call, spy_store::build_spy_store,
+                },
             },
         },
         impl_block::{ImplExpandable, ImplMethodExpandable},

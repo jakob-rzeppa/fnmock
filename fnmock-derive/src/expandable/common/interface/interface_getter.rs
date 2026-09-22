@@ -2,6 +2,7 @@ use quote::quote;
 
 use crate::scheme::common::generic_scheme::GenericScheme;
 
+/// Builds the interface getter function.
 pub fn build_interface_getter(
     interface_name: &syn::Ident,
     generic_scheme: Option<&GenericScheme>,
