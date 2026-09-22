@@ -44,3 +44,27 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct Ref<'a>(&'a str);
+
+    #[fnmock::mockable]
+    fn elided_lifetime_param_type(r: Ref<'_>) -> usize {
+        r.0.len()
+    }
+
+    #[test]
+    fn test_elided_lifetime_param_type() {
+        let mock = elided_lifetime_param_type_mock();
+        mock.setup(|r: Ref<'_>| {
+            assert_eq!(r.0, "hi");
+            42
+        });
+        mock.expectf(|r: &Ref<'_>| r.0 == "hi").once();
+
+        let res = elided_lifetime_param_type(Ref("hi"));
+
+        assert_eq!(res, 42);
+        mock.assert();
+    }
+}

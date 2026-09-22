@@ -39,3 +39,23 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn generic_behind_reference<'a, T: 'static + std::fmt::Debug>(value: &'a T) -> String {
+        format!("{value:?}")
+    }
+
+    #[test]
+    fn test_generic_behind_reference() {
+        let mock = generic_behind_reference_mock::<u8>();
+        mock.setup(|_value| "Fake".to_string());
+        mock.expect(fnmock::predicate::eq(1u8)).once();
+
+        let owned = 1u8;
+        let res = generic_behind_reference(&owned);
+
+        assert_eq!(res, "Fake");
+        mock.assert();
+    }
+}

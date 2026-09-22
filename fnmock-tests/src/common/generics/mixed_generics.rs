@@ -39,3 +39,24 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn mixed_generics<'a, T: std::fmt::Display + 'static, const N: usize>(a: &'a T) -> String {
+        format!("{} {}", a, N)
+    }
+
+    #[test]
+    fn test_mixed_generics() {
+        let mock = mixed_generics_mock::<String, 5>();
+        mock.setup(|a| format!("Fake {} 5", a));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let value = "Test".to_string();
+        let res = mixed_generics::<String, 5>(&value);
+
+        assert_eq!(res, "Fake Test 5");
+        mock.assert();
+    }
+}

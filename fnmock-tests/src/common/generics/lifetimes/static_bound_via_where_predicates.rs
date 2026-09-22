@@ -44,3 +44,27 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn static_bound_via_where_predicates<'a, T>(value: T) -> String
+    where
+        T: 'a + std::fmt::Display,
+        'a: 'static,
+    {
+        format!("{value}")
+    }
+
+    #[test]
+    fn test_static_bound_via_where_predicates() {
+        let mock = static_bound_via_where_predicates_mock::<String>();
+        mock.setup(|value| format!("Fake {value}"));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let res = static_bound_via_where_predicates("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

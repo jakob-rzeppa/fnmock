@@ -56,3 +56,29 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    use std::fmt::Display;
+
+    #[fnmock::mockable]
+    fn associated_type_bounds<I>(value: I) -> Vec<String>
+    where
+        I: Iterator + 'static,
+        I::Item: Display,
+    {
+        value.map(|item| item.to_string()).collect()
+    }
+
+    #[test]
+    fn test_associated_type_bounds() {
+        let mock = associated_type_bounds_mock::<std::vec::IntoIter<i32>>();
+        mock.setup(|_value| vec!["Fake".to_string()]);
+        mock.expectf(|value: &std::vec::IntoIter<i32>| value.len() == 3)
+            .once();
+
+        let res = associated_type_bounds(vec![1i32, 2i32, 3i32].into_iter());
+
+        assert_eq!(res, vec!["Fake".to_string()]);
+        mock.assert();
+    }
+}

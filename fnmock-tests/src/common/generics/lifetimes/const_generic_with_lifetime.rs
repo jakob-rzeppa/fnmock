@@ -44,3 +44,23 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn const_generic_with_lifetime<'a, const N: usize>(s: &'a str) -> usize {
+        s.len() + N
+    }
+
+    #[test]
+    fn test_const_generic_with_lifetime() {
+        let mock = const_generic_with_lifetime_mock::<2>();
+        mock.setup(|s| s.len() + 10);
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let res = const_generic_with_lifetime::<2>("Test");
+
+        assert_eq!(res, 14);
+        mock.assert();
+    }
+}

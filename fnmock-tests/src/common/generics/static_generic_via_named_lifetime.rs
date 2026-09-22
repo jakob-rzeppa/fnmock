@@ -50,3 +50,27 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn static_generic_via_named_lifetime<'a, T: 'a + std::fmt::Display>(value: T) -> String
+    where
+        'a: 'static,
+    {
+        format!("{value}")
+    }
+
+    #[test]
+    fn test_static_generic_via_named_lifetime() {
+        let mock = static_generic_via_named_lifetime_mock::<String>();
+        mock.setup(|value| format!("Fake {}", value));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let value = "Test".to_string();
+        let res = static_generic_via_named_lifetime(value);
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

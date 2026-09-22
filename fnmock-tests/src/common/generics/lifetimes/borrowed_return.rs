@@ -48,3 +48,24 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn borrowed_return<'a>(s: &'a str) -> &'a str {
+        s
+    }
+
+    #[test]
+    fn test_borrowed_return() {
+        let mock = borrowed_return_mock();
+        mock.setup(|_s| "Fake");
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let owned = "Test".to_string();
+        let res = borrowed_return(&owned);
+
+        assert_eq!(res, "Fake");
+        mock.assert();
+    }
+}

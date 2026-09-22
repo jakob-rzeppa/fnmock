@@ -48,3 +48,22 @@ mod spy {
         spy_5.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn unused_const_generic<const N: usize>(id: i32) -> i32 {
+        id
+    }
+
+    #[test]
+    fn test_unused_const_generic() {
+        let mock = unused_const_generic_mock::<3>();
+        mock.setup(|id| id + 1);
+        mock.expect(fnmock::predicate::eq(7)).once();
+
+        let res = unused_const_generic::<3>(7);
+
+        assert_eq!(res, 8);
+        mock.assert();
+    }
+}

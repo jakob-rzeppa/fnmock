@@ -47,3 +47,30 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn where_bounds<T: 'static, U: std::fmt::Debug>(a: T, b: U) -> String
+    where
+        T: std::fmt::Display,
+        U: 'static,
+    {
+        format!("{} {:?}", a, b)
+    }
+
+    #[test]
+    fn test_where_bounds() {
+        let mock = where_bounds_mock::<String, i32>();
+        mock.setup(|a, b| format!("Fake {} {:?}", a, b));
+        mock.expect(
+            fnmock::predicate::eq("Test".to_string()),
+            fnmock::predicate::eq(2),
+        )
+        .once();
+
+        let res = where_bounds("Test".to_string(), 2);
+
+        assert_eq!(res, "Fake Test 2");
+        mock.assert();
+    }
+}

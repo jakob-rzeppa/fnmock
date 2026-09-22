@@ -62,3 +62,30 @@ mod spy {
         spy_u8.assert();
     }
 }
+
+mod mock {
+    struct Ref<'a>(&'a str);
+
+    #[fnmock::mockable]
+    fn mixed_lifetime_and_generic<'a, T: 'static>(r: Ref<'a>, value: T) -> usize {
+        let _ = value;
+        r.0.len()
+    }
+
+    #[test]
+    fn test_mixed_lifetime_and_generic() {
+        let mock = mixed_lifetime_and_generic_mock::<i32>();
+        mock.setup(|r, value| {
+            assert_eq!(r.0, "hi");
+            assert_eq!(value, 2);
+            3
+        });
+        mock.expectf(|r: &Ref<'_>, value: &i32| r.0 == "hi" && *value == 2)
+            .once();
+
+        let res = mixed_lifetime_and_generic(Ref("hi"), 2);
+
+        assert_eq!(res, 3);
+        mock.assert();
+    }
+}
