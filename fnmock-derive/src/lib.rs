@@ -9,6 +9,7 @@
 
 use crate::{fakeable::handle_fakeable, spyable::handle_spyable};
 
+mod entry;
 mod expandable;
 mod expanded;
 mod fakeable;
