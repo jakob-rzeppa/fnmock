@@ -34,3 +34,23 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn return_result(a: String) -> Result<String, String> {
+        Ok(a)
+    }
+
+    #[test]
+    fn test_return_result() {
+        let mock = return_result_mock();
+        mock.setup(|a| Ok(format!("Fake {}", a)));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let res = return_result("Test".to_string());
+
+        assert_eq!(res, Ok("Fake Test".to_string()));
+        mock.assert();
+    }
+}

@@ -34,3 +34,23 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn return_option(a: String) -> Option<String> {
+        Some(a)
+    }
+
+    #[test]
+    fn test_return_option() {
+        let mock = return_option_mock();
+        mock.setup(|a| Some(format!("Fake {}", a)));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let res = return_option("Test".to_string());
+
+        assert_eq!(res, Some("Fake Test".to_string()));
+        mock.assert();
+    }
+}

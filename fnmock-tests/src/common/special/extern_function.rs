@@ -36,3 +36,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    extern "C" fn extern_function(value: i32) -> i32 {
+        value + 1
+    }
+
+    #[test]
+    fn test_extern_function() {
+        let mock = extern_function_mock();
+        mock.setup(|value| value + 10);
+        mock.expect(fnmock::predicate::eq(1)).once();
+
+        let result = extern_function(1);
+
+        assert_eq!(result, 11);
+        mock.assert();
+    }
+}

@@ -50,3 +50,29 @@ mod spy {
         }
     }
 }
+
+mod mock {
+    use std::{future::Future, pin::Pin};
+
+    #[fnmock::mockable]
+    fn futures(value: i32) -> Pin<Box<dyn Future<Output = String> + Send>> {
+        Box::pin(async move { format!("Real {}", value) })
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[tokio::test]
+        async fn test_futures() {
+            let mock = futures_mock();
+            mock.setup(|value| Box::pin(async move { format!("Fake {}", value) }));
+            mock.expect(fnmock::predicate::eq(1)).once();
+
+            let result = futures(1).await;
+
+            assert_eq!(result, "Fake 1");
+            mock.assert();
+        }
+    }
+}

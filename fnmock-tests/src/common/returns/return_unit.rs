@@ -58,3 +58,24 @@ mod spy {
         assert_eq!(value, "Test modified");
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn return_unit(a: &mut String) {
+        a.push_str(" modified");
+    }
+
+    #[test]
+    fn test_return_unit() {
+        let mock = return_unit_mock();
+        mock.setup(|a| a.push_str(" fake modified"));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let mut value = "Test".to_string();
+        return_unit(&mut value);
+
+        assert_eq!(value, "Test fake modified");
+        mock.assert();
+    }
+}
