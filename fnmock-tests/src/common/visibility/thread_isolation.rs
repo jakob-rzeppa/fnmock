@@ -85,3 +85,27 @@ mod spy {
         thread_handle.join().unwrap();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn thread_isolation(a: String) -> String {
+        format!("Real {}", a)
+    }
+
+    #[test]
+    fn test_mock_not_visible_in_spawned_thread() {
+        let mock = thread_isolation_mock();
+        mock.setup(|a| format!("Fake {}", a));
+        mock.expect_once();
+
+        let res = std::thread::spawn(|| thread_isolation("Test".to_string()))
+            .join()
+            .unwrap();
+        assert_eq!(res, "Real Test");
+
+        // The mock set up on the main thread is still active on the main thread.
+        let res = thread_isolation("Test".to_string());
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}
