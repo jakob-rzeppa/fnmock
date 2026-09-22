@@ -74,7 +74,7 @@ dependencies = [
 
 [[package]]
 name = "fnmock"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fnmock-derive",
  "predicates",
@@ -82,7 +82,7 @@ dependencies = [
 
 [[package]]
 name = "fnmock-derive"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -91,7 +91,7 @@ dependencies = [
 
 [[package]]
 name = "fnmock-tests"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fnmock",
  "tokio",
