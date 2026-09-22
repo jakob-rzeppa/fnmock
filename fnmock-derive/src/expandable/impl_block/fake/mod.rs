@@ -12,9 +12,12 @@ use crate::{
         },
         impl_block::{ImplExpandable, ImplMethodExpandable},
     },
-    scheme::impl_block::{
-        common::{ImplCommonMethodScheme, ImplCommonScheme},
-        fake::{ImplFakeMethodScheme, ImplFakeScheme},
+    scheme::{
+        function::fake::FakeScheme,
+        impl_block::{
+            common::{ImplCommonMethodScheme, ImplCommonScheme},
+            fake::{ImplFakeMethodScheme, ImplFakeScheme},
+        },
     },
 };
 
@@ -50,9 +53,12 @@ fn create_impl_method_expandable(scheme: ImplFakeMethodScheme) -> ImplMethodExpa
                 generic_scheme,
                 method_generic_params,
             },
-        store_name,
-        fn_closure_trait,
-        fake_call_values,
+        fake:
+            FakeScheme {
+                store_name,
+                fn_closure_trait,
+                fake_call_values,
+            },
     } = scheme;
 
     let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
@@ -117,9 +123,11 @@ mod tests {
                 interface_name: interface_name.clone(),
                 generic_scheme: None,
             },
-            store_name,
-            fn_closure_trait: parse_quote!(Fn() -> i32),
-            fake_call_values: vec![],
+            fake: FakeScheme {
+                store_name,
+                fn_closure_trait: parse_quote!(Fn() -> i32),
+                fake_call_values: vec![],
+            },
         }
     }
 

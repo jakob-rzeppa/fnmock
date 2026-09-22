@@ -6,6 +6,7 @@ use crate::{
     },
     scheme::{
         common::{fn_closure_trait::build_fn_closure_trait, generic_scheme::build_generic_scheme},
+        function::fake::FakeScheme,
         impl_block::{
             common::{ImplCommonMethodScheme, ImplCommonScheme, combine_generic_param_infos},
             fake::names::{
@@ -28,11 +29,7 @@ pub struct ImplFakeScheme {
 pub struct ImplFakeMethodScheme {
     pub common: ImplCommonMethodScheme,
 
-    pub store_name: syn::Ident,
-
-    pub fn_closure_trait: syn::TraitBound,
-
-    pub fake_call_values: Vec<CallValue>,
+    pub fake: FakeScheme,
 }
 
 impl TryFrom<ImplBlockInfo> for ImplFakeScheme {
@@ -58,6 +55,33 @@ impl TryFrom<ImplBlockInfo> for ImplFakeScheme {
     }
 }
 
+pub fn build_fake_scheme(
+    struct_name: &syn::TypePath,
+    method: &ImplMethodInfo,
+) -> syn::Result<FakeScheme> {
+    let store_name = build_store_name(struct_name, &method.method_name);
+
+    let param_types = method
+        .param_infos
+        .iter()
+        .map(|p| p.ty.clone())
+        .collect::<Vec<_>>();
+    let fn_closure_trait =
+        build_fn_closure_trait(&method.lifetimes, &param_types, &method.return_type)?;
+
+    let fake_call_values = method
+        .param_infos
+        .iter()
+        .map(|p| CallValue::try_from(&p.pat))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(FakeScheme {
+        store_name,
+        fn_closure_trait,
+        fake_call_values,
+    })
+}
+
 /// Builds the fake scheme for a single method, merging the struct's generics (shared by every
 /// method) with the method's own.
 fn build_method_scheme(
@@ -65,28 +89,21 @@ fn build_method_scheme(
     struct_generic_param_infos: &[GenericParamInfo],
     method: ImplMethodInfo,
 ) -> syn::Result<(syn::Ident, ImplFakeMethodScheme)> {
+    let fake = build_fake_scheme(struct_name, &method)?;
+
     let ImplMethodInfo {
         method_name,
         visibility,
-        param_infos,
-        lifetimes,
-        return_type,
+        param_infos: _,
+        lifetimes: _,
+        return_type: _,
         generic_param_infos: method_generic_param_infos,
     } = method;
 
     let module_name = build_module_name(struct_name, &method_name);
-    let store_name = build_store_name(struct_name, &method_name);
     let accessor_name = build_accessor_name(&method_name);
     let interface_name = build_interface_name(struct_name, &method_name)?;
     let display_name = method_name.to_string();
-
-    let param_types = param_infos.iter().map(|p| p.ty.clone()).collect::<Vec<_>>();
-    let fn_closure_trait = build_fn_closure_trait(&lifetimes, &param_types, &return_type)?;
-
-    let fake_call_values = param_infos
-        .iter()
-        .map(|p| CallValue::try_from(&p.pat))
-        .collect::<Result<Vec<_>, _>>()?;
 
     let (method_generic_params, combined_generic_param_infos) =
         combine_generic_param_infos(struct_generic_param_infos, method_generic_param_infos);
@@ -105,9 +122,7 @@ fn build_method_scheme(
                 generic_scheme,
                 method_generic_params,
             },
-            store_name,
-            fn_closure_trait,
-            fake_call_values,
+            fake,
         },
     ))
 }
@@ -148,11 +163,11 @@ mod tests {
             "UserServiceGetUserFakeInterface"
         );
         assert_eq!(
-            method.1.store_name.to_string(),
+            method.1.fake.store_name.to_string(),
             "USER_SERVICE_GET_USER_FAKE_STORE"
         );
         // The receiver (`self`) plus the one declared parameter.
-        assert_eq!(method.1.fake_call_values.len(), 2);
+        assert_eq!(method.1.fake.fake_call_values.len(), 2);
     }
 
     #[test]
@@ -177,8 +192,8 @@ mod tests {
             scheme.methods[1].1.common.module_name
         );
         assert_ne!(
-            scheme.methods[0].1.store_name,
-            scheme.methods[1].1.store_name
+            scheme.methods[0].1.fake.store_name,
+            scheme.methods[1].1.fake.store_name
         );
     }
 
