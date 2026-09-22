@@ -13,9 +13,7 @@ use crate::{
 
 mod names;
 
-pub struct FunctionFakeScheme {
-    pub common: FunctionCommonScheme,
-
+pub struct FakeScheme {
     pub store_name: syn::Ident,
 
     pub fn_closure_trait: syn::TraitBound,
@@ -23,30 +21,46 @@ pub struct FunctionFakeScheme {
     pub fake_call_values: Vec<CallValue>,
 }
 
+pub fn build_fake_scheme(value: &FunctionInfo) -> syn::Result<FakeScheme> {
+    let store_name = build_store_name(&value.name);
+
+    let param_types = value
+        .params
+        .iter()
+        .map(|p| p.ty.clone())
+        .collect::<Vec<_>>();
+    let fn_closure_trait =
+        build_fn_closure_trait(&value.lifetimes, &param_types, &value.return_type)?;
+
+    let fake_call_values = value
+        .params
+        .iter()
+        .map(|p| CallValue::try_from(&p.pat))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(FakeScheme {
+        store_name,
+        fn_closure_trait,
+        fake_call_values,
+    })
+}
+
+pub struct FunctionFakeScheme {
+    pub common: FunctionCommonScheme,
+
+    pub fake: FakeScheme,
+}
+
 impl TryFrom<FunctionInfo> for FunctionFakeScheme {
     type Error = syn::Error;
 
     fn try_from(value: FunctionInfo) -> Result<Self, Self::Error> {
+        let fake = build_fake_scheme(&value)?;
+
         let module_name = build_module_name(&value.name);
-        let store_name = build_store_name(&value.name);
         let accessor_name = build_accessor_name(&value.name);
         let interface_name = build_interface_name(&value.name);
         let display_name = value.name.to_string();
-
-        let param_types = value
-            .params
-            .iter()
-            .map(|p| p.ty.clone())
-            .collect::<Vec<_>>();
-        let fn_closure_trait =
-            build_fn_closure_trait(&value.lifetimes, &param_types, &value.return_type)?;
-
-        let fake_call_values = value
-            .params
-            .iter()
-            .map(|p| CallValue::try_from(&p.pat))
-            .collect::<Result<Vec<_>, _>>()?;
-
         let generic_scheme = build_generic_scheme(&value.generic_params);
 
         Ok(FunctionFakeScheme {
@@ -59,9 +73,7 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
                 interface_name,
                 generic_scheme,
             },
-            store_name,
-            fn_closure_trait,
-            fake_call_values,
+            fake,
         })
     }
 }
@@ -94,8 +106,8 @@ mod tests {
             "GetUserFakeInterface"
         );
         assert!(scheme.common.generic_scheme.is_none());
-        assert_eq!(scheme.store_name.to_string(), "GET_USER_FAKE_STORE");
-        assert_eq!(scheme.fake_call_values.len(), 1);
+        assert_eq!(scheme.fake.store_name.to_string(), "GET_USER_FAKE_STORE");
+        assert_eq!(scheme.fake.fake_call_values.len(), 1);
     }
 
     #[test]

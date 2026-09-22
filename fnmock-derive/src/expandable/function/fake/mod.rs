@@ -12,7 +12,10 @@ use crate::{
         },
         function::FunctionExpandable,
     },
-    scheme::function::{common::FunctionCommonScheme, fake::FunctionFakeScheme},
+    scheme::function::{
+        common::FunctionCommonScheme,
+        fake::{FakeScheme, FunctionFakeScheme},
+    },
 };
 
 impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
@@ -30,9 +33,12 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
                     interface_name,
                     generic_scheme,
                 },
-            store_name,
-            fn_closure_trait,
-            fake_call_values,
+            fake:
+                FakeScheme {
+                    store_name,
+                    fn_closure_trait,
+                    fake_call_values,
+                },
         } = value;
 
         let accessor_generic_params = generic_scheme
