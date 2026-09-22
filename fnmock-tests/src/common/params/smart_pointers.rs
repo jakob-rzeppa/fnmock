@@ -36,3 +36,23 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn smart_pointers(a: Box<String>) -> String {
+        a.to_string()
+    }
+
+    #[test]
+    fn test_smart_pointers() {
+        let mock = smart_pointers_mock();
+        mock.setup(|a| format!("{} fake modified", a));
+        mock.expect(fnmock::predicate::eq(Box::new("hi".to_string())))
+            .once();
+
+        let result = smart_pointers(Box::new("hi".to_string()));
+
+        assert_eq!(result, "hi fake modified");
+        mock.assert();
+    }
+}

@@ -37,3 +37,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn reference_in_option(a: Option<&'static str>) -> String {
+        format!("Real {}", a.unwrap_or("none"))
+    }
+
+    #[test]
+    fn test_reference_in_option() {
+        let mock = reference_in_option_mock();
+        mock.setup(|a| format!("Fake {}", a.unwrap_or("none")));
+        mock.expect(fnmock::predicate::eq(Some("hi"))).once();
+
+        let result = reference_in_option(Some("hi"));
+
+        assert_eq!(result, "Fake hi");
+        mock.assert();
+    }
+}

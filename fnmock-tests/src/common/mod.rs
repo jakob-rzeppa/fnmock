@@ -8,6 +8,7 @@ mod params {
     mod raw_const_pointers;
     mod raw_mut_pointers;
     mod reference;
+    mod reference_in_container;
     mod reference_in_option;
     mod reference_in_slice;
     mod reference_in_tuple;

@@ -36,3 +36,23 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn reference(a: &str) -> String {
+        a.to_string()
+    }
+
+    #[test]
+    fn test_reference() {
+        let mock = reference_mock();
+        mock.setup(|a| format!("{} fake modified", a));
+        mock.expect(fnmock::predicate::eq("hi".to_string())).once();
+
+        let value = "hi".to_string();
+        let result = reference(&value);
+
+        assert_eq!(result, "hi fake modified");
+        mock.assert();
+    }
+}

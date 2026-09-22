@@ -26,3 +26,7 @@ mod fake {
 
 // No `mod spy` here: spy rejects tuple-destructuring params outright, even
 // with a `mut` binding inside, see unsupported/spy/tuple_destructuring.rs.
+//
+// No `mod mock` either, for the same reason: a mock is the intersection of
+// fake and spy, see docs/LIMITATIONS.md#parameter-patterns and
+// unsupported_tuple_destructuring_mock.cf.rs.

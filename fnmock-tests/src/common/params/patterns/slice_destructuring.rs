@@ -21,3 +21,7 @@ mod fake {
 
 // No `mod spy` here: spy rejects slice-destructuring params outright, see
 // unsupported/spy/slice_destructuring.rs.
+//
+// No `mod mock` either, for the same reason: a mock is the intersection of
+// fake and spy, see docs/LIMITATIONS.md#parameter-patterns and
+// unsupported_slice_destructuring_mock.cf.rs.

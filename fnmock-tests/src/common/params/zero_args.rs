@@ -33,3 +33,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn zero_args() -> i32 {
+        1
+    }
+
+    #[test]
+    fn test_zero_args() {
+        let mock = zero_args_mock();
+        mock.setup(|| 42);
+        mock.expect_once();
+
+        let res = zero_args();
+
+        assert_eq!(res, 42);
+        mock.assert();
+    }
+}

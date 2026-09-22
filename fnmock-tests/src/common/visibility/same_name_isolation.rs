@@ -26,12 +26,28 @@ mod fourth {
     }
 }
 
+mod fifth {
+    #[fnmock::mockable]
+    pub fn fetch(a: i32) -> i32 {
+        a + 100000
+    }
+}
+
+mod sixth {
+    #[fnmock::mockable]
+    pub fn fetch(a: i32) -> i32 {
+        a + 1000000
+    }
+}
+
 #[test]
 fn test_real_bodies_are_independent() {
     assert_eq!(first::fetch(1), 2);
     assert_eq!(second::fetch(1), 101);
     assert_eq!(third::fetch(1), 1001);
     assert_eq!(fourth::fetch(1), 10001);
+    assert_eq!(fifth::fetch(1), 100001);
+    assert_eq!(sixth::fetch(1), 1000001);
 }
 
 #[test]
@@ -58,4 +74,20 @@ fn test_spies_are_independent() {
 
     spy1.assert();
     spy2.assert();
+}
+
+#[test]
+fn test_mocks_are_independent() {
+    let mock1 = fifth::fetch_mock();
+    mock1.setup(|a| a + 1);
+    mock1.expect_once();
+
+    let mock2 = sixth::fetch_mock();
+    mock2.expect_once();
+
+    assert_eq!(fifth::fetch(1), 2);
+    assert_eq!(sixth::fetch(1), 1000001);
+
+    mock1.assert();
+    mock2.assert();
 }

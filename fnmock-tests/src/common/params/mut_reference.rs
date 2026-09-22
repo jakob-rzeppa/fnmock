@@ -38,3 +38,23 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn mut_reference(a: &mut String) {
+        a.push_str(" modified");
+    }
+
+    #[test]
+    fn test_mut_reference() {
+        let mock = mut_reference_mock();
+        mock.setup(|a| a.push_str(" fake modified"));
+        mock.expect(fnmock::predicate::eq("hi".to_string())).once();
+
+        let mut value = "hi".to_string();
+        mut_reference(&mut value);
+
+        assert_eq!(value, "hi fake modified");
+        mock.assert();
+    }
+}

@@ -42,3 +42,27 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn raw_mut_pointers(a: *mut String) -> String {
+        unsafe { (*a).clone() }
+    }
+
+    #[test]
+    fn test_raw_mut_pointers() {
+        let mock = raw_mut_pointers_mock();
+        mock.setup(|a| unsafe {
+            let mut clone = (*a).clone();
+            clone.push_str(" fake modified");
+            clone
+        });
+        mock.expectf(|e| unsafe { **e == "hi".to_string() });
+
+        let mut value = "hi".to_string();
+        let result = raw_mut_pointers(&mut value as *mut String);
+
+        assert_eq!(result, "hi fake modified");
+        mock.assert();
+    }
+}

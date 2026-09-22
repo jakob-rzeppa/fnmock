@@ -34,3 +34,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn by_value(a: String) -> String {
+        a
+    }
+
+    #[test]
+    fn test_by_value() {
+        let mock = by_value_mock();
+        mock.setup(|a| format!("Fake {}", a));
+        mock.expect(fnmock::predicate::eq("hi".to_string())).once();
+
+        let res = by_value("hi".to_string());
+
+        assert_eq!(res, "Fake hi");
+        mock.assert();
+    }
+}

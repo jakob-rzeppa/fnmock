@@ -37,3 +37,24 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn implicit_lifetime(a: &'_ str) -> String {
+        a.to_string()
+    }
+
+    #[test]
+    fn test_implicit_lifetime() {
+        let mock = implicit_lifetime_mock();
+        mock.setup(|a| format!("{} fake modified", a));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let value = "Test".to_string();
+        let result = implicit_lifetime(&value);
+
+        assert_eq!(result, "Test fake modified");
+        mock.assert();
+    }
+}
