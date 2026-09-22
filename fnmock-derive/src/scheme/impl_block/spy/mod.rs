@@ -55,7 +55,7 @@ pub struct ImplSpyMethodScheme {
     pub generic_display_fragments: Vec<syn::Expr>,
 
     /// Whether the matcher can offer `expect`'s `Predicate<..>`-based matching, alongside
-    /// `expectf`; see [`FunctionSpyScheme::supports_expect`](crate::scheme::function::spy::FunctionSpyScheme::supports_expect).
+    /// `expectf`; see [`SpyScheme::supports_expect`](crate::scheme::function::spy::SpyScheme::supports_expect).
     pub supports_expect: bool,
 }
 

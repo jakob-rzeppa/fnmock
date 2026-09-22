@@ -17,9 +17,7 @@ use crate::{
 
 mod names;
 
-pub struct FunctionSpyScheme {
-    pub common: FunctionCommonScheme,
-
+pub struct SpyScheme {
     pub store_name: syn::Ident,
     pub matcher_name: syn::Ident,
     /// The name of the wrapper struct `Params<'a>` is set to; see
@@ -55,26 +53,49 @@ pub struct FunctionSpyScheme {
     pub supports_expect: bool,
 }
 
+pub fn build_spy_scheme(value: &FunctionInfo) -> syn::Result<SpyScheme> {
+    let store_name = build_store_name(&value.name);
+    let matcher_name = build_matcher_name(&value.name);
+    let params_name = build_params_name(&value.name);
+
+    let params = build_spy_params(&value.params)?;
+
+    let generic_display_fragments = value
+        .generic_params
+        .iter()
+        .map(build_generic_display_fragment)
+        .collect();
+
+    Ok(SpyScheme {
+        store_name,
+        matcher_name,
+        params_name,
+        param_idents: params.idents,
+        param_types: params.types,
+        params_tuple_types: params.params_tuple_types,
+        reference_call_values: params.reference_call_values,
+        generic_display_fragments,
+        supports_expect: params.supports_expect,
+    })
+}
+
+pub struct FunctionSpyScheme {
+    pub common: FunctionCommonScheme,
+
+    pub spy: SpyScheme,
+}
+
 impl TryFrom<FunctionInfo> for FunctionSpyScheme {
     type Error = syn::Error;
 
     fn try_from(value: FunctionInfo) -> Result<Self, Self::Error> {
+        let spy = build_spy_scheme(&value)?;
+
         let module_name = build_module_name(&value.name);
-        let store_name = build_store_name(&value.name);
         let accessor_name = build_accessor_name(&value.name);
         let interface_name = build_interface_name(&value.name);
-        let matcher_name = build_matcher_name(&value.name);
-        let params_name = build_params_name(&value.name);
         let display_name = value.name.to_string();
-
-        let params = build_spy_params(&value.params)?;
-
         let generic_scheme = build_generic_scheme(&value.generic_params);
-        let generic_display_fragments = value
-            .generic_params
-            .iter()
-            .map(build_generic_display_fragment)
-            .collect();
 
         Ok(FunctionSpyScheme {
             common: FunctionCommonScheme {
@@ -86,15 +107,7 @@ impl TryFrom<FunctionInfo> for FunctionSpyScheme {
                 interface_name,
                 generic_scheme,
             },
-            store_name,
-            matcher_name,
-            params_name,
-            param_idents: params.idents,
-            param_types: params.types,
-            params_tuple_types: params.params_tuple_types,
-            reference_call_values: params.reference_call_values,
-            generic_display_fragments,
-            supports_expect: params.supports_expect,
+            spy,
         })
     }
 }
@@ -126,10 +139,11 @@ mod tests {
             "GetUserSpyInterface"
         );
         assert!(scheme.common.generic_scheme.is_none());
-        assert_eq!(scheme.store_name.to_string(), "GET_USER_SPY_STORE");
-        assert_eq!(scheme.matcher_name.to_string(), "GetUserMatcher");
+        assert_eq!(scheme.spy.store_name.to_string(), "GET_USER_SPY_STORE");
+        assert_eq!(scheme.spy.matcher_name.to_string(), "GetUserMatcher");
         assert_eq!(
             scheme
+                .spy
                 .param_idents
                 .iter()
                 .map(|i| i.to_string())
@@ -138,6 +152,7 @@ mod tests {
         );
         assert_eq!(
             scheme
+                .spy
                 .param_types
                 .iter()
                 .map(|t| t.to_token_stream().to_string())
@@ -146,6 +161,7 @@ mod tests {
         );
         assert_eq!(
             scheme
+                .spy
                 .reference_call_values
                 .iter()
                 .map(|v| v.to_token_stream().to_string())
@@ -179,9 +195,9 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["T".to_string()]
         );
-        assert_eq!(scheme.generic_display_fragments.len(), 1);
+        assert_eq!(scheme.spy.generic_display_fragments.len(), 1);
         assert_eq!(
-            scheme.generic_display_fragments[0]
+            scheme.spy.generic_display_fragments[0]
                 .to_token_stream()
                 .to_string(),
             quote::quote!(::std::any::type_name::<T>().to_string()).to_string()
@@ -201,7 +217,7 @@ mod tests {
             .expect("conversion should succeed for a const-generic function");
 
         assert_eq!(
-            scheme.generic_display_fragments[0]
+            scheme.spy.generic_display_fragments[0]
                 .to_token_stream()
                 .to_string(),
             quote::quote!(C.to_string()).to_string()
@@ -266,7 +282,7 @@ mod tests {
 
         let scheme = FunctionSpyScheme::try_from(info).expect("conversion should succeed");
 
-        assert!(!scheme.supports_expect);
+        assert!(!scheme.spy.supports_expect);
     }
 
     #[test]
@@ -280,7 +296,7 @@ mod tests {
 
         let scheme = FunctionSpyScheme::try_from(info).expect("conversion should succeed");
 
-        assert!(scheme.supports_expect);
+        assert!(scheme.spy.supports_expect);
     }
 
     #[test]
@@ -298,11 +314,13 @@ mod tests {
         // `<>` away inside `quote!`/`parse_quote!` calls, so the expected value is written as
         // a plain string here rather than `quote::quote!(Ref<>).to_string()`.
         assert_eq!(
-            scheme.param_types[0].to_token_stream().to_string(),
+            scheme.spy.param_types[0].to_token_stream().to_string(),
             "Ref < >"
         );
         assert_eq!(
-            scheme.params_tuple_types[0].to_token_stream().to_string(),
+            scheme.spy.params_tuple_types[0]
+                .to_token_stream()
+                .to_string(),
             quote::quote!(Ref<'__fnmock_params>).to_string()
         );
     }
@@ -317,8 +335,8 @@ mod tests {
         let scheme =
             FunctionSpyScheme::try_from(info).expect("conversion should succeed for zero params");
 
-        assert!(scheme.param_idents.is_empty());
-        assert!(scheme.param_types.is_empty());
-        assert!(scheme.reference_call_values.is_empty());
+        assert!(scheme.spy.param_idents.is_empty());
+        assert!(scheme.spy.param_types.is_empty());
+        assert!(scheme.spy.reference_call_values.is_empty());
     }
 }
