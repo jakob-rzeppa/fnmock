@@ -10,6 +10,7 @@ pub mod fake {
         pub mod fake_store;
         pub mod implementation_getter;
         pub mod interface_impl;
+        pub mod module_parts;
     }
 }
 
