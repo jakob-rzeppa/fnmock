@@ -6,22 +6,13 @@ use crate::{
             interface::{
                 interface_getter::build_interface_getter, interface_struct::build_interface_struct,
             },
-            spy::{
-                inline_call::build_inline_call,
-                module::{
-                    interface_impl::build_interface_impl, matcher::build_matcher,
-                    record_call::build_record_call, spy_store::build_spy_store,
-                },
-            },
+            spy::{inline_call::build_inline_call, module::module_parts::build_module_parts},
         },
         impl_block::{ImplExpandable, ImplMethodExpandable},
     },
     scheme::{
         common::impl_block::{ImplCommonMethodScheme, ImplCommonScheme},
-        spy::{
-            SpyScheme,
-            impl_block::{ImplSpyMethodScheme, ImplSpyScheme},
-        },
+        spy::impl_block::{ImplSpyMethodScheme, ImplSpyScheme},
     },
 };
 
@@ -57,18 +48,7 @@ fn create_impl_method_expandable(scheme: ImplSpyMethodScheme) -> ImplMethodExpan
                 generic_scheme,
                 method_generic_params,
             },
-        spy:
-            SpyScheme {
-                store_name,
-                matcher_name,
-                params_name,
-                param_idents,
-                param_types,
-                params_tuple_types,
-                reference_call_values,
-                generic_display_fragments,
-                supports_expect,
-            },
+        spy,
     } = scheme;
 
     let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
@@ -78,64 +58,38 @@ fn create_impl_method_expandable(scheme: ImplSpyMethodScheme) -> ImplMethodExpan
         parse_quote! { #interface_name }
     };
 
-    let matcher_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
-        let generic_idents = &generic_scheme.idents;
-        parse_quote! { #matcher_name<#(#generic_idents),*> }
-    } else {
-        parse_quote! { #matcher_name }
-    };
+    let inline_call = build_inline_call(
+        &module_name,
+        &spy.reference_call_values,
+        generic_scheme.as_ref().map(|g| g.idents.as_slice()),
+    );
+
+    let module_parts = [
+        vec![build_interface_struct(
+            &interface_name,
+            generic_scheme.as_ref(),
+        )],
+        build_module_parts(
+            &display_name,
+            &interface_name,
+            generic_scheme.as_ref(),
+            &spy,
+        ),
+        vec![build_interface_getter(
+            &interface_name,
+            generic_scheme.as_ref(),
+        )],
+    ]
+    .concat();
 
     ImplMethodExpandable {
         vis,
-        inline_call: build_inline_call(
-            &module_name,
-            &reference_call_values,
-            generic_scheme.as_ref().map(|g| g.idents.as_slice()),
-        ),
+        inline_call,
         accessor_name,
         method_generic_params,
         interface_type,
         module_name,
-        module_parts: vec![
-            build_spy_store(
-                &store_name,
-                &display_name,
-                &matcher_type,
-                generic_scheme.as_ref().map(|g| g.params.len()),
-            ),
-            build_matcher(
-                &matcher_name,
-                &params_name,
-                &param_idents,
-                &param_types,
-                &params_tuple_types,
-                generic_scheme.as_ref(),
-                supports_expect,
-            ),
-            build_interface_struct(&interface_name, generic_scheme.as_ref()),
-            build_interface_impl(
-                &interface_name,
-                &store_name,
-                &matcher_name,
-                &display_name,
-                &param_idents,
-                &param_types,
-                generic_scheme.as_ref(),
-                &generic_display_fragments,
-                supports_expect,
-            ),
-            build_interface_getter(&interface_name, generic_scheme.as_ref()),
-            build_record_call(
-                &store_name,
-                &matcher_name,
-                &params_name,
-                &display_name,
-                &param_idents,
-                &param_types,
-                generic_scheme.as_ref(),
-                &generic_display_fragments,
-            ),
-        ],
+        module_parts,
     }
 }
 
@@ -145,7 +99,10 @@ mod tests {
     use syn::parse_quote;
 
     use super::*;
-    use crate::{item_info::original::OriginalImpl, scheme::common::generic_scheme::GenericScheme};
+    use crate::{
+        item_info::original::OriginalImpl,
+        scheme::{common::generic_scheme::GenericScheme, spy::SpyScheme},
+    };
 
     fn non_generic_method_scheme(
         accessor_name: syn::Ident,
