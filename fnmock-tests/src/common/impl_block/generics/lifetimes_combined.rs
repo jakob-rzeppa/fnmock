@@ -48,3 +48,29 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct LifetimesCombined<'s> {
+        prefix: &'s str,
+    }
+
+    #[fnmock::mockable]
+    impl<'s> LifetimesCombined<'s> {
+        fn describe<'a>(&self, suffix: &'a str) -> String {
+            format!("{}{}", self.prefix, suffix)
+        }
+    }
+
+    #[test]
+    fn test_lifetimes_combined() {
+        let mock = LifetimesCombined::describe_mock();
+        mock.setup(|_, suffix| format!("Fake{}", suffix));
+        mock.expect_once();
+
+        let s = LifetimesCombined { prefix: "Test" };
+        let res = s.describe(" Value");
+
+        assert_eq!(res, "Fake Value");
+        mock.assert();
+    }
+}

@@ -41,3 +41,29 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    mod inner {
+        pub struct PubSuperStruct;
+
+        #[fnmock::mockable]
+        impl PubSuperStruct {
+            pub(super) fn pub_super_method(&self, a: String) -> String {
+                format!("Real {}", a)
+            }
+        }
+    }
+
+    #[test]
+    fn test_pub_super_impl_method_mock_accessor_usable_from_parent_module() {
+        let mock = inner::PubSuperStruct::pub_super_method_mock();
+        mock.setup(|_, a| format!("Fake {}", a));
+        mock.expect_once();
+
+        let s = inner::PubSuperStruct;
+        let res = s.pub_super_method("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

@@ -54,3 +54,32 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[derive(Debug, PartialEq)]
+    struct ReturnSelf {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl ReturnSelf {
+        fn doubled(&self) -> Self {
+            Self {
+                value: self.value * 2,
+            }
+        }
+    }
+
+    #[test]
+    fn test_return_self() {
+        let mock = ReturnSelf::doubled_mock();
+        mock.setup(|_| ReturnSelf { value: 5 });
+        mock.expect_once();
+
+        let s = ReturnSelf { value: 42 };
+        let res = s.doubled();
+
+        assert_eq!(res, ReturnSelf { value: 5 });
+        mock.assert();
+    }
+}

@@ -46,3 +46,28 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct Foo<T> {
+        value: T,
+    }
+
+    #[fnmock::mockable]
+    impl Foo<u8> {
+        fn bar(&self) -> u8 {
+            self.value
+        }
+    }
+
+    #[test]
+    fn test_foo_bar() {
+        let mock = Foo::<u8>::bar_mock();
+        mock.setup(|_| 9);
+        mock.expect_once();
+
+        let res = Foo::<u8> { value: 1 }.bar();
+
+        assert_eq!(res, 9);
+        mock.assert();
+    }
+}

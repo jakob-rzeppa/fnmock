@@ -80,3 +80,45 @@ mod spy {
         spy_two.assert();
     }
 }
+
+mod mock {
+    //! Two `#[fnmock::mockable]` impl blocks for the same struct
+    //! should not interfere with each other.
+
+    struct Foo {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl Foo {
+        fn bar_one(&self) -> i32 {
+            self.value
+        }
+    }
+
+    #[fnmock::mockable]
+    impl Foo {
+        fn bar_two(&self) -> i32 {
+            self.value + 2
+        }
+    }
+
+    #[test]
+    fn test_mocks_are_independent() {
+        let mock_one = Foo::bar_one_mock();
+        mock_one.setup(|_| 9);
+        mock_one.expect_once();
+
+        let mock_two = Foo::bar_two_mock();
+        mock_two.expect_once();
+
+        let first = Foo { value: 1 };
+        assert_eq!(first.bar_one(), 9);
+
+        let second = Foo { value: 2 };
+        assert_eq!(second.bar_two(), 4);
+
+        mock_one.assert();
+        mock_two.assert();
+    }
+}

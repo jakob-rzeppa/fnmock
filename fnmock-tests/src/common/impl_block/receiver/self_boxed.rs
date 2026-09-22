@@ -48,3 +48,29 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct SelfBoxed {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl SelfBoxed {
+        fn get(self: Box<Self>) -> i32 {
+            self.value
+        }
+    }
+
+    #[test]
+    fn test_self_boxed() {
+        let mock = SelfBoxed::get_mock();
+        mock.setup(|_| 5);
+        mock.expect_once();
+
+        let s = Box::new(SelfBoxed { value: 42 });
+        let res = s.get();
+
+        assert_eq!(res, 5);
+        mock.assert();
+    }
+}

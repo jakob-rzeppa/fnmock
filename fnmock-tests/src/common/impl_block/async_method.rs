@@ -57,3 +57,32 @@ mod spy {
         }
     }
 }
+
+mod mock {
+    struct AsyncMethod;
+
+    #[fnmock::mockable]
+    impl AsyncMethod {
+        async fn get_user(&self, user_id: u32) -> Option<String> {
+            Some(format!("User{}", user_id))
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[tokio::test]
+        async fn test_get_user() {
+            let mock = AsyncMethod::get_user_mock();
+            mock.setup(|_, id| Some(format!("Fake{}", id)));
+            mock.expect(fnmock::predicate::eq(1)).once();
+
+            let s = AsyncMethod;
+            let result = s.get_user(1).await;
+
+            assert_eq!(result, Some("Fake1".into()));
+            mock.assert();
+        }
+    }
+}

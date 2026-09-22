@@ -96,3 +96,34 @@ mod spy {
         thread_handle.join().unwrap();
     }
 }
+
+mod mock {
+    //! Thread isolation for an impl-block method's mock: state set up on one thread must not be
+    //! visible on another.
+
+    struct ThreadIsolation;
+
+    #[fnmock::mockable]
+    impl ThreadIsolation {
+        fn greet(&self, a: String) -> String {
+            format!("Real {}", a)
+        }
+    }
+
+    #[test]
+    fn test_mock_not_visible_in_spawned_thread() {
+        let mock = ThreadIsolation::greet_mock();
+        mock.setup(|_, a| format!("Fake {}", a));
+        mock.expect_once();
+
+        let res = std::thread::spawn(|| ThreadIsolation.greet("Test".to_string()))
+            .join()
+            .unwrap();
+        assert_eq!(res, "Real Test");
+
+        // The mock set up on the main thread is still active on the main thread.
+        let res = ThreadIsolation.greet("Test".to_string());
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

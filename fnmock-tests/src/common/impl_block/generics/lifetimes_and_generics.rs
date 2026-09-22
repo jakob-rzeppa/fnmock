@@ -53,3 +53,31 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct LifetimesAndGenerics;
+
+    #[fnmock::mockable]
+    impl LifetimesAndGenerics {
+        fn describe<'a, T: std::fmt::Display + 'static>(
+            &self,
+            prefix: &'a str,
+            value: T,
+        ) -> String {
+            format!("{}: {}", prefix, value)
+        }
+    }
+
+    #[test]
+    fn test_lifetimes_and_generics() {
+        let mock = LifetimesAndGenerics::describe_mock::<i32>();
+        mock.setup(|_, prefix, value| format!("Fake {}: {}", prefix, value));
+        mock.expect_once();
+
+        let s = LifetimesAndGenerics;
+        let res = s.describe("Value", 42);
+
+        assert_eq!(res, "Fake Value: 42");
+        mock.assert();
+    }
+}

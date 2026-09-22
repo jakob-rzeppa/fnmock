@@ -77,3 +77,44 @@ mod spy {
         spy_bar2.assert();
     }
 }
+
+mod mock {
+    use std::fmt::Display;
+
+    struct Foo<T, U> {
+        value: T,
+        value2: U,
+    }
+
+    #[fnmock::mockable]
+    impl<U: Display + 'static> Foo<u8, U> {
+        fn bar(&self) -> u8 {
+            self.value
+        }
+
+        fn bar2(self) -> U {
+            self.value2
+        }
+    }
+
+    #[test]
+    fn test_foo_bar() {
+        let mock_bar = Foo::<u8, i32>::bar_mock();
+        mock_bar.setup(|_| 6);
+        mock_bar.expect_once();
+
+        let mock_bar2 = Foo::<u8, i32>::bar2_mock();
+        mock_bar2.setup(|_| 7);
+        mock_bar2.expect_once();
+
+        let foo = Foo::<u8, i32> {
+            value: 1,
+            value2: 2,
+        };
+        assert_eq!(foo.bar(), 6);
+        assert_eq!(foo.bar2(), 7);
+
+        mock_bar.assert();
+        mock_bar2.assert();
+    }
+}

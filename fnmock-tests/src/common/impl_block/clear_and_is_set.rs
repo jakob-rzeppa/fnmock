@@ -69,3 +69,38 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct ClearAndIsSet;
+
+    #[fnmock::mockable]
+    impl ClearAndIsSet {
+        fn greet(&self, a: String) -> String {
+            format!("Real {}", a)
+        }
+    }
+
+    #[test]
+    fn test_is_set_transitions() {
+        assert!(!ClearAndIsSet::greet_mock().is_set());
+
+        ClearAndIsSet::greet_mock().setup(|_, a| format!("Fake {}", a));
+        assert!(ClearAndIsSet::greet_mock().is_set());
+
+        ClearAndIsSet::greet_mock().clear();
+        assert!(!ClearAndIsSet::greet_mock().is_set());
+    }
+
+    #[test]
+    fn test_setup_and_expect_together() {
+        let mock = ClearAndIsSet::greet_mock();
+        mock.setup(|_, a| format!("Fake {}", a));
+        mock.expect(fnmock::predicate::eq("Test".to_string())).once();
+
+        let s = ClearAndIsSet;
+        let res = s.greet("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

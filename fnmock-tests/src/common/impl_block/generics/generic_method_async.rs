@@ -72,3 +72,38 @@ mod spy {
         }
     }
 }
+
+mod mock {
+    use std::fmt::Display;
+
+    struct GenericMethodAsync<T> {
+        value: T,
+    }
+
+    #[fnmock::mockable]
+    impl<T: Display + 'static> GenericMethodAsync<T> {
+        async fn combine<U: Display + 'static>(&self, other: U) -> String {
+            format!("{} {}", self.value, other)
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[tokio::test]
+        async fn test_generic_method_async() {
+            let mock = GenericMethodAsync::<String>::combine_mock::<i32>();
+            mock.setup(|_, other| format!("Fake {}", other));
+            mock.expect_once();
+
+            let s = GenericMethodAsync {
+                value: "Test".to_string(),
+            };
+            let result = s.combine(1).await;
+
+            assert_eq!(result, "Fake 1");
+            mock.assert();
+        }
+    }
+}

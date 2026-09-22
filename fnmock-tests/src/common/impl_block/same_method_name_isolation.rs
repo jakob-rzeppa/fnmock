@@ -75,3 +75,42 @@ mod spy {
         spy_second.assert();
     }
 }
+
+mod mock {
+    struct FirstStruct;
+
+    #[fnmock::mockable]
+    impl FirstStruct {
+        fn basic(&self) -> i32 {
+            42
+        }
+    }
+
+    struct SecondStruct;
+
+    #[fnmock::mockable]
+    impl SecondStruct {
+        fn basic(&self) -> i32 {
+            67
+        }
+    }
+
+    #[test]
+    fn test_same_method_name_mocks_are_independent() {
+        let mock_first = FirstStruct::basic_mock();
+        mock_first.setup(|_| 5);
+        mock_first.expect_once();
+
+        let mock_second = SecondStruct::basic_mock();
+        mock_second.expect_once();
+
+        let f = FirstStruct;
+        assert_eq!(f.basic(), 5);
+
+        let s = SecondStruct;
+        assert_eq!(s.basic(), 67);
+
+        mock_first.assert();
+        mock_second.assert();
+    }
+}

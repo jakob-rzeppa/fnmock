@@ -58,3 +58,34 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[derive(Debug, PartialEq)]
+    struct ReturnOptionSelf {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl ReturnOptionSelf {
+        fn checked(&self) -> Option<Self> {
+            if self.value > 0 {
+                Some(Self { value: self.value })
+            } else {
+                None
+            }
+        }
+    }
+
+    #[test]
+    fn test_return_option_self() {
+        let mock = ReturnOptionSelf::checked_mock();
+        mock.setup(|_| None);
+        mock.expect_once();
+
+        let s = ReturnOptionSelf { value: 42 };
+        let res = s.checked();
+
+        assert_eq!(res, None);
+        mock.assert();
+    }
+}

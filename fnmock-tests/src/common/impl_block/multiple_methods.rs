@@ -59,3 +59,36 @@ mod spy {
         spy_second.assert();
     }
 }
+
+mod mock {
+    struct MultipleMethods;
+
+    #[fnmock::mockable]
+    impl MultipleMethods {
+        fn first(&self) -> i32 {
+            1
+        }
+
+        fn second(&self) -> i32 {
+            2
+        }
+    }
+
+    #[test]
+    fn test_multiple_methods() {
+        let mock_first = MultipleMethods::first_mock();
+        mock_first.setup(|_| 10);
+        mock_first.expect_once();
+
+        let mock_second = MultipleMethods::second_mock();
+        mock_second.setup(|_| 20);
+        mock_second.expect_once();
+
+        let s = MultipleMethods;
+        assert_eq!(s.first(), 10);
+        assert_eq!(s.second(), 20);
+
+        mock_first.assert();
+        mock_second.assert();
+    }
+}

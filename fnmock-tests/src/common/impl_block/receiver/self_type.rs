@@ -71,3 +71,42 @@ mod spy {
         spy_combine.assert();
     }
 }
+
+mod mock {
+    #[derive(Debug, PartialEq)]
+    struct SelfType {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl SelfType {
+        fn create(value: i32) -> Self {
+            Self { value }
+        }
+
+        fn combine(&self, other: Self) -> Self {
+            Self {
+                value: self.value + other.value,
+            }
+        }
+    }
+
+    #[test]
+    fn test_self_type() {
+        let mock_create = SelfType::create_mock();
+        mock_create.setup(|value| SelfType { value: value * 2 });
+        mock_create.expect_times(2);
+
+        let mock_combine = SelfType::combine_mock();
+        mock_combine.expect_once();
+
+        let a = SelfType::create(42);
+        assert_eq!(a, SelfType { value: 84 });
+
+        let b = SelfType::create(8);
+        assert_eq!(a.combine(b), SelfType { value: 168 });
+
+        mock_create.assert();
+        mock_combine.assert();
+    }
+}

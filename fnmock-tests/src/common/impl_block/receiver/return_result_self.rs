@@ -58,3 +58,34 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[derive(Debug, PartialEq)]
+    struct ReturnResultSelf {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl ReturnResultSelf {
+        fn validated(&self) -> Result<Self, String> {
+            if self.value > 0 {
+                Ok(Self { value: self.value })
+            } else {
+                Err("invalid".to_string())
+            }
+        }
+    }
+
+    #[test]
+    fn test_return_result_self() {
+        let mock = ReturnResultSelf::validated_mock();
+        mock.setup(|_| Err("faked".to_string()));
+        mock.expect_once();
+
+        let s = ReturnResultSelf { value: 42 };
+        let res = s.validated();
+
+        assert_eq!(res, Err("faked".to_string()));
+        mock.assert();
+    }
+}
