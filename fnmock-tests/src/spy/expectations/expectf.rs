@@ -1,25 +1,44 @@
-#[fnmock::spyable]
-fn expectf_target(id: i32) {
-    let _ = id;
+mod spy {
+    #[fnmock::spyable]
+    fn expectf_target(id: i32) {
+        let _ = id;
+    }
+
+    #[test]
+    fn test_expectf_default() {
+        let spy = expectf_target_spy();
+        spy.expectf(|id: &i32| *id == 2);
+
+        expectf_target(2);
+
+        spy.assert();
+    }
+
+    #[test]
+    fn test_expectf_times() {
+        let spy = expectf_target_spy();
+        spy.expectf(|id: &i32| *id == 2).times(2);
+
+        expectf_target(2);
+        expectf_target(2);
+
+        spy.assert();
+    }
 }
 
-#[test]
-fn test_expectf_default() {
-    let spy = expectf_target_spy();
-    spy.expectf(|id: &i32| *id == 2);
+mod mock {
+    #[fnmock::mockable]
+    fn expectf_target(id: i32) {
+        let _ = id;
+    }
 
-    expectf_target(2);
+    #[test]
+    fn test_expectf_default() {
+        let mock = expectf_target_mock();
+        mock.expectf(|id: &i32| *id == 2);
 
-    spy.assert();
-}
+        expectf_target(2);
 
-#[test]
-fn test_expectf_times() {
-    let spy = expectf_target_spy();
-    spy.expectf(|id: &i32| *id == 2).times(2);
-
-    expectf_target(2);
-    expectf_target(2);
-
-    spy.assert();
+        mock.assert();
+    }
 }
