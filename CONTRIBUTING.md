@@ -11,8 +11,7 @@ This project puts a high value on the tests in `fnmock-tests` and the support ma
 ## Releases
 
 Releases are cut manually by the maintainer from a green `master`, following
-[RELEASE.md](docs/internal/RELEASE.md). Contributors do not need to bump versions or edit
-[CHANGELOG.md](CHANGELOG.md) in a pull request.
+[RELEASE.md](docs/internal/RELEASE.md). Contributors do not need to bump versions in a pull request, but they should make sure that the changelog is updated with a description of their change.
 
 ## License
 
