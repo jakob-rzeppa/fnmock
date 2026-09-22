@@ -2,12 +2,14 @@ use crate::{
     item_info::{
         generics::GenericParamInfo,
         impl_block::{ImplBlockInfo, ImplMethodInfo},
+        param_info::ParamInfo,
     },
     scheme::{
         common::{
             generic_scheme::{build_generic_display_fragment, build_generic_scheme},
             spy_param::build_spy_params,
         },
+        function::spy::SpyScheme,
         impl_block::{
             common::{ImplCommonMethodScheme, ImplCommonScheme, combine_generic_param_infos},
             spy::names::{
@@ -31,32 +33,7 @@ pub struct ImplSpyScheme {
 pub struct ImplSpyMethodScheme {
     pub common: ImplCommonMethodScheme,
 
-    pub store_name: syn::Ident,
-    pub matcher_name: syn::Ident,
-    /// The name of the wrapper struct `Params<'a>` is set to; see
-    /// [`build_params_name`] for why it exists.
-    pub params_name: syn::Ident,
-
-    /// One identifier per non-receiver parameter, in declaration order. The `self` receiver is
-    /// not recorded: `self` is not a legal closure-parameter or field name, and matching on the
-    /// receiver isn't offered.
-    pub param_idents: Vec<syn::Ident>,
-    /// One type per recorded parameter, in declaration order, with references stripped and
-    /// lifetimes elided.
-    pub param_types: Vec<syn::Type>,
-    /// One type per recorded parameter, for the element type of the matcher's `Params<'a>` tuple.
-    pub params_tuple_types: Vec<syn::Type>,
-    /// The expressions the injected call passes to `internal_record_call`, one per recorded
-    /// parameter, in declaration order.
-    pub reference_call_values: Vec<syn::Expr>,
-
-    /// One expression per generic parameter (struct's, then method's), that renders it into the
-    /// display name of an instantiation. Only used when `common.generic_scheme` is `Some`.
-    pub generic_display_fragments: Vec<syn::Expr>,
-
-    /// Whether the matcher can offer `expect`'s `Predicate<..>`-based matching, alongside
-    /// `expectf`; see [`SpyScheme::supports_expect`](crate::scheme::function::spy::SpyScheme::supports_expect).
-    pub supports_expect: bool,
+    pub spy: SpyScheme,
 }
 
 impl TryFrom<ImplBlockInfo> for ImplSpyScheme {
@@ -82,6 +59,36 @@ impl TryFrom<ImplBlockInfo> for ImplSpyScheme {
     }
 }
 
+pub fn build_spy_scheme(
+    struct_name: &syn::TypePath,
+    method_name: &syn::Ident,
+    param_infos: &[ParamInfo],
+    combined_generic_param_infos: &[GenericParamInfo],
+) -> syn::Result<SpyScheme> {
+    let store_name = build_store_name(struct_name, method_name);
+    let matcher_name = build_matcher_name(struct_name, method_name)?;
+    let params_name = build_params_name(struct_name, method_name)?;
+
+    let params = build_spy_params(param_infos)?;
+
+    let generic_display_fragments = combined_generic_param_infos
+        .iter()
+        .map(build_generic_display_fragment)
+        .collect();
+
+    Ok(SpyScheme {
+        store_name,
+        matcher_name,
+        params_name,
+        param_idents: params.idents,
+        param_types: params.types,
+        params_tuple_types: params.params_tuple_types,
+        reference_call_values: params.reference_call_values,
+        generic_display_fragments,
+        supports_expect: params.supports_expect,
+    })
+}
+
 /// Builds the spy scheme for a single method, merging the struct's generics (shared by every
 /// method) with the method's own.
 fn build_method_scheme(
@@ -98,24 +105,22 @@ fn build_method_scheme(
         generic_param_infos: method_generic_param_infos,
     } = method;
 
-    let module_name = build_module_name(struct_name, &method_name);
-    let store_name = build_store_name(struct_name, &method_name);
-    let accessor_name = build_accessor_name(&method_name);
-    let interface_name = build_interface_name(struct_name, &method_name)?;
-    let matcher_name = build_matcher_name(struct_name, &method_name)?;
-    let params_name = build_params_name(struct_name, &method_name)?;
-    let display_name = method_name.to_string();
-
-    let params = build_spy_params(&param_infos)?;
-
     let (method_generic_params, combined_generic_param_infos) =
         combine_generic_param_infos(struct_generic_param_infos, method_generic_param_infos);
 
+    let spy = build_spy_scheme(
+        struct_name,
+        &method_name,
+        &param_infos,
+        &combined_generic_param_infos,
+    )?;
+
+    let module_name = build_module_name(struct_name, &method_name);
+    let accessor_name = build_accessor_name(&method_name);
+    let interface_name = build_interface_name(struct_name, &method_name)?;
+    let display_name = method_name.to_string();
+
     let generic_scheme = build_generic_scheme(&combined_generic_param_infos);
-    let generic_display_fragments = combined_generic_param_infos
-        .iter()
-        .map(build_generic_display_fragment)
-        .collect();
 
     Ok((
         method_name,
@@ -129,15 +134,7 @@ fn build_method_scheme(
                 generic_scheme,
                 method_generic_params,
             },
-            store_name,
-            matcher_name,
-            params_name,
-            param_idents: params.idents,
-            param_types: params.types,
-            params_tuple_types: params.params_tuple_types,
-            reference_call_values: params.reference_call_values,
-            generic_display_fragments,
-            supports_expect: params.supports_expect,
+            spy,
         },
     ))
 }
@@ -179,18 +176,18 @@ mod tests {
             "UserServiceGetUserSpyInterface"
         );
         assert_eq!(
-            method.1.store_name.to_string(),
+            method.1.spy.store_name.to_string(),
             "USER_SERVICE_GET_USER_SPY_STORE"
         );
         assert_eq!(
-            method.1.matcher_name.to_string(),
+            method.1.spy.matcher_name.to_string(),
             "UserServiceGetUserMatcher"
         );
         assert_eq!(
-            method.1.params_name.to_string(),
+            method.1.spy.params_name.to_string(),
             "UserServiceGetUserMatcherParams"
         );
-        assert!(method.1.supports_expect);
+        assert!(method.1.spy.supports_expect);
     }
 
     #[test]
@@ -210,6 +207,7 @@ mod tests {
         assert_eq!(
             method
                 .1
+                .spy
                 .param_idents
                 .iter()
                 .map(|i| i.to_string())
@@ -219,6 +217,7 @@ mod tests {
         assert_eq!(
             method
                 .1
+                .spy
                 .param_types
                 .iter()
                 .map(|t| t.to_token_stream().to_string())
@@ -228,6 +227,7 @@ mod tests {
         assert_eq!(
             method
                 .1
+                .spy
                 .reference_call_values
                 .iter()
                 .map(|v| v.to_token_stream().to_string())
@@ -251,6 +251,7 @@ mod tests {
         assert_eq!(
             method
                 .1
+                .spy
                 .param_idents
                 .iter()
                 .map(|i| i.to_string())
@@ -276,6 +277,7 @@ mod tests {
         assert_eq!(
             method
                 .1
+                .spy
                 .param_idents
                 .iter()
                 .map(|i| i.to_string())
@@ -304,8 +306,8 @@ mod tests {
             scheme.methods[1].1.common.module_name
         );
         assert_ne!(
-            scheme.methods[0].1.store_name,
-            scheme.methods[1].1.store_name
+            scheme.methods[0].1.spy.store_name,
+            scheme.methods[1].1.spy.store_name
         );
     }
 
@@ -339,9 +341,9 @@ mod tests {
         // Only the method's own generics get redeclared on the accessor; the struct's are already
         // in scope from the enclosing `impl<..>` block.
         assert_eq!(method.1.common.method_generic_params.len(), 1);
-        assert_eq!(method.1.generic_display_fragments.len(), 2);
+        assert_eq!(method.1.spy.generic_display_fragments.len(), 2);
         assert_eq!(
-            method.1.generic_display_fragments[0]
+            method.1.spy.generic_display_fragments[0]
                 .to_token_stream()
                 .to_string(),
             quote::quote!(::std::any::type_name::<S>().to_string()).to_string()
@@ -361,7 +363,7 @@ mod tests {
 
         let method = &scheme.methods[0];
         assert_eq!(
-            method.1.generic_display_fragments[0]
+            method.1.spy.generic_display_fragments[0]
                 .to_token_stream()
                 .to_string(),
             quote::quote!(N.to_string()).to_string()
@@ -381,7 +383,7 @@ mod tests {
 
         let scheme = ImplSpyScheme::try_from(info).expect("conversion should succeed");
 
-        assert!(!scheme.methods[0].1.supports_expect);
+        assert!(!scheme.methods[0].1.spy.supports_expect);
     }
 
     #[test]
@@ -397,7 +399,7 @@ mod tests {
 
         let scheme = ImplSpyScheme::try_from(info).expect("conversion should succeed");
 
-        assert!(scheme.methods[0].1.supports_expect);
+        assert!(scheme.methods[0].1.spy.supports_expect);
     }
 
     #[test]

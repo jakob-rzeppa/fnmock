@@ -12,9 +12,12 @@ use crate::{
         },
         impl_block::{ImplExpandable, ImplMethodExpandable},
     },
-    scheme::impl_block::{
-        common::{ImplCommonMethodScheme, ImplCommonScheme},
-        spy::{ImplSpyMethodScheme, ImplSpyScheme},
+    scheme::{
+        function::spy::SpyScheme,
+        impl_block::{
+            common::{ImplCommonMethodScheme, ImplCommonScheme},
+            spy::{ImplSpyMethodScheme, ImplSpyScheme},
+        },
     },
 };
 
@@ -50,15 +53,18 @@ fn create_impl_method_expandable(scheme: ImplSpyMethodScheme) -> ImplMethodExpan
                 generic_scheme,
                 method_generic_params,
             },
-        store_name,
-        matcher_name,
-        params_name,
-        param_idents,
-        param_types,
-        params_tuple_types,
-        reference_call_values,
-        generic_display_fragments,
-        supports_expect,
+        spy:
+            SpyScheme {
+                store_name,
+                matcher_name,
+                params_name,
+                param_idents,
+                param_types,
+                params_tuple_types,
+                reference_call_values,
+                generic_display_fragments,
+                supports_expect,
+            },
     } = scheme;
 
     let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
@@ -139,6 +145,7 @@ mod tests {
         item_info::original::OriginalImpl,
         scheme::{
             common::generic_scheme::GenericScheme,
+            function::spy::SpyScheme,
             impl_block::{
                 common::{ImplCommonMethodScheme, ImplCommonScheme},
                 spy::ImplSpyMethodScheme,
@@ -164,15 +171,17 @@ mod tests {
                 interface_name,
                 generic_scheme: None,
             },
-            store_name,
-            matcher_name,
-            params_name,
-            param_idents: vec![parse_quote!(a)],
-            param_types: vec![parse_quote!(i32)],
-            params_tuple_types: vec![parse_quote!(i32)],
-            reference_call_values: vec![parse_quote!(&a)],
-            generic_display_fragments: vec![],
-            supports_expect: true,
+            spy: SpyScheme {
+                store_name,
+                matcher_name,
+                params_name,
+                param_idents: vec![parse_quote!(a)],
+                param_types: vec![parse_quote!(i32)],
+                params_tuple_types: vec![parse_quote!(i32)],
+                reference_call_values: vec![parse_quote!(&a)],
+                generic_display_fragments: vec![],
+                supports_expect: true,
+            },
         }
     }
 
