@@ -418,7 +418,7 @@ mod tests {
                 "a destructuring parameter should be rejected: a matcher needs one name per parameter"
             );
         };
-        assert!(error.to_string().contains("#[spyable]"));
+        assert!(error.to_string().contains("destructures its value"));
     }
 
     #[test]
