@@ -20,6 +20,8 @@ pub trait DynSpyStore: Any {
     fn name(&self) -> &str;
     /// See [`SpyStore::check_for_failures`].
     fn check_for_failures(&self) -> Vec<String>;
+    /// See [`SpyStore::clear`].
+    fn clear(&mut self);
     /// Borrow this store as [`Any`], to downcast to a concrete `SpyStore<M>`.
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
@@ -31,6 +33,10 @@ impl<M: Matcher> DynSpyStore for SpyStore<M> {
 
     fn check_for_failures(&self) -> Vec<String> {
         SpyStore::check_for_failures(self)
+    }
+
+    fn clear(&mut self) {
+        SpyStore::clear(self)
     }
 
     fn as_any_mut(&mut self) -> &mut dyn Any {
@@ -151,6 +157,15 @@ impl<const GENERIC_COUNT: usize> GenericSpyStore<GENERIC_COUNT> {
             self.name,
             failures.join("\n")
         );
+    }
+
+    /// Clear all expectations and calls of one combination of generic arguments, if it exists.
+    pub fn clear_for(&mut self, generic_keys: &[GenericKeyPart; GENERIC_COUNT]) {
+        let Some(store) = self.stores.get_mut(generic_keys) else {
+            return;
+        };
+
+        store.clear();
     }
 }
 
@@ -313,5 +328,68 @@ mod tests {
         );
 
         store.assert_all();
+    }
+
+    #[test]
+    fn test_clear_for_removes_the_expectations_of_that_instantiation() {
+        let mut store = GenericSpyStore::<1>::new("f");
+        store.with_store_mut::<TestMatcher<i32>, _>(
+            type_key::<i32>(),
+            || "f::<i32>".into(),
+            |s| s.add_expectation(Expectation::new(TestMatcher::new(true), "f::<i32>")),
+        );
+
+        store.clear_for(&type_key::<i32>());
+
+        store.assert_for(&type_key::<i32>());
+    }
+
+    #[test]
+    fn test_clear_for_leaves_other_instantiations_untouched() {
+        let mut store = GenericSpyStore::<1>::new("f");
+        store.with_store_mut::<TestMatcher<i32>, _>(
+            type_key::<i32>(),
+            || "f::<i32>".into(),
+            |s| s.add_expectation(Expectation::new(TestMatcher::new(true), "f::<i32>")),
+        );
+        store.with_store_mut::<TestMatcher<String>, _>(
+            type_key::<String>(),
+            || "f::<String>".into(),
+            |s| s.add_expectation(Expectation::new(TestMatcher::new(true), "f::<String>")),
+        );
+
+        store.clear_for(&type_key::<i32>());
+
+        store.with_store_mut::<TestMatcher<String>, _>(
+            type_key::<String>(),
+            || unreachable!("the store already exists"),
+            |s| assert_eq!(s.check_for_failures().len(), 1),
+        );
+    }
+
+    #[test]
+    fn test_clear_for_resets_the_call_count_of_that_instantiation() {
+        let mut store = GenericSpyStore::<1>::new("f");
+        store.with_store_mut::<TestMatcher<i32>, _>(
+            type_key::<i32>(),
+            || "f::<i32>".into(),
+            |s| {
+                s.set_total_call_range(1.into());
+                s.record_call(&(&1,));
+            },
+        );
+
+        store.clear_for(&type_key::<i32>());
+
+        // Would panic with "Too many calls" if the count or total range survived.
+        store.with_store_mut::<TestMatcher<i32>, _>(
+            type_key::<i32>(),
+            || unreachable!("the store already exists"),
+            |s| {
+                s.set_total_call_range(1.into());
+                s.record_call(&(&1,));
+                assert!(s.check_for_failures().is_empty());
+            },
+        );
     }
 }
