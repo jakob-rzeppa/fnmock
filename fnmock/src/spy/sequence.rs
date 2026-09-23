@@ -175,6 +175,25 @@ impl Sequence {
             })
             .collect()
     }
+
+    /// Remove all steps of matcher type `M` from this sequence.
+    pub(crate) fn clear_expectations_for<M: Matcher>(&mut self) {
+        let mut guard = self.0.borrow_mut();
+
+        let current_step = guard.current_step;
+
+        // Only removed steps before the current one shift it back; later ones don't affect it.
+        let remove_before_current_count = guard.steps[..current_step.min(guard.steps.len())]
+            .iter()
+            .filter(|step| step.as_any().downcast_ref::<Expectation<M>>().is_some())
+            .count();
+
+        guard
+            .steps
+            .retain(|step| step.as_any().downcast_ref::<Expectation<M>>().is_none());
+
+        guard.current_step = current_step - remove_before_current_count;
+    }
 }
 
 impl Default for Sequence {
@@ -455,5 +474,76 @@ mod tests {
 
         assert!(seq.unfulfilled_steps::<StrMatcher>().is_empty());
         assert!(!seq.unfulfilled_steps::<IntMatcher>().is_empty());
+    }
+
+    #[test]
+    fn clear_expectations_for_removes_only_that_matcher_types_steps() {
+        let mut seq = Sequence::new();
+        seq.append_expectation(int_step(1, "f"));
+        seq.append_expectation(Expectation::new(StrMatcher("bob"), "g"));
+
+        seq.clear_expectations_for::<IntMatcher>();
+
+        assert!(seq.unfulfilled_steps::<IntMatcher>().is_empty());
+        assert_eq!(seq.unfulfilled_steps::<StrMatcher>().len(), 1);
+    }
+
+    #[test]
+    fn clear_expectations_for_is_a_noop_when_no_steps_of_that_type_exist() {
+        let mut seq = Sequence::new();
+        seq.append_expectation(Expectation::new(StrMatcher("bob"), "g"));
+
+        seq.clear_expectations_for::<IntMatcher>();
+
+        assert_eq!(seq.unfulfilled_steps::<StrMatcher>().len(), 1);
+    }
+
+    #[test]
+    fn clear_expectations_for_on_an_empty_sequence_does_nothing() {
+        let mut seq = Sequence::new();
+
+        seq.clear_expectations_for::<IntMatcher>();
+
+        assert!(seq.unfulfilled_steps::<IntMatcher>().is_empty());
+    }
+
+    #[test]
+    fn clear_expectations_for_stops_the_cleared_type_from_blocking_the_sequence() {
+        let mut seq = Sequence::new_strict();
+        let mut blocking = int_step(1, "f");
+        blocking.set_call_range((2..).into());
+        seq.append_expectation(blocking);
+        seq.append_expectation(Expectation::new(StrMatcher("bob"), "g"));
+
+        seq.clear_expectations_for::<IntMatcher>();
+
+        // Would panic with "Call out of sequence" if the int step still blocked the sequence.
+        record_str(&seq, "bob");
+
+        assert!(seq.unfulfilled_steps::<StrMatcher>().is_empty());
+    }
+
+    #[test]
+    fn clear_expectations_for_does_not_disturb_current_step_for_types_still_present() {
+        let mut seq = Sequence::new();
+        let mut a = int_step(1, "f");
+        a.set_call_range(1.into());
+        seq.append_expectation(a);
+        let mut b = int_step(2, "f");
+        b.set_call_range(1.into());
+        seq.append_expectation(b);
+        seq.append_expectation(Expectation::new(StrMatcher("x"), "g"));
+        seq.append_expectation(int_step(1, "f"));
+
+        record_int(&seq, 1);
+        record_int(&seq, 2);
+
+        seq.clear_expectations_for::<StrMatcher>();
+
+        // The remaining int(1) step should still be reached without re-matching the
+        // already-fulfilled, exact-once step `a` at index 0.
+        record_int(&seq, 1);
+
+        assert!(seq.unfulfilled_steps::<IntMatcher>().is_empty());
     }
 }
