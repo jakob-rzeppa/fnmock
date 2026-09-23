@@ -13,5 +13,5 @@ readme.workspace = true
 documentation = "https://docs.rs/fnmock"
 
 [dependencies]
-fnmock-derive = { path = "../fnmock-derive", version = "0.2.0" }
+fnmock-derive = { path = "../fnmock-derive", version = "0.2.1" }
 predicates = "3.1.4"
