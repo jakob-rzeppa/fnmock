@@ -10,6 +10,7 @@ This is an internal planning document. It is deleted or folded into
 
 - [The surface](#the-surface)
 - [What an expansion looks like](#what-an-expansion-looks-like)
+- [`clear()`](#clear)
 - [Semantics](#semantics)
 - [Pipeline changes](#pipeline-changes)
 - [Rejections and error wording](#rejections-and-error-wording)
@@ -44,15 +45,18 @@ fn test_greeting() {
 One accessor, `fetch_user_name_mock()`, returning one zero-sized interface value that carries
 **both** halves' methods flat:
 
-| From the fake half | From the spy half |
-| --- | --- |
-| `setup(closure)` | `expect(pred, ..)` / `expectf(closure)` |
-| `clear()` | `expect_times(n)` / `expect_once()` / `expect_never()` |
-| `is_set()` | `assert()` |
+| From the fake half | From the spy half | Mock-only |
+| --- | --- | --- |
+| `setup(closure)` | `expect(pred, ..)` / `expectf(closure)` | `clear()` |
+| `is_set()` | `expect_times(n)` / `expect_once()` / `expect_never()` | |
+| | `assert()` | |
 
-The two method sets do not collide, which is what makes the flat merge possible. `#[mockable]`
-does **not** additionally emit `_fake()` / `_spy()` accessors — the merged interface covers every
-call.
+The two method sets overlap in exactly one name. Both halves define `clear()` — the fake's removes
+the installed fake, the spy's drops expectations and call history — and two inherent methods of the
+same name on one struct do not compile. The mock resolves it by **suppressing both halves' `clear()`
+and emitting one of its own that does both** (see [`clear()`](#clear)). Everything else merges flat.
+`#[mockable]` does **not** additionally emit `_fake()` / `_spy()` accessors — the merged interface
+covers every call.
 
 Stacking `#[fakeable]` + `#[spyable]` on one item is **not** the supported route and is not made to
 work: the fake's early return would run before the spy's record statement, so faked calls would go
@@ -87,20 +91,23 @@ mod get_user_mock_module {
 
     thread_local! { static GET_USER_FAKE_STORE: ... }   // fake parts
     pub(super) fn implementation() -> Option<...> { ... }
-    impl GetUserMockInterface { /* setup, clear, is_set */ }
+    impl GetUserMockInterface { /* setup, is_set */ }   // fake's clear suppressed
 
     thread_local! { static GET_USER_SPY_STORE: ... }    // spy parts
     pub struct GetUserMatcher { ... }
-    impl GetUserMockInterface { /* expect, expectf, expect_times, ..., assert */ }
+    impl GetUserMockInterface { /* expect, expectf, expect_times, ..., assert */ }  // spy's clear suppressed
     pub(super) fn internal_record_call(id: &u32) { ... }
+
+    impl GetUserMockInterface { /* clear: fake + expectations */ }   // mock-only
 
     pub(super) fn interface() -> GetUserMockInterface { ... }  // shared builder, once
 }
 ```
 
-Two inherent `impl` blocks on one struct are legal Rust and the methods merge. Both existing
-`build_interface_impl` builders are already parameterized by interface name, so handing both the
-same `GetUserMockInterface` is all the merge takes — **no new interface codegen**.
+Several inherent `impl` blocks on one struct are legal Rust and the methods merge, provided no name
+repeats. Both existing `build_interface_impl` builders are already parameterized by interface name,
+so handing both the same `GetUserMockInterface` merges everything except `clear()`, which needs the
+small piece of new codegen described under [`clear()`](#clear).
 
 ### Names
 
@@ -127,6 +134,53 @@ Both generated modules define `pub(super) fn interface()`. Resolved by moving
 The two copies are **byte-identical today**, so this is a pure dedupe: fake and spy expansions come
 out token-for-token unchanged and no existing test moves.
 
+## `clear()`
+
+On a mock, `clear()` resets **the whole mock**: it removes the installed fake *and* drops every
+expectation, global `expect_times` range and recorded call, so the accessor is back to a
+freshly-created state. After `clear()`, `is_set()` is `false`, calls run the real body, and
+`assert()` passes vacuously.
+
+```rust
+let mock = get_user_mock();
+mock.setup(|_| "Test".into());
+mock.expect(eq(1)).once();
+
+get_user(1);
+mock.clear();                 // fake gone, expectation gone, call history gone
+
+get_user(2);                  // real body; recorded afresh, no expectation to violate
+mock.assert();                // passes
+```
+
+Because a mock records every call, clearing only the fake would leave stale expectations to fail a
+later `assert()`, and clearing only the spy would leave the fake answering — neither is the reset a
+caller means by "clear the mock". There is no half-clear on the mock interface; a test that wants
+one uses a plain `#[fakeable]` / `#[spyable]`.
+
+Generics follow the existing per-instantiation rule: `get_user_mock::<i32>().clear()` resets both
+halves for `i32` and leaves `::<u8>()` untouched on both sides.
+
+### Codegen
+
+Both halves' `build_interface_impl` gain an `include_clear: bool`. `#[fakeable]` / `#[spyable]` pass
+`true` and expand token-for-token as before; the mock passes `false` for both. A new
+`expandable/common/mock/clear.rs` builds the one combined method, taking both store names and the
+`GenericScheme`, in its own `impl` block:
+
+```rust
+pub fn clear(&self) {
+    GET_USER_FAKE_STORE.with_borrow_mut(|fake| fake.clear_for([/* keys */]));   // fake half
+    GET_USER_SPY_STORE.with_borrow_mut(|store| store.clear_for(&[/* keys */])); // spy half
+}
+```
+
+The two statements are separate borrows of separate thread-locals, so a fake closure that calls
+`clear()` on its own mock (the existing re-entrancy case) does not double-borrow. The non-generic
+and `#[fakeable]`-only forms of the fake store use the same `clear` the fake half emits today; the
+mock builder branches on `GenericScheme` exactly as the two existing builders do. No runtime-crate
+change: `clear_for` and `SpyStore::clear` already exist.
+
 ## Semantics
 
 **Record first, then the fake.** The spy half observes every call, whether or not a fake intercepts
@@ -145,6 +199,7 @@ Everything else falls out of the two halves being independent stores:
 | Sequences | The spy half is a spy: it joins `Sequence`s and interleaves with plain spies and other mocks. |
 | `supports_expect == false` | A parameter type that still names a lifetime yields `expectf` but not `expect`, exactly as a spy does today. No mock-specific handling. |
 | Receivers | The fake is handed the receiver as its first closure argument; the spy does not record it. Both stay true in a mock: `setup` sees `&self`, expectations never match on it. |
+| `clear()` | One method that clears both halves — see [`clear()`](#clear). |
 | Isolation, re-entrancy, unexpected calls | Unchanged. Both stores are `thread_local!`s in the same module; a fake that calls back into the mocked function records again. |
 
 The consequence to document: an intercepted call means the real body never runs, so its side
@@ -233,17 +288,19 @@ than a shared trait, because `FunctionCommonScheme` and `ImplCommonMethodScheme`
 subset.
 
 Note what is **absent** from both lists: `interface_struct` and `interface_getter`, which the
-caller emits once per module.
+caller emits once per module. Both `interface_impl` entries take `include_clear`; the function-level
+builders default it to `true`, so single-half callers are unchanged.
 
 All six `TryFrom<..Scheme> for ..Expandable` impls (function / impl × fake / spy / mock) then
 collapse to the same three lines:
 
 ```rust
-module_parts: [interface_struct] + fake_parts + spy_parts + [interface_getter],
+module_parts: [interface_struct] + fake_parts + spy_parts + [mock_clear] + [interface_getter],
 inline_call:  merge(spy_inline, fake_inline),   // stmts concatenated, spy first
 ```
 
-with the single-half flavours passing only their own half. `merge` concatenates two
+with the single-half flavours passing only their own half (and `include_clear: true`); `mock_clear`
+exists only in the mock flavour. `merge` concatenates two
 `syn::Block`s' statements; it lives in `expandable/common/`.
 
 This deletes real duplication: `expandable/function/fake/mod.rs` and
@@ -341,7 +398,8 @@ Both directories adopt `common/`'s convention. Each file's contents are wrapped 
 `_mock()` accessor in place of `_fake()` / `_spy()`. Bodies otherwise unchanged.
 
 - `fake/` — 4 files: `clear_and_is_set`, `generic_clear_and_is_set`, `captured_state`,
-  `reentrant_fake`.
+  `reentrant_fake`. The two `clear` files keep their fake assertions in the mock arm; that `clear()`
+  also resets expectations is pinned in `mock/clear.rs`, not here.
 - `spy/` — 27 files: `expectations/` (8), `sequences/` (13), `generics/` (4), `lifetimes/` (1).
 
 All 31 targets take plain-identifier parameters and return nameable types, so all are inside the
@@ -358,8 +416,9 @@ The things neither half can test alone:
 | File | Asserts |
 | --- | --- |
 | `record_then_fake.rs` | a faked call is still recorded, expectations match it, and the real body's side effects are skipped |
-| `merged_interface.rs` | `setup` and `expect` on the same accessor value; clearing the fake mid-test does not disturb recording |
-| `generics.rs` | `foo_mock::<i32>()` moves both halves together; `::<u8>()` untouched on both sides |
+| `merged_interface.rs` | `setup` and `expect` on the same accessor value; a faked call is recorded and matched before and after further `setup` calls |
+| `clear.rs` | `clear()` removes the fake (`is_set()` false, real body runs) **and** drops expectations, global `expect_times` and call history (`assert()` passes after a violated expectation is cleared); a fake calling `clear()` on its own mock does not panic; a cleared mock can be set up and expected on again |
+| `generics.rs` | `foo_mock::<i32>()` moves both halves together, including `clear()`; `::<u8>()` untouched on both sides |
 | `impl_block.rs` | `Type::method_mock()` with both halves, receiver forms, associated functions |
 | `sequences.rs` | a mock interleaves with a plain spy in one `Sequence` |
 
@@ -374,7 +433,7 @@ several commits.
 
 | Doc | Change |
 | --- | --- |
-| `docs/MOCK_FEATURES.md` | New, mirroring the other two feature docs: the attribute, the `_mock()` accessor, the merged method table, the record-then-fake rule, and the skipped-side-effects caveat. |
+| `docs/MOCK_FEATURES.md` | New, mirroring the other two feature docs: the attribute, the `_mock()` accessor, the merged method table, `clear()` resetting both halves, the record-then-fake rule, and the skipped-side-effects caveat. |
 | `docs/LIMITATIONS.md` | A real third column. Every row links to its `mod mock` arm, or to the `_mock.cf.rs` fixture where the intersection bites — the doc's contract that every cell links to a test is preserved. The intro ("The two macros mostly agree…") is rewritten for three, stating the intersection rule. |
 | `README.md` | "Mocks" leaves Work in Progress; a third example joins the fake and spy ones. |
 | `USAGE.md` | The `_mock()` accessor. |
@@ -384,12 +443,12 @@ several commits.
 ## Implementation order
 
 1. **Refactor, no behaviour change.** Split the schemes, extract `build_module_parts`, move the
-   interface builders, add `entry.rs`, reword the three messages, re-bless the four snapshots.
+   interface builders, add `include_clear` (defaulting to `true`), add `entry.rs`, reword the three messages, re-bless the four snapshots.
    Gate: full suite green and fake / spy expansions token-identical.
 2. **Tests first.** Every `mod mock` arm, the `mock/` directory, and the five compile-fail
    fixtures — written and failing. Then stop and confirm before any codegen.
-3. **Mock codegen.** Names module, `FunctionMockScheme` / `ImplMockScheme`, the two mock
-   `TryFrom`s, the two strategies, `mockable.rs`, the `lib.rs` attribute.
+3. **Mock codegen.** Names module, the `include_clear` flag and `mock/clear.rs` builder,
+   `FunctionMockScheme` / `ImplMockScheme`, the two mock `TryFrom`s, the two strategies, `mockable.rs`, the `lib.rs` attribute.
 4. **Docs.**
 5. **`0.3.0`** as its own step, per [RELEASE.md](RELEASE.md).
 
@@ -398,5 +457,8 @@ several commits.
 - **Lifetime parameters in the fake half.** `spy/lifetimes/` and the `Ref<'_>` targets require the
   fake's closure bound to bind those lifetimes higher-ranked. Believed supported; step 2 finds out
   before any codegen is written, which is the right time.
+- **`clear()` semantics surprise.** A mock's `clear()` is broader than a fake's. Someone porting a
+  `#[fakeable]` test that calls `clear()` to swap fakes mid-test will also wipe their expectations.
+  Called out in `MOCK_FEATURES.md`; `setup` alone already replaces a fake without clearing.
 - **Snapshot churn.** `TRYBUILD=overwrite` will happily bless a worse message. Read every diff.
 - **Suite size.** Step 2 is the largest single diff in the project's history. Split it by subtree.
