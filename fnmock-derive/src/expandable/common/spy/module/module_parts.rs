@@ -14,6 +14,7 @@ pub fn build_module_parts(
     interface_name: &syn::Ident,
     generic_scheme: Option<&GenericScheme>,
     spy: &SpyScheme,
+    include_clear: bool,
 ) -> Vec<proc_macro2::TokenStream> {
     let matcher_type: syn::Type = if let Some(generic_scheme) = generic_scheme {
         let generic_idents = &generic_scheme.idents;
@@ -50,6 +51,7 @@ pub fn build_module_parts(
             generic_scheme,
             &spy.generic_display_fragments,
             spy.supports_expect,
+            include_clear,
         ),
         build_record_call(
             &spy.store_name,
@@ -89,7 +91,7 @@ mod tests {
         let interface_name: syn::Ident = parse_quote!(MyInterface);
         let spy = spy_scheme();
 
-        let parts = build_module_parts("my_fn", &interface_name, None, &spy);
+        let parts = build_module_parts("my_fn", &interface_name, None, &spy, true);
 
         assert_eq!(parts.len(), 4);
     }
@@ -105,7 +107,7 @@ mod tests {
             keys: vec![parse_quote!(::std::any::TypeId::of::<T>())],
         };
 
-        let parts = build_module_parts("my_fn", &interface_name, Some(&generic_scheme), &spy);
+        let parts = build_module_parts("my_fn", &interface_name, Some(&generic_scheme), &spy, true);
 
         assert_eq!(parts.len(), 4);
     }

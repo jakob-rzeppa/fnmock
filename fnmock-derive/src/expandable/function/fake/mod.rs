@@ -59,6 +59,7 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
                 &interface_name,
                 generic_scheme.as_ref(),
                 &fake,
+                true,
             ),
             vec![build_interface_getter(
                 &interface_name,

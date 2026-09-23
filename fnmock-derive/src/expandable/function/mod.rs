@@ -1,6 +1,7 @@
 use crate::item_info::original::OriginalFn;
 
 pub mod fake;
+pub mod mock;
 pub mod spy;
 
 pub struct FunctionExpandable {

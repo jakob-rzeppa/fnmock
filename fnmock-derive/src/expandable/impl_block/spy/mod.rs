@@ -74,6 +74,7 @@ fn create_impl_method_expandable(scheme: ImplSpyMethodScheme) -> ImplMethodExpan
             &interface_name,
             generic_scheme.as_ref(),
             &spy,
+            true,
         ),
         vec![build_interface_getter(
             &interface_name,

@@ -3,21 +3,23 @@ use syn::parse_quote;
 use crate::{
     expandable::{
         common::{
+            fake::inline_call::build_inline_call as build_fake_inline_call,
             interface::{
                 interface_getter::build_interface_getter, interface_struct::build_interface_struct,
             },
-            spy::{inline_call::build_inline_call, module::module_parts::build_module_parts},
+            mock::{inline_call::merge_blocks, module_parts::build_module_parts},
+            spy::inline_call::build_inline_call as build_spy_inline_call,
         },
         function::FunctionExpandable,
     },
-    scheme::{common::function::FunctionCommonScheme, spy::function::FunctionSpyScheme},
+    scheme::{common::function::FunctionCommonScheme, mock::function::FunctionMockScheme},
 };
 
-impl TryFrom<FunctionSpyScheme> for FunctionExpandable {
+impl TryFrom<FunctionMockScheme> for FunctionExpandable {
     type Error = syn::Error;
 
-    fn try_from(value: FunctionSpyScheme) -> Result<Self, Self::Error> {
-        let FunctionSpyScheme {
+    fn try_from(value: FunctionMockScheme) -> Result<Self, Self::Error> {
+        let FunctionMockScheme {
             common:
                 FunctionCommonScheme {
                     vis,
@@ -28,6 +30,7 @@ impl TryFrom<FunctionSpyScheme> for FunctionExpandable {
                     interface_name,
                     generic_scheme,
                 },
+            fake,
             spy,
         } = value;
 
@@ -42,10 +45,12 @@ impl TryFrom<FunctionSpyScheme> for FunctionExpandable {
             parse_quote! { #interface_name }
         };
 
-        let inline_call = build_inline_call(
-            &module_name,
-            &spy.reference_call_values,
-            generic_scheme.as_ref().map(|g| g.idents.as_slice()),
+        let generic_idents = generic_scheme.as_ref().map(|g| g.idents.as_slice());
+        // Record first, then the fake: the spy half observes every call, whether or not a fake
+        // intercepts it.
+        let inline_call = merge_blocks(
+            build_spy_inline_call(&module_name, &spy.reference_call_values, generic_idents),
+            build_fake_inline_call(&module_name, &fake.fake_call_values, generic_idents),
         );
 
         let module_parts = [
@@ -57,8 +62,8 @@ impl TryFrom<FunctionSpyScheme> for FunctionExpandable {
                 &display_name,
                 &interface_name,
                 generic_scheme.as_ref(),
+                &fake,
                 &spy,
-                true,
             ),
             vec![build_interface_getter(
                 &interface_name,

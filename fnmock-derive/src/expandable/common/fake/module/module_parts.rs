@@ -14,6 +14,7 @@ pub fn build_module_parts(
     interface_name: &syn::Ident,
     generic_scheme: Option<&GenericScheme>,
     fake: &FakeScheme,
+    include_clear: bool,
 ) -> Vec<proc_macro2::TokenStream> {
     vec![
         build_fake_store(
@@ -28,6 +29,7 @@ pub fn build_module_parts(
             &fake.store_name,
             generic_scheme,
             &fake.fn_closure_trait,
+            include_clear,
         ),
     ]
 }
@@ -52,7 +54,7 @@ mod tests {
         let interface_name: syn::Ident = parse_quote!(MyInterface);
         let fake = fake_scheme();
 
-        let parts = build_module_parts("my_fn", &interface_name, None, &fake);
+        let parts = build_module_parts("my_fn", &interface_name, None, &fake, true);
 
         assert_eq!(parts.len(), 3);
     }
@@ -68,7 +70,7 @@ mod tests {
             keys: vec![parse_quote!(::std::any::TypeId::of::<T>())],
         };
 
-        let parts = build_module_parts("my_fn", &interface_name, Some(&generic_scheme), &fake);
+        let parts = build_module_parts("my_fn", &interface_name, Some(&generic_scheme), &fake, true);
 
         assert_eq!(parts.len(), 3);
     }

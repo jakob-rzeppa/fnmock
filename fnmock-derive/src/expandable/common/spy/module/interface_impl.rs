@@ -22,6 +22,7 @@ pub fn build_interface_impl(
     generic_scheme: Option<&GenericScheme>,
     generic_display_fragments: &[syn::Expr],
     supports_expect: bool,
+    include_clear: bool,
 ) -> proc_macro2::TokenStream {
     let marker_construct = build_marker_construct(generic_scheme);
     let expectf_signature = quote! { Fn(#(&#param_types),*) -> bool };
@@ -41,6 +42,17 @@ pub fn build_interface_impl(
         let generic_idents = &generic_scheme.idents;
         let generic_keys = &generic_scheme.keys;
         let matcher_type = quote! { #matcher_name<#(#generic_idents),*> };
+        let clear_method = include_clear.then(|| {
+            quote! {
+                /// Clear all expectations and call history for this combination of
+                /// generic arguments. Other instantiations are not affected.
+                pub fn clear(&self) {
+                    #store_name.with_borrow_mut(|store| {
+                        store.clear_for(&[#(#generic_keys),*]);
+                    });
+                }
+            }
+        });
         let instantiation_name = quote! {
             format!("{}::<{}>", #display_name, [#(#generic_display_fragments),*].join(", "))
         };
@@ -120,13 +132,7 @@ pub fn build_interface_impl(
                     });
                 }
 
-                /// Clear all expectations and call history for this combination of
-                /// generic arguments. Other instantiations are not affected.
-                pub fn clear(&self) {
-                    #store_name.with_borrow_mut(|store| {
-                        store.clear_for(&[#(#generic_keys),*]);
-                    });
-                }
+                #clear_method
 
                 fn set_expectation(
                     &self,
@@ -158,6 +164,14 @@ pub fn build_interface_impl(
             }
         }
     } else {
+        let clear_method = include_clear.then(|| {
+            quote! {
+                /// Clear all expectations and call history for this spy.
+                pub fn clear(&self) {
+                    #store_name.with_borrow_mut(|spy| spy.clear());
+                }
+            }
+        });
         let expect_method = match expect_method {
             Some((expect_params, expect_construct_fields)) => quote! {
                 /// Expect calls whose arguments satisfy one predicate per parameter.
@@ -220,10 +234,7 @@ pub fn build_interface_impl(
                     #store_name.with_borrow(|spy| spy.assert());
                 }
 
-                /// Clear all expectations and call history for this spy.
-                pub fn clear(&self) {
-                    #store_name.with_borrow_mut(|spy| spy.clear());
-                }
+                #clear_method
 
                 fn set_expectation(
                     &self,
@@ -270,6 +281,7 @@ mod tests {
             &[],
             None,
             &[],
+            true,
             true,
         );
 
@@ -363,6 +375,7 @@ mod tests {
             &param_types,
             Some(&generic_scheme),
             &display_fragments,
+            true,
             true,
         );
 

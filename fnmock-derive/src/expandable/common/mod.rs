@@ -14,6 +14,12 @@ pub mod fake {
     }
 }
 
+pub mod mock {
+    pub mod clear;
+    pub mod inline_call;
+    pub mod module_parts;
+}
+
 pub mod spy {
     pub mod inline_call;
 
