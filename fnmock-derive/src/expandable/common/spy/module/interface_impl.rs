@@ -113,11 +113,18 @@ pub fn build_interface_impl(
                 }
 
                 /// Assert every expectation set on this combination of generic arguments is
-                /// fulfilled. Other instantiations are not checked; see the `_spy_all()`
-                /// accessor to sweep every one at once.
+                /// fulfilled. Other instantiations are not checked.
                 pub fn assert(&self) {
                     #store_name.with_borrow(|store| {
                         store.assert_for(&[#(#generic_keys),*]);
+                    });
+                }
+
+                /// Clear all expectations and call history for this combination of
+                /// generic arguments. Other instantiations are not affected.
+                pub fn clear(&self) {
+                    #store_name.with_borrow_mut(|store| {
+                        store.clear_for(&[#(#generic_keys),*]);
                     });
                 }
 
@@ -213,6 +220,11 @@ pub fn build_interface_impl(
                     #store_name.with_borrow(|spy| spy.assert());
                 }
 
+                /// Clear all expectations and call history for this spy.
+                pub fn clear(&self) {
+                    #store_name.with_borrow_mut(|spy| spy.clear());
+                }
+
                 fn set_expectation(
                     &self,
                     matcher: #matcher_name,
@@ -293,6 +305,10 @@ mod tests {
 
                 pub fn assert(&self) {
                     PING_SPY_STORE.with_borrow(|spy| spy.assert());
+                }
+
+                pub fn clear(&self) {
+                    PING_SPY_STORE.with_borrow_mut(|spy| spy.clear());
                 }
 
                 fn set_expectation(

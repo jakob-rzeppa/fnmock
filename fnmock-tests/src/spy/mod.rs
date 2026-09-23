@@ -1,3 +1,10 @@
+mod clear {
+    mod basic;
+    mod generics;
+    mod impl_block;
+    mod sequences;
+}
+
 mod expectations {
     mod describe;
     mod expect_availability;

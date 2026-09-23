@@ -80,6 +80,25 @@ impl<M: Matcher + 'static> SpyStore<M> {
         &self.name
     }
 
+    /// Add a standalone expectation
+    pub fn add_expectation(&mut self, expectation: Expectation<M>) {
+        self.expectations.push(expectation);
+    }
+
+    /// Add a sequence, skip if it already exists
+    pub fn add_sequences(&mut self, sequences: Vec<Sequence>) {
+        for sequence in sequences {
+            if self
+                .sequences
+                .iter()
+                .find(|e| e.id() == sequence.id())
+                .is_none()
+            {
+                self.sequences.push(sequence);
+            }
+        }
+    }
+
     /// Check that every expectation set on the spied function is fulfilled.
     /// One message per expectation of this store that is not fulfilled, empty when it is
     /// satisfied.
@@ -138,22 +157,288 @@ impl<M: Matcher + 'static> SpyStore<M> {
         );
     }
 
-    /// Add a standalone expectation
-    pub fn add_expectation(&mut self, expectation: Expectation<M>) {
-        self.expectations.push(expectation);
+    pub fn clear(&mut self) {
+        self.total_calls = 0;
+        self.total_call_range = None;
+
+        self.expectations.clear();
+
+        // We need to remove the expectations from the sequences before clearing the array,
+        // since the sequences are shared between different spies.
+        self.sequences
+            .iter_mut()
+            .for_each(|seq| seq.clear_expectations_for::<M>());
+        self.sequences.clear();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fmt::Display;
+
+    use super::*;
+
+    #[derive(Clone)]
+    struct IntMatcher(i32);
+
+    impl Display for IntMatcher {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "eq({})", self.0)
+        }
     }
 
-    /// Add a sequence, skip if it already exists
-    pub fn add_sequences(&mut self, sequences: Vec<Sequence>) {
-        for sequence in sequences {
-            if self
-                .sequences
-                .iter()
-                .find(|e| e.id() == sequence.id())
-                .is_none()
-            {
-                self.sequences.push(sequence);
-            }
+    impl Matcher for IntMatcher {
+        type Params<'a> = (&'a i32,);
+
+        fn matches(&self, params: &Self::Params<'_>) -> bool {
+            params.0 == &self.0
         }
+    }
+
+    #[derive(Clone)]
+    struct StrMatcher(&'static str);
+
+    impl Display for StrMatcher {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "eq({:?})", self.0)
+        }
+    }
+
+    impl Matcher for StrMatcher {
+        type Params<'a> = (&'a str,);
+
+        fn matches(&self, params: &Self::Params<'_>) -> bool {
+            params.0 == self.0
+        }
+    }
+
+    fn int_expectation(value: i32, range: impl Into<CallRange>) -> Expectation<IntMatcher> {
+        let mut expectation = Expectation::new(IntMatcher(value), "f");
+        expectation.set_call_range(range.into());
+        expectation
+    }
+
+    fn call(store: &mut SpyStore<IntMatcher>, value: i32) {
+        store.record_call(&(&value,));
+    }
+
+    #[test]
+    fn name_returns_the_name_given_at_creation() {
+        let store = SpyStore::<IntMatcher>::new("get_user");
+        assert_eq!(store.name(), "get_user");
+    }
+
+    #[test]
+    fn new_store_has_no_failures() {
+        let store = SpyStore::<IntMatcher>::new("f");
+        assert!(store.check_for_failures().is_empty());
+        store.assert();
+    }
+
+    #[test]
+    fn calls_without_any_expectation_are_not_an_error() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        call(&mut store, 1);
+        store.assert();
+    }
+
+    #[test]
+    fn expectation_is_fulfilled_by_matching_calls() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.add_expectation(int_expectation(1, 2));
+
+        call(&mut store, 1);
+        call(&mut store, 1);
+
+        store.assert();
+    }
+
+    #[test]
+    fn non_matching_calls_do_not_count_towards_an_expectation() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.add_expectation(int_expectation(1, 1));
+
+        call(&mut store, 2);
+
+        let failures = store.check_for_failures();
+        assert_eq!(failures.len(), 1);
+        assert!(failures[0].contains("eq(1)"));
+        assert!(failures[0].contains("got 0 matching call(s)"));
+    }
+
+    #[test]
+    fn every_expectation_sees_every_matching_call() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.add_expectation(int_expectation(1, 1));
+        store.add_expectation(int_expectation(1, 1));
+
+        call(&mut store, 1);
+
+        store.assert();
+    }
+
+    #[test]
+    fn each_unfulfilled_expectation_gets_its_own_failure() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.add_expectation(int_expectation(1, 1));
+        store.add_expectation(int_expectation(2, 1));
+
+        assert_eq!(store.check_for_failures().len(), 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "Too many calls of the spied function")]
+    fn exceeding_an_expectations_maximum_panics() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.add_expectation(int_expectation(1, 1));
+
+        call(&mut store, 1);
+        call(&mut store, 1);
+    }
+
+    #[test]
+    fn total_call_range_counts_calls_regardless_of_arguments() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.set_total_call_range(3.into());
+
+        call(&mut store, 1);
+        call(&mut store, 2);
+        call(&mut store, 3);
+
+        store.assert();
+    }
+
+    #[test]
+    fn total_call_range_below_its_minimum_fails() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.set_total_call_range(3.into());
+
+        call(&mut store, 1);
+
+        let failures = store.check_for_failures();
+        assert_eq!(failures.len(), 1);
+        assert!(failures[0].contains("'f' was called 1 time(s)"));
+    }
+
+    #[test]
+    #[should_panic(expected = "Too many calls of the spied function 'f': got 2, expected")]
+    fn exceeding_the_total_call_range_panics() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.set_total_call_range(1.into());
+
+        call(&mut store, 1);
+        call(&mut store, 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "Expectation(s) of the spied function 'f' failed")]
+    fn assert_panics_naming_the_function_when_unfulfilled() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.add_expectation(int_expectation(1, 1));
+
+        store.assert();
+    }
+
+    #[test]
+    fn add_sequences_skips_a_sequence_already_added() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        let seq = Sequence::new();
+
+        store.add_sequences(vec![seq.clone()]);
+        store.add_sequences(vec![seq.clone(), seq]);
+
+        assert_eq!(store.sequences.len(), 1);
+    }
+
+    #[test]
+    fn add_sequences_keeps_different_sequences() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+
+        store.add_sequences(vec![Sequence::new(), Sequence::new()]);
+
+        assert_eq!(store.sequences.len(), 2);
+    }
+
+    #[test]
+    fn calls_are_passed_through_to_sequences() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        let mut seq = Sequence::new();
+        seq.append_expectation(int_expectation(1, 1));
+        store.add_sequences(vec![seq]);
+
+        call(&mut store, 1);
+
+        store.assert();
+    }
+
+    #[test]
+    fn unfulfilled_sequence_step_is_reported_as_sequenced() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        let mut seq = Sequence::new();
+        seq.append_expectation(int_expectation(1, 1));
+        store.add_sequences(vec![seq]);
+
+        let failures = store.check_for_failures();
+        assert_eq!(failures.len(), 1);
+        assert!(failures[0].starts_with("sequenced "));
+    }
+
+    #[test]
+    #[should_panic(expected = "Call out of sequence")]
+    fn strict_sequence_panic_propagates_from_record_call() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        let mut seq = Sequence::new_strict();
+        seq.append_expectation(int_expectation(1, 2..));
+        seq.append_expectation(int_expectation(2, 1));
+        store.add_sequences(vec![seq]);
+
+        call(&mut store, 1);
+        call(&mut store, 2);
+    }
+
+    #[test]
+    fn clear_resets_expectations_and_call_counts() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.set_total_call_range(1.into());
+        store.add_expectation(int_expectation(1, 1));
+        call(&mut store, 1);
+
+        store.clear();
+
+        // Would fail if the total range, expectation or call count survived.
+        store.assert();
+    }
+
+    #[test]
+    fn clear_removes_own_steps_from_shared_sequences_only() {
+        let mut int_store = SpyStore::<IntMatcher>::new("f");
+        let mut str_store = SpyStore::<StrMatcher>::new("g");
+        let mut seq = Sequence::new();
+        seq.append_expectation(int_expectation(1, 1));
+        seq.append_expectation(Expectation::new(StrMatcher("bob"), "g"));
+        int_store.add_sequences(vec![seq.clone()]);
+        str_store.add_sequences(vec![seq]);
+
+        int_store.clear();
+
+        assert!(int_store.check_for_failures().is_empty());
+        assert_eq!(str_store.check_for_failures().len(), 1);
+    }
+
+    #[test]
+    fn clear_detaches_the_store_from_its_sequences() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.add_sequences(vec![Sequence::new()]);
+
+        store.clear();
+
+        assert!(store.sequences.is_empty());
+    }
+
+    #[test]
+    fn clear_keeps_the_name() {
+        let mut store = SpyStore::<IntMatcher>::new("f");
+        store.clear();
+        assert_eq!(store.name(), "f");
     }
 }
