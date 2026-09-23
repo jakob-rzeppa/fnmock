@@ -5,6 +5,8 @@ mod compile_fail;
 #[allow(dead_code)]
 mod fake;
 #[allow(dead_code)]
+mod mock;
+#[allow(dead_code)]
 mod spy;
 
 fn main() {
