@@ -10,6 +10,8 @@ together.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-24
+
 ### Added
 
 - `fnmock` now supports faking and spying on functions and methods at the same time by the `mockable` attribute.
@@ -51,7 +53,8 @@ together.
   methods in an `impl` block.
 - Initial release of `fnmock-derive` - a procedural macro crate powering `fnmock`.
 
-[Unreleased]: https://github.com/jakob-rzeppa/fnmock/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/jakob-rzeppa/fnmock/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/jakob-rzeppa/fnmock/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/jakob-rzeppa/fnmock/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/jakob-rzeppa/fnmock/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jakob-rzeppa/fnmock/releases/tag/v0.1.0
