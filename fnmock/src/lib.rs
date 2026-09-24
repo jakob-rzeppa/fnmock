@@ -1,18 +1,13 @@
 //! A Rust mocking framework for standalone functions and methods in an impl block.
 //!
-//! fnmock lets you replace or observe a function's behaviour in tests without introducing a trait
-//! or dependency injection wiring. You annotate the function where it already lives, and the test
-//! either controls what it returns ([`fakeable`]) or asserts on how it was called ([`spyable`]).
-//!
-//! # Fakes
-//!
-//! [`fakeable`] injects a lookup at the top of the function: if the test installed a fake, the
-//! fake runs instead of the body.
+//! fnmock lets you mock a plain function in tests without adding a trait or dependency-injection
+//! wiring. Annotate the function with [`mockable`] where it already lives. The test can then decide
+//! what the function returns and assert on how it was called.
 //!
 //! ```ignore
-//! #[fnmock::fakeable]
+//! #[fnmock::mockable]
 //! fn fetch_user_name(id: u32) -> String {
-//!     todo!()
+//!     // real database call
 //! }
 //!
 //! fn greet(id: u32) -> String {
@@ -21,50 +16,50 @@
 //!
 //! #[test]
 //! fn test_greeting() {
-//!     fetch_user_name_fake().setup(|_| "Test".into());
+//!     let mock = fetch_user_name_mock();
+//!     mock.setup(|_| "Test".into());                  // replace what it returns ...
+//!     mock.expect(fnmock::predicate::eq(1)).once();   // ... and expect how it is called
 //!
 //!     assert_eq!(greet(1), "Hello, Test");
+//!
+//!     mock.assert();
 //! }
 //! ```
 //!
-//! # Spies
+//! Every call is recorded, including calls the `setup` closure answers. Without `setup`, the real
+//! body runs. `clear()` resets the whole mock.
 //!
-//! [`spyable`] works the other way round: the real body still runs, and the test asserts on the
-//! arguments it was called with.
+//! `expect` and `expectf` return an [`ExpectationHandle`], which refines the expectation by
+//! chaining:
 //!
-//! ```ignore
-//! #[fnmock::spyable]
-//! fn fetch_user_name(id: u32) -> String {
-//!     format!("user {id}")
-//! }
+//! - `times`, which takes anything that converts into a [`CallRange`] (a count or a range)
+//! - `once`
+//! - `never`
+//! - `describe`
+//! - `in_sequence`, which adds the expectation to a [`Sequence`]
 //!
-//! #[test]
-//! fn test_fetch_user_name() {
-//!     let spy = fetch_user_name_spy();
-//!     spy.expect(fnmock::predicate::eq(1)).once();
+//! A [`Sequence`] orders expectations across several functions.
 //!
-//!     assert_eq!(fetch_user_name(1), "user 1"); // the real body still runs
+//! # Only need one half?
 //!
-//!     spy.assert();
-//! }
-//! ```
+//! Two smaller attributes each provide one half of a mock:
 //!
-//! `expect` and `expectf` hand back an [`ExpectationHandle`], which refines the expectation by
-//! chaining: `times` (taking anything that converts into a [`CallRange`] — a count or a range),
-//! `once`, `never`, `describe` and `in_sequence`, where a [`Sequence`] orders expectations across
-//! several spies.
+//! - [`fakeable`] generates `<fn_name>_fake()` with `setup`, `is_set` and `clear`. It replaces the
+//!   body and records nothing. It also accepts destructuring parameters, which a mock can't record.
+//! - [`spyable`] generates `<fn_name>_spy()` with the expectation methods only. The real body always
+//!   runs. It also accepts `-> impl Trait` and `-> !`, which a mock can't produce.
 //!
 //! # Crate layout
 //!
-//! [`fakeable`] and [`spyable`] are the whole API you apply to production code. The types a test
-//! touches are [`ExpectationHandle`], [`CallRange`], [`Sequence`] and the re-exported
-//! [`predicate`] builders. Every other module — the fake and spy stores, matchers, expectations —
-//! only exists because the code the macros expand to has to name it; they are fnmock internals and
-//! you should not interact with them directly.
+//! [`mockable`], [`fakeable`] and [`spyable`] are the whole API you apply to production code. The
+//! types a test touches are [`ExpectationHandle`], [`CallRange`], [`Sequence`] and the re-exported
+//! [`predicate`] builders. Every other module (the stores, matchers and expectations) exists only
+//! because the code the macros expand to has to name it. They are fnmock internals, and you
+//! shouldn't use them directly.
 //!
-//! Fakes and spies are kept per thread and their lookup is `#[cfg(test)]`-gated, so each `#[test]`
-//! gets its own isolated state and release builds compile no fake or spy machinery at all. The
-//! flip side is that both can only be set up from a `#[cfg(test)]` unit test inside the crate that
+//! Mocks are kept per thread and their injected code is `#[cfg(test)]`-gated. Each `#[test]`
+//! therefore gets its own isolated state, and release builds compile no mock code at all. The flip
+//! side is that a mock can only be set up from a `#[cfg(test)]` unit test inside the crate that
 //! defines the annotated item.
 //!
 //! See the [README](https://github.com/jakob-rzeppa/fnmock/blob/master/README.md) for installation,

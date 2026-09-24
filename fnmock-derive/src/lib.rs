@@ -1,8 +1,9 @@
 //! Proc-macro implementation behind [`fnmock`](https://docs.rs/fnmock).
 //!
-//! Everything here except the [`macro@fakeable`], [`macro@spyable`] and [`macro@mockable`]
-//! attributes is a fnmock internal. Depend on the `fnmock` crate rather than on this one; it
-//! re-exports the attributes as `fnmock::fakeable`, `fnmock::spyable` and `fnmock::mockable`.
+//! Everything here except the [`macro@mockable`] attribute and its two single-half variants,
+//! [`macro@fakeable`] and [`macro@spyable`], is a fnmock internal. Depend on the `fnmock` crate
+//! rather than on this one. It re-exports the attributes as `fnmock::mockable`, `fnmock::fakeable`
+//! and `fnmock::spyable`.
 //!
 //! See the [README](https://github.com/jakob-rzeppa/fnmock/blob/master/README.md) for installation,
 //! a walkthrough and the current limitations.
@@ -19,12 +20,80 @@ mod scheme;
 mod spyable;
 mod strategy;
 
-/// Make a function or an impl methods fakeable in tests.
+/// Mock a free function or the methods of an inherent impl block in tests.
 ///
-/// Applied to a function, the attribute leaves the original body in place and injects a
-/// `#[cfg(test)]`-gated lookup at the top of it: if a fake is installed for this function on the
-/// current thread, the fake runs instead of the body. It also generates an accessor named after
-/// the function — `fetch_user` gets `fetch_user_fake()` — which tests use to control the fake:
+/// The attribute leaves the original body in place and injects a `#[cfg(test)]`-gated block at the
+/// top of it. The block records the call. Then, if the test has installed a replacement closure on
+/// the current thread, the closure's result is returned instead of running the body. The attribute
+/// also generates an accessor named after the function (`get_user` gets `get_user_mock()`), which
+/// tests use to control the mock:
+///
+/// | Method | Behaviour |
+/// | --- | --- |
+/// | `setup(closure)` | Replace the body with a closure of the same signature. Calling it again replaces the previous one. |
+/// | `is_set()` | Whether a replacement closure is installed. |
+/// | `expect(pred, ..)` | Expect calls whose arguments satisfy one predicate per parameter. |
+/// | `expectf(closure)` | Expect calls whose arguments satisfy one closure over all of them. |
+/// | `expect_times(n)` / `expect_once()` / `expect_never()` | Expect this many calls, whatever their arguments. |
+/// | `assert()` | Assert every expectation set on this mock is fulfilled. |
+/// | `clear()` | Reset the whole mock: remove the closure, and drop every expectation and recorded call. |
+///
+/// ```ignore
+/// #[fnmock::mockable]
+/// fn fetch_user_name(id: u32) -> String {
+///     // real database call
+/// }
+///
+/// #[test]
+/// fn test_greeting() {
+///     let mock = fetch_user_name_mock();
+///     mock.setup(|_| "Test".into());
+///     mock.expect(fnmock::predicate::eq(1)).once();
+///
+///     assert_eq!(greet(1), "Hello, Test");
+///
+///     mock.assert();
+/// }
+/// ```
+///
+/// Every call is recorded, including calls the closure answers, so a canned return value and an
+/// assertion on the call work together. A call the closure answers never runs the real body, so the
+/// real body's side effects don't happen. Arguments are matched by shared reference: a `String`
+/// parameter is matched by a `Predicate<String>` and a `&str` one by a `Predicate<str>`.
+///
+/// `expect` and `expectf` return a handle that refines the expectation by chaining: `times(2)`,
+/// `once()`, `never()`, `describe(..)`, `in_sequence(&seq)`. See
+/// [FEATURES.md](https://github.com/jakob-rzeppa/fnmock/blob/master/docs/FEATURES.md).
+///
+/// Applied to an inherent impl block, every method in it gets its own mock, and the accessors are
+/// generated as associated functions on the same type (`Type::method_mock()`). The `setup` closure
+/// receives the receiver as its first argument. Expectations never match on the receiver.
+///
+/// Mocks are stored per thread, and the test harness gives each `#[test]` its own thread, so tests
+/// can't leak into one another and no reset step is needed. The flip side is that a mock is only
+/// visible on the thread that set it up. Because the injected block is `#[cfg(test)]`-gated,
+/// release builds keep the original body and compile no mock code at all.
+#[proc_macro_attribute]
+pub fn mockable(
+    attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    // These attribute functions are the only place proc_macro::TokenStream should appear: the
+    // actual proc-macro ABI boundary requires it, but proc_macro::TokenStream cannot be constructed
+    // or parsed outside a live macro expansion (it panics), which makes anything using it
+    // untestable. Converting to proc_macro2::TokenStream here lets the rest of the crate be tested
+    // with ordinary unit tests.
+    let res = handle_mockable(attr.into(), item.into());
+
+    match res {
+        Ok(expanded) => expanded.into(),
+        Err(e) => e.to_compile_error().into(),
+    }
+}
+
+/// Replace a free function's or impl method's body in tests, without recording calls.
+///
+/// This is the replacing half of [`macro@mockable`] on its own. It generates `<fn_name>_fake()`:
 ///
 /// | Method | Behaviour |
 /// | --- | --- |
@@ -45,30 +114,11 @@ mod strategy;
 ///     assert_eq!(fetch_user(1).name, "Test");
 /// }
 /// ```
-///
-/// Applied to an inherent impl block, every method in it becomes fakeable and the accessors are
-/// generated as associated functions on the same type.
-///
-/// Fakes are stored per thread, and the test harness gives each `#[test]` its own thread, so tests
-/// cannot leak into one another and no reset step is needed. The flip side is that a fake is only
-/// visible on the thread that installed it.
-///
-/// Because the injected lookup is `#[cfg(test)]`-gated, release builds keep the original function
-/// body and compile no fake machinery at all.
-///
-/// # Errors
-///
-/// The macro can return a compile error if something went wrong or an unsupported construct was used.
-/// See `docs/LIMITATIONS.md` for the full list of unsupported constructs.
 #[proc_macro_attribute]
 pub fn fakeable(
     attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    // This is the only place proc_macro::TokenStream should appear: the actual proc-macro ABI
-    // boundary requires it, but proc_macro::TokenStream cannot be constructed or parsed outside
-    // a live macro expansion (it panics), which makes anything using it untestable. Converting to
-    // proc_macro2::TokenStream here lets the rest of the crate be tested with ordinary unit tests.
     let res = handle_fakeable(attr.into(), item.into());
 
     match res {
@@ -77,25 +127,13 @@ pub fn fakeable(
     }
 }
 
-/// Record a free function's or impl method's calls in tests, and assert on them.
+/// Record a free function's or impl method's calls in tests and assert on them. The real body
+/// always runs.
 ///
-/// Where [`macro@fakeable`] replaces a function's body, a spy leaves it alone: the attribute
-/// injects a `#[cfg(test)]`-gated statement at the top of the body that hands the call's arguments
-/// to the spy on the way past, and then the real implementation runs. It also generates an
-/// accessor named after the function — `get_user` gets `get_user_spy()` — which tests set
-/// expectations on:
-///
-/// | Method | Behaviour |
-/// | --- | --- |
-/// | `expect(pred, ..)` | Expect calls whose arguments satisfy one predicate per parameter. |
-/// | `expectf(closure)` | Expect calls whose arguments satisfy one closure over all of them. |
-/// | `expect_times(n)` / `expect_once()` / `expect_never()` | Expect this many calls, whatever their arguments. |
-/// | `assert()` | Assert every expectation set on this spy is fulfilled. |
-/// | `clear()` | Reset the whole spy: drop every expectation and recorded call. |
-///
-/// `expect` and `expectf` hand back a handle that refines the expectation by chaining —
-/// `times(2)`, `once()`, `never()`, `in_sequence(&mut seq)`. See
-/// [SPY_FEATURES.md](https://github.com/jakob-rzeppa/fnmock/blob/master/docs/SPY_FEATURES.md).
+/// This is the recording half of [`macro@mockable`] on its own. It generates `<fn_name>_spy()`
+/// with the mock's expectation methods, `expect`, `expectf`, `expect_times`, `expect_once`,
+/// `expect_never` and `assert`, plus a `clear()` that drops the expectations and call history. It
+/// has no `setup` or `is_set`.
 ///
 /// ```ignore
 /// #[fnmock::spyable]
@@ -113,82 +151,12 @@ pub fn fakeable(
 ///     spy.assert();
 /// }
 /// ```
-///
-/// Arguments are matched by shared reference, so a `String` parameter is matched by a
-/// `Predicate<String>` and a `&str` one by a `Predicate<str>`; nothing is cloned or moved out of
-/// the call.
-///
-/// Spies are stored per thread, and the test harness gives each `#[test]` its own thread, so tests
-/// cannot leak into one another. Because the injected statement is `#[cfg(test)]`-gated, release
-/// builds keep the original function body and compile no spy machinery at all.
-///
-/// # Errors
-///
-/// Parameters that are not plain identifiers are rejected with a compile error, as are `const fn`,
-/// trait impl blocks and types the matcher cannot name. See `docs/LIMITATIONS.md` for the full
-/// list.
 #[proc_macro_attribute]
 pub fn spyable(
     attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     let res = handle_spyable(attr.into(), item.into());
-
-    match res {
-        Ok(expanded) => expanded.into(),
-        Err(e) => e.to_compile_error().into(),
-    }
-}
-
-/// Make a function or an impl method's calls both fakeable and recorded in tests.
-///
-/// A mock is a fake and a spy on the same item, behind one accessor: `get_user` gets
-/// `get_user_mock()`, whose interface carries both halves' methods:
-///
-/// | Method | Behaviour |
-/// | --- | --- |
-/// | `setup(closure)` | Install a fake implementation, replacing any previous one. |
-/// | `is_set()` | Whether a fake is currently installed. |
-/// | `expect(pred, ..)` | Expect calls whose arguments satisfy one predicate per parameter. |
-/// | `expectf(closure)` | Expect calls whose arguments satisfy one closure over all of them. |
-/// | `expect_times(n)` / `expect_once()` / `expect_never()` | Expect this many calls, whatever their arguments. |
-/// | `assert()` | Assert every expectation set on this mock is fulfilled. |
-/// | `clear()` | Reset the whole mock: remove the fake, drop every expectation and recorded call. |
-///
-/// Every call is recorded first and the fake, if one is installed, answers second, so a canned
-/// value and an assertion on how it was asked for work together. An intercepted call never runs
-/// the real body, so its side effects are skipped.
-///
-/// ```ignore
-/// #[fnmock::mockable]
-/// fn fetch_user_name(id: u32) -> String {
-///     // real database call
-/// }
-///
-/// #[test]
-/// fn test_greeting() {
-///     let mock = fetch_user_name_mock();
-///     mock.setup(|_| "Test".into());
-///     mock.expect(fnmock::predicate::eq(1)).once();
-///
-///     assert_eq!(greet(1), "Hello, Test");
-///
-///     mock.assert();
-/// }
-/// ```
-///
-/// A mock supports only what both halves support; anything either rejects is a compile error.
-///
-/// # Errors
-///
-/// The macro can return a compile error if something went wrong or an unsupported construct was used.
-/// See `docs/LIMITATIONS.md` for the full list of unsupported constructs.
-#[proc_macro_attribute]
-pub fn mockable(
-    attr: proc_macro::TokenStream,
-    item: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
-    let res = handle_mockable(attr.into(), item.into());
 
     match res {
         Ok(expanded) => expanded.into(),

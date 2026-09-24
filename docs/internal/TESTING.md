@@ -16,14 +16,13 @@ is the only scope where fnmock's accessors exist at all.
 
 ```
 src/
-  common/    features that apply to fakes and spies alike; most files contain a
-             `mod fake { .. }` and a `mod spy { .. }` testing the same construct both ways
-    params/        by value, by reference, patterns, smart pointers, raw pointers, ...
-    generics/      type params, const generics, lifetimes, isolation between instantiations
-    impl_block/    receivers, associated functions, visibility, isolation between types
-    returns/, traits/, special/, visibility/, attributes/
+  common/    features that apply to fakes, spies and mocks alike; most files contain a
+             `mod fake { .. }`, a `mod spy { .. }` and a `mod mock { .. }` testing the same
+             construct all three ways
   fake/      fake-only: captured state, clear/is_set, re-entrancy
-  spy/       spy-only: expectations, sequences, generic instantiation scoping
+  spy/       spy-only: expectations, sequences, clear, generic instantiation scoping
+  mock/      mock-only: the interactions neither half can test alone (record-then-fake,
+             `clear()` resetting both halves, generics, impl blocks, sequences)
   compile_fail.rs
 ```
 
@@ -49,7 +48,7 @@ fn compile_fail() {
 ```
 
 They sit next to the passing tests for the same feature, and most unsupported constructs have a
-`_fake` and a `_spy` variant, since the two attributes reject different things.
+`_fake`, a `_spy` and a `_mock` variant.
 
 Regenerating the snapshots after changing an error message:
 
