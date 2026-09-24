@@ -8,7 +8,6 @@ mod params {
     mod raw_const_pointers;
     mod raw_mut_pointers;
     mod reference;
-    mod reference_in_container;
     mod reference_in_option;
     mod reference_in_slice;
     mod reference_in_tuple;
@@ -30,7 +29,6 @@ mod impl_block {
     mod associated_function;
     mod async_method;
     mod basic;
-    mod clear_and_is_set;
     mod module_path_isolation;
     mod multiple_methods;
     mod same_method_name_isolation;

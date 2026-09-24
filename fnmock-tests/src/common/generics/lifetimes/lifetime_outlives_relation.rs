@@ -59,7 +59,8 @@ mod mock {
     fn test_lifetime_outlives_relation() {
         let mock = lifetime_outlives_relation_mock();
         mock.setup(|x, y| x.len() + y.len() + 1);
-        mock.expectf(|x: &str, y: &str| x == "a" && y == "bb").once();
+        mock.expectf(|x: &str, y: &str| x == "a" && y == "bb")
+            .once();
 
         let res = lifetime_outlives_relation("a", "bb");
 

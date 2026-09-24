@@ -70,7 +70,8 @@ mod tests {
             keys: vec![parse_quote!(::std::any::TypeId::of::<T>())],
         };
 
-        let parts = build_module_parts("my_fn", &interface_name, Some(&generic_scheme), &fake, true);
+        let parts =
+            build_module_parts("my_fn", &interface_name, Some(&generic_scheme), &fake, true);
 
         assert_eq!(parts.len(), 3);
     }

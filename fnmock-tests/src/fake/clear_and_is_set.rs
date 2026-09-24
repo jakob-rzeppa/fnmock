@@ -57,7 +57,8 @@ mod mock {
     fn test_setup_and_expect_together() {
         let mock = clear_and_is_set_mock();
         mock.setup(|a| format!("Fake {}", a));
-        mock.expect(fnmock::predicate::eq("Test".to_string())).once();
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
 
         let res = clear_and_is_set("Test".to_string());
 

@@ -1,5 +1,4 @@
-/// Compile-fail tests for parameter patterns that `#[fnmock::fakeable]` and
-/// `#[fnmock::spyable]` explicitly do not support.
+/// # Compile-fail tests
 ///
 /// Each file ending in `.cf.rs` is expected to fail
 /// compilation with the error message stored in the matching `.cf.stderr` snapshot.
