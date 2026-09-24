@@ -1,9 +1,9 @@
-//! `#[must_use]` written before `#[fnmock::spyable]` must survive expansion.
+//! `#[must_use]` written before `#[fnmock::mockable]` must survive expansion.
 
 #![deny(unused_must_use)]
 
 #[must_use]
-#[fnmock::spyable]
+#[fnmock::mockable]
 fn compute(a: i32) -> i32 {
     a + 1
 }

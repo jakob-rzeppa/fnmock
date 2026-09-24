@@ -1,0 +1,15 @@
+error[E0599]: no associated function or constant named `parent_visible_method_mock` found for struct `MyStruct` in the current scope
+  --> src/common/impl_block/visibility/impl_method_pub_super_not_accessible_from_sibling_mock.cf.rs:21:19
+   |
+ 5 |     pub struct MyStruct;
+   |     ------------------- associated function or constant `parent_visible_method_mock` not found for this struct
+...
+21 |         MyStruct::parent_visible_method_mock().setup(|_, a| format!("Fake {}", a));
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `MyStruct`
+   |
+help: there is a method `parent_visible_method` with a similar name, but with different arguments
+  --> src/common/impl_block/visibility/impl_method_pub_super_not_accessible_from_sibling_mock.cf.rs:7:5
+   |
+ 7 |     #[fnmock::mockable]
+   |     ^^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `fnmock::mockable` (in Nightly builds, run with -Z macro-backtrace for more info)

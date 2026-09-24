@@ -1,0 +1,5 @@
+error: Generic parameter 'T' has no 'static bound. Type parameters are keyed by TypeId, which requires 'static; add an explicit `T: 'static` bound.
+ --> src/common/generics/lifetimes/unsupported_missing_static_bound_mock.cf.rs:5:25
+  |
+5 | fn missing_static_bound<T: std::fmt::Display>(value: T) -> String {
+  |                         ^^^^^^^^^^^^^^^^^^^^
