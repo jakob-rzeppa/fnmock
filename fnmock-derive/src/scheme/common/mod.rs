@@ -1,5 +1,7 @@
 pub mod fn_closure_trait;
+pub mod function;
 pub mod generic_scheme;
+pub mod impl_block;
 pub mod names;
 pub mod spy_param;
 pub mod supported_type;

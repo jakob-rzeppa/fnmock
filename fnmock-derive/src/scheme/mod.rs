@@ -1,3 +1,4 @@
 pub mod common;
-pub mod function;
-pub mod impl_block;
+pub mod fake;
+pub mod mock;
+pub mod spy;

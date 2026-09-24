@@ -45,3 +45,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn reference_with_named_lifetime<'a>(s: &'a str) -> usize {
+        s.len()
+    }
+
+    #[test]
+    fn test_reference_with_named_lifetime() {
+        let mock = reference_with_named_lifetime_mock();
+        mock.setup(|s| s.len() + 1);
+        mock.expect(fnmock::predicate::eq("hi".to_string())).once();
+
+        let res = reference_with_named_lifetime("hi");
+
+        assert_eq!(res, 3);
+        mock.assert();
+    }
+}

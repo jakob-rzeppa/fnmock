@@ -59,3 +59,34 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct HigherRankedWherePredicate;
+
+    #[fnmock::mockable]
+    impl HigherRankedWherePredicate {
+        fn apply<F: 'static>(&self, f: F, s: &str) -> String
+        where
+            for<'x> F: Fn(&'x str) -> String,
+        {
+            f(s)
+        }
+    }
+
+    fn uppercase(s: &str) -> String {
+        s.to_uppercase()
+    }
+
+    #[test]
+    fn test_higher_ranked_where_predicate() {
+        let mock = HigherRankedWherePredicate::apply_mock::<fn(&str) -> String>();
+        mock.setup(|_, _f, s| format!("Fake {s}"));
+        mock.expect_once();
+
+        let f: fn(&str) -> String = uppercase;
+        let res = HigherRankedWherePredicate.apply(f, "test");
+
+        assert_eq!(res, "Fake test");
+        mock.assert();
+    }
+}

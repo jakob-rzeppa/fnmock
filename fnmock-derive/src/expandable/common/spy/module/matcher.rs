@@ -8,7 +8,7 @@ use crate::scheme::common::generic_scheme::GenericScheme;
 /// [`Predicate`](fnmock::Predicate) per parameter (built by `expect`), and `Function`, a single
 /// closure over every parameter at once (built by `expectf`). When `supports_expect` is `false`
 /// the `Predicates` variant is left off entirely — see its doc comment on
-/// [`FunctionSpyScheme`](crate::scheme::function::spy::FunctionSpyScheme) for why a parameter
+/// [`SpyScheme::supports_expect`](crate::scheme::function::spy::SpyScheme::supports_expect) for why a parameter
 /// can force that.
 ///
 /// When `generic_scheme` is `Some`, the enum and both impls repeat the function's generic

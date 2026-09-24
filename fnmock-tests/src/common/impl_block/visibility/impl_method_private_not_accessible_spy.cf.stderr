@@ -1,0 +1,8 @@
+error[E0599]: no associated function or constant named `private_method_spy` found for struct `MyStruct` in the current scope
+  --> src/common/impl_block/visibility/impl_method_private_not_accessible_spy.cf.rs:20:19
+   |
+ 5 |     pub struct MyStruct;
+   |     ------------------- associated function or constant `private_method_spy` not found for this struct
+...
+20 |         MyStruct::private_method_spy().expect_once();
+   |                   ^^^^^^^^^^^^^^^^^^ associated function or constant not found in `MyStruct`

@@ -1,0 +1,15 @@
+error[E0599]: no associated function or constant named `parent_visible_method_spy` found for struct `MyStruct` in the current scope
+  --> src/common/impl_block/visibility/impl_method_pub_super_not_accessible_from_sibling_spy.cf.rs:21:19
+   |
+ 5 |     pub struct MyStruct;
+   |     ------------------- associated function or constant `parent_visible_method_spy` not found for this struct
+...
+21 |         MyStruct::parent_visible_method_spy().expect_once();
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `MyStruct`
+   |
+help: there is a method `parent_visible_method` with a similar name, but with different arguments
+  --> src/common/impl_block/visibility/impl_method_pub_super_not_accessible_from_sibling_spy.cf.rs:7:5
+   |
+ 7 |     #[fnmock::spyable]
+   |     ^^^^^^^^^^^^^^^^^^
+   = note: this error originates in the attribute macro `fnmock::spyable` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -68,3 +68,42 @@ mod spy {
         spy_i32.assert();
     }
 }
+
+mod mock {
+    struct GenericClearAndIsSet;
+
+    #[fnmock::mockable]
+    impl GenericClearAndIsSet {
+        fn echo<T: 'static + std::fmt::Display>(&self, a: T) -> String {
+            format!("Real {}", a)
+        }
+    }
+
+    #[test]
+    fn test_is_set_transitions() {
+        assert!(!GenericClearAndIsSet::echo_mock::<String>().is_set());
+
+        GenericClearAndIsSet::echo_mock::<String>().setup(|_, a| format!("Fake {}", a));
+        assert!(GenericClearAndIsSet::echo_mock::<String>().is_set());
+
+        GenericClearAndIsSet::echo_mock::<String>().clear();
+        assert!(!GenericClearAndIsSet::echo_mock::<String>().is_set());
+    }
+
+    #[test]
+    fn test_setup_and_expect_per_instantiation() {
+        let s = GenericClearAndIsSet;
+
+        let mock_string = GenericClearAndIsSet::echo_mock::<String>();
+        mock_string.setup(|_, a| format!("Fake {}", a));
+        mock_string.expect_once();
+
+        let mock_i32 = GenericClearAndIsSet::echo_mock::<i32>();
+        mock_i32.expect_never();
+
+        assert_eq!(s.echo("Test".to_string()), "Fake Test");
+
+        mock_string.assert();
+        mock_i32.assert();
+    }
+}

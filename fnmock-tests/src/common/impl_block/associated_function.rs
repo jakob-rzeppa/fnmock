@@ -41,3 +41,26 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct AssociatedFunction;
+
+    #[fnmock::mockable]
+    impl AssociatedFunction {
+        fn associated(a: i32) -> i32 {
+            a
+        }
+    }
+
+    #[test]
+    fn test_associated_function() {
+        let mock = AssociatedFunction::associated_mock();
+        mock.setup(|_| 5);
+        mock.expect(fnmock::predicate::eq(42)).once();
+
+        let res = AssociatedFunction::associated(42);
+
+        assert_eq!(res, 5);
+        mock.assert();
+    }
+}

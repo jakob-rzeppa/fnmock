@@ -48,3 +48,29 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct SelfReferenced {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl SelfReferenced {
+        fn get(&self) -> i32 {
+            self.value
+        }
+    }
+
+    #[test]
+    fn test_self_referenced() {
+        let mock = SelfReferenced::get_mock();
+        mock.setup(|_| 5);
+        mock.expect_once();
+
+        let s = SelfReferenced { value: 42 };
+        let res = s.get();
+
+        assert_eq!(res, 5);
+        mock.assert();
+    }
+}

@@ -48,3 +48,22 @@ mod spy {
         spy_bool.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn unused_generic<T: 'static>(id: i32) -> i32 {
+        id
+    }
+
+    #[test]
+    fn test_unused_generic() {
+        let mock = unused_generic_mock::<String>();
+        mock.setup(|id| id + 1);
+        mock.expect(fnmock::predicate::eq(7)).once();
+
+        let res = unused_generic::<String>(7);
+
+        assert_eq!(res, 8);
+        mock.assert();
+    }
+}

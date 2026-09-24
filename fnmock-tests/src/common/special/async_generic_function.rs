@@ -50,3 +50,29 @@ mod spy {
         }
     }
 }
+
+mod mock {
+    use std::fmt::Display;
+
+    #[fnmock::mockable]
+    async fn async_generic_function<T: Display + 'static>(value: T) -> String {
+        format!("Real {}", value)
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[tokio::test]
+        async fn test_async_generic_function() {
+            let mock = async_generic_function_mock::<i32>();
+            mock.setup(|value| format!("Fake {}", value));
+            mock.expect(fnmock::predicate::eq(1)).once();
+
+            let result = async_generic_function(1).await;
+
+            assert_eq!(result, "Fake 1");
+            mock.assert();
+        }
+    }
+}

@@ -41,3 +41,26 @@ mod spy {
         spy_7.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn cross_value_isolation<const C: usize>(a: String) -> String {
+        format!("{} {}", a, C)
+    }
+
+    #[test]
+    fn test_mock_does_not_leak_across_values() {
+        let mock_5 = cross_value_isolation_mock::<5>();
+        mock_5.setup(|a| format!("Fake {} {}", a, 5));
+        mock_5.expect_once();
+
+        let mock_7 = cross_value_isolation_mock::<7>();
+        mock_7.expect_never();
+
+        let res = cross_value_isolation::<5>("Test".to_string());
+
+        assert_eq!(res, "Fake Test 5");
+        mock_5.assert();
+        mock_7.assert();
+    }
+}

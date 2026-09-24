@@ -50,3 +50,30 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct SelfMutReferenced {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl SelfMutReferenced {
+        fn increment(&mut self) -> i32 {
+            self.value += 1;
+            self.value
+        }
+    }
+
+    #[test]
+    fn test_self_mut_referenced() {
+        let mock = SelfMutReferenced::increment_mock();
+        mock.setup(|_| 5);
+        mock.expect_once();
+
+        let mut s = SelfMutReferenced { value: 42 };
+        let res = s.increment();
+
+        assert_eq!(res, 5);
+        mock.assert();
+    }
+}

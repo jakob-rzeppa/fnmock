@@ -33,3 +33,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn slice(items: &[i32]) -> i32 {
+        items.iter().sum()
+    }
+
+    #[test]
+    fn test_slice() {
+        let mock = slice_mock();
+        mock.setup(|items: &[i32]| items.iter().product());
+        mock.expect(fnmock::predicate::eq(&[2, 3, 4][..])).once();
+
+        let result = slice(&[2, 3, 4]);
+
+        assert_eq!(result, 24);
+        mock.assert();
+    }
+}

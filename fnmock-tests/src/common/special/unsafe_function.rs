@@ -36,3 +36,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    unsafe fn unsafe_function(value: i32) -> i32 {
+        value + 1
+    }
+
+    #[test]
+    fn test_unsafe_function() {
+        let mock = unsafe_function_mock();
+        mock.setup(|value| value + 10);
+        mock.expect(fnmock::predicate::eq(1)).once();
+
+        let result = unsafe { unsafe_function(1) };
+
+        assert_eq!(result, 11);
+        mock.assert();
+    }
+}

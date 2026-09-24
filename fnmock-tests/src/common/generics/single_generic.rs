@@ -55,3 +55,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn single_generic<T: 'static>(a: T) -> T {
+        a
+    }
+
+    #[test]
+    fn test_single_generic() {
+        let mock = single_generic_mock::<String>();
+        mock.setup(|a| format!("Fake {}", a));
+        mock.expect(fnmock::predicate::eq("hi".to_string())).once();
+
+        let res = single_generic("hi".to_string());
+
+        assert_eq!(res, "Fake hi");
+        mock.assert();
+    }
+}

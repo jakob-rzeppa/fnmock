@@ -1,6 +1,7 @@
 use crate::item_info::original::OriginalImpl;
 
 pub mod fake;
+pub mod mock;
 pub mod spy;
 
 pub struct ImplExpandable {

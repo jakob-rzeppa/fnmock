@@ -36,3 +36,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn unused_lifetime<'a>(id: i32) -> i32 {
+        id
+    }
+
+    #[test]
+    fn test_unused_lifetime() {
+        let mock = unused_lifetime_mock();
+        mock.setup(|id| id + 1);
+        mock.expect(fnmock::predicate::eq(7)).once();
+
+        let res = unused_lifetime(7);
+
+        assert_eq!(res, 8);
+        mock.assert();
+    }
+}

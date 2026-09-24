@@ -42,3 +42,29 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    mod definitions {
+        pub struct CrateVisibleStruct;
+
+        #[fnmock::mockable]
+        impl CrateVisibleStruct {
+            pub(crate) fn crate_visible_method(&self, a: String) -> String {
+                format!("Real {}", a)
+            }
+        }
+    }
+
+    #[test]
+    fn test_pub_crate_impl_method_mock_accessor_usable_from_another_module() {
+        let mock = definitions::CrateVisibleStruct::crate_visible_method_mock();
+        mock.setup(|_, a| format!("Fake {}", a));
+        mock.expect_once();
+
+        let s = definitions::CrateVisibleStruct;
+        let res = s.crate_visible_method("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

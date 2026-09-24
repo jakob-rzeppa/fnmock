@@ -58,3 +58,30 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn higher_ranked_where_predicate_borrowed_return<F: 'static>(f: F, s: &str) -> usize
+    where
+        for<'x> F: Fn(&'x str) -> &'x str,
+    {
+        f(s).len()
+    }
+
+    fn identity(s: &str) -> &str {
+        s
+    }
+
+    #[test]
+    fn test_higher_ranked_where_predicate_borrowed_return() {
+        let mock = higher_ranked_where_predicate_borrowed_return_mock::<fn(&str) -> &str>();
+        mock.setup(|_f, s| s.len() + 1);
+        mock.expectf(|_f, s: &str| s == "test").once();
+
+        let f: fn(&str) -> &str = identity;
+        let res = higher_ranked_where_predicate_borrowed_return(f, "test");
+
+        assert_eq!(res, 5);
+        mock.assert();
+    }
+}

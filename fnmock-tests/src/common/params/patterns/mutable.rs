@@ -42,3 +42,26 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn mutable(mut val: String) -> String {
+        val.push_str(" prefix");
+        val
+    }
+
+    #[test]
+    fn test_mutable() {
+        let mock = mutable_mock();
+        mock.setup(|mut val| {
+            val.push_str(" Fake prefix");
+            val
+        });
+        mock.expect(fnmock::predicate::eq("hi".to_string())).once();
+
+        let result = mutable("hi".to_string());
+
+        assert_eq!(result, "hi Fake prefix");
+        mock.assert();
+    }
+}

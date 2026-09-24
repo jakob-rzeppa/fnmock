@@ -61,3 +61,33 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    use std::cell::Cell;
+
+    struct ReturnUnit {
+        calls: Cell<i32>,
+    }
+
+    #[fnmock::mockable]
+    impl ReturnUnit {
+        fn record(&self) {
+            self.calls.set(self.calls.get() + 1);
+        }
+    }
+
+    #[test]
+    fn test_return_unit() {
+        let mock = ReturnUnit::record_mock();
+        mock.setup(|_| ());
+        mock.expect_once();
+
+        let s = ReturnUnit {
+            calls: Cell::new(0),
+        };
+        s.record();
+
+        assert_eq!(s.calls.get(), 0);
+        mock.assert();
+    }
+}

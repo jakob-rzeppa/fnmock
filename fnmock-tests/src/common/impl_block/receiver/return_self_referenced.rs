@@ -54,3 +54,31 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct ReturnSelfReferenced {
+        name: String,
+    }
+
+    #[fnmock::mockable]
+    impl ReturnSelfReferenced {
+        fn name(&self) -> &str {
+            &self.name
+        }
+    }
+
+    #[test]
+    fn test_return_self_referenced() {
+        let mock = ReturnSelfReferenced::name_mock();
+        mock.setup(|_| "Fake");
+        mock.expect_once();
+
+        let s = ReturnSelfReferenced {
+            name: "Test".to_string(),
+        };
+        let res = s.name();
+
+        assert_eq!(res, "Fake");
+        mock.assert();
+    }
+}

@@ -42,3 +42,27 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn raw_const_pointers(a: *const String) -> String {
+        unsafe { (*a).clone() }
+    }
+
+    #[test]
+    fn test_raw_const_pointers() {
+        let mock = raw_const_pointers_mock();
+        mock.setup(|a| unsafe {
+            let mut clone = (*a).clone();
+            clone.push_str(" fake modified");
+            clone
+        });
+        mock.expectf(|e| unsafe { **e == "hi".to_string() });
+
+        let value = "hi".to_string();
+        let result = raw_const_pointers(&value as *const String);
+
+        assert_eq!(result, "hi fake modified");
+        mock.assert();
+    }
+}

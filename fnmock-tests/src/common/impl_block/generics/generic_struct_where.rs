@@ -60,3 +60,34 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct GenericStructWhere<T> {
+        value: T,
+    }
+
+    #[fnmock::mockable]
+    impl<T> GenericStructWhere<T>
+    where
+        T: Clone + 'static,
+    {
+        fn get(&self) -> T {
+            self.value.clone()
+        }
+    }
+
+    #[test]
+    fn test_generic_struct_where() {
+        let mock = GenericStructWhere::<String>::get_mock();
+        mock.setup(|_| "Fake".to_string());
+        mock.expect_once();
+
+        let s = GenericStructWhere {
+            value: "Test".to_string(),
+        };
+        let res = s.get();
+
+        assert_eq!(res, "Fake");
+        mock.assert();
+    }
+}

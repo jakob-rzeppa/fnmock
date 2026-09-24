@@ -58,3 +58,54 @@ mod spy {
         spy_i32_string.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn multiple_generics<T: 'static, U: 'static>(a: T, b: U) -> (T, U) {
+        (a, b)
+    }
+
+    #[test]
+    fn test_multiple_generics() {
+        let res = multiple_generics("Test".to_string(), "Another".to_string());
+        assert_eq!(res, ("Test".to_string(), "Another".to_string()));
+    }
+
+    #[test]
+    fn test_multiple_generics_fake() {
+        let mock = multiple_generics_mock::<String, String>();
+        mock.setup(|a, b| (format!("Fake {}", a), format!("Fake {}", b)));
+        let res = multiple_generics("Test".to_string(), "Another".to_string());
+        assert_eq!(res, ("Fake Test".to_string(), "Fake Another".to_string()));
+    }
+
+    #[test]
+    fn test_multiple_generics_spy() {
+        let mock = multiple_generics_mock::<String, i32>();
+        mock.expect(
+            fnmock::predicate::eq("hi".to_string()),
+            fnmock::predicate::eq(2),
+        )
+        .once();
+
+        let res = multiple_generics("hi".to_string(), 2);
+
+        assert_eq!(res, ("hi".to_string(), 2));
+        mock.assert();
+    }
+
+    /// The store is keyed by the generic arguments as a whole, so swapping them
+    /// around reaches a different instantiation entirely.
+    #[test]
+    fn test_swapped_generic_arguments_are_a_different_instantiation() {
+        let mock_string_i32 = multiple_generics_mock::<String, i32>();
+        let mock_i32_string = multiple_generics_mock::<i32, String>();
+        mock_string_i32.expect_once();
+        mock_i32_string.expect_never();
+
+        multiple_generics("hi".to_string(), 2);
+
+        mock_string_i32.assert();
+        mock_i32_string.assert();
+    }
+}

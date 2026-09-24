@@ -1,0 +1,5 @@
+error: The never type `!` is not supported.
+ --> src/common/returns/unsupported_never_return_type_mock.cf.rs:7:33
+  |
+7 | fn returns_never(flag: bool) -> ! {
+  |                                 ^

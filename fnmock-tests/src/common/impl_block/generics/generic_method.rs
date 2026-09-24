@@ -44,3 +44,28 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct GenericMethod;
+
+    #[fnmock::mockable]
+    impl GenericMethod {
+        fn echo<T: 'static>(&self, a: T) -> T {
+            a
+        }
+    }
+
+    #[test]
+    fn test_generic_method() {
+        let mock = GenericMethod::echo_mock::<String>();
+        mock.setup(|_, a| format!("Fake {}", a));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let s = GenericMethod;
+        let res = s.echo("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

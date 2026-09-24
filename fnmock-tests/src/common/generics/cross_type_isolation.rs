@@ -96,3 +96,26 @@ mod spy {
         cross_type_isolation_spy::<u8>().assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn cross_type_isolation<T: 'static>(a: T) -> T {
+        a
+    }
+
+    #[test]
+    fn test_mocks_do_not_leak_across_instantiations() {
+        let mock_string = cross_type_isolation_mock::<String>();
+        mock_string.setup(|a| format!("Fake {}", a));
+        mock_string.expect_once();
+
+        let mock_i32 = cross_type_isolation_mock::<i32>();
+        mock_i32.expect_never();
+
+        let res = cross_type_isolation("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock_string.assert();
+        mock_i32.assert();
+    }
+}

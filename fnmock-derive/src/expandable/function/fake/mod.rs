@@ -2,17 +2,15 @@ use syn::parse_quote;
 
 use crate::{
     expandable::{
-        common::fake::{
-            inline_call::build_inline_call,
-            module::{
-                fake_store::build_fake_store, implementation_getter::build_implementation_getter,
-                interface_getter::build_interface_getter, interface_impl::build_interface_impl,
-                interface_struct::build_interface_struct,
+        common::{
+            fake::{inline_call::build_inline_call, module::module_parts::build_module_parts},
+            interface::{
+                interface_getter::build_interface_getter, interface_struct::build_interface_struct,
             },
         },
         function::FunctionExpandable,
     },
-    scheme::function::{common::FunctionCommonScheme, fake::FunctionFakeScheme},
+    scheme::{common::function::FunctionCommonScheme, fake::function::FunctionFakeScheme},
 };
 
 impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
@@ -30,9 +28,7 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
                     interface_name,
                     generic_scheme,
                 },
-            store_name,
-            fn_closure_trait,
-            fake_call_values,
+            fake,
         } = value;
 
         let accessor_generic_params = generic_scheme
@@ -47,38 +43,39 @@ impl TryFrom<FunctionFakeScheme> for FunctionExpandable {
             parse_quote! { #interface_name }
         };
 
+        let inline_call = build_inline_call(
+            &module_name,
+            &fake.fake_call_values,
+            generic_scheme.as_ref().map(|g| g.idents.as_slice()),
+        );
+
+        let module_parts = [
+            vec![build_interface_struct(
+                &interface_name,
+                generic_scheme.as_ref(),
+            )],
+            build_module_parts(
+                &display_name,
+                &interface_name,
+                generic_scheme.as_ref(),
+                &fake,
+                true,
+            ),
+            vec![build_interface_getter(
+                &interface_name,
+                generic_scheme.as_ref(),
+            )],
+        ]
+        .concat();
+
         Ok(FunctionExpandable {
             vis,
             original,
-            inline_call: build_inline_call(
-                &module_name,
-                &fake_call_values,
-                generic_scheme.as_ref().map(|g| g.idents.as_slice()),
-            ),
+            inline_call,
             accessor_name,
             accessor_generic_params,
             module_name,
-            module_parts: vec![
-                build_fake_store(
-                    &store_name,
-                    &display_name,
-                    &fn_closure_trait,
-                    generic_scheme.as_ref().map(|g| g.params.len()),
-                ),
-                build_implementation_getter(
-                    &store_name,
-                    &fn_closure_trait,
-                    generic_scheme.as_ref(),
-                ),
-                build_interface_struct(&interface_name, generic_scheme.as_ref()),
-                build_interface_impl(
-                    &interface_name,
-                    &store_name,
-                    generic_scheme.as_ref(),
-                    &fn_closure_trait,
-                ),
-                build_interface_getter(&interface_name, generic_scheme.as_ref()),
-            ],
+            module_parts,
             interface_type,
         })
     }

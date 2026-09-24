@@ -52,3 +52,31 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    use std::pin::Pin;
+
+    struct SelfPinMut {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl SelfPinMut {
+        fn get(self: Pin<&mut Self>) -> i32 {
+            self.value
+        }
+    }
+
+    #[test]
+    fn test_self_pin_mut() {
+        let mock = SelfPinMut::get_mock();
+        mock.setup(|_| 5);
+        mock.expect_once();
+
+        let mut s = SelfPinMut { value: 42 };
+        let res = SelfPinMut::get(Pin::new(&mut s));
+
+        assert_eq!(res, 5);
+        mock.assert();
+    }
+}

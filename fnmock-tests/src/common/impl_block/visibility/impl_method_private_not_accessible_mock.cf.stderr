@@ -1,0 +1,8 @@
+error[E0599]: no associated function or constant named `private_method_mock` found for struct `MyStruct` in the current scope
+  --> src/common/impl_block/visibility/impl_method_private_not_accessible_mock.cf.rs:20:19
+   |
+ 5 |     pub struct MyStruct;
+   |     ------------------- associated function or constant `private_method_mock` not found for this struct
+...
+20 |         MyStruct::private_method_mock().setup(|_, a| format!("Fake {}", a));
+   |                   ^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `MyStruct`

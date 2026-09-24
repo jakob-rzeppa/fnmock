@@ -63,3 +63,38 @@ mod spy {
         prefix_spy.assert();
     }
 }
+
+mod mock {
+    struct LifetimesBorrowedReturn<'s> {
+        prefix: &'s str,
+    }
+
+    #[fnmock::mockable]
+    impl<'s> LifetimesBorrowedReturn<'s> {
+        fn echo<'a>(&self, value: &'a str) -> &'a str {
+            value
+        }
+
+        fn prefix(&self) -> &'s str {
+            self.prefix
+        }
+    }
+
+    #[test]
+    fn test_lifetimes_borrowed_return() {
+        let echo_mock = LifetimesBorrowedReturn::echo_mock();
+        echo_mock.setup(|_, value| value);
+        echo_mock.expect_once();
+
+        let prefix_mock = LifetimesBorrowedReturn::prefix_mock();
+        prefix_mock.setup(|_| "Fake");
+        prefix_mock.expect_once();
+
+        let s = LifetimesBorrowedReturn { prefix: "Test" };
+        assert_eq!(s.echo("Value"), "Value");
+        assert_eq!(s.prefix(), "Fake");
+
+        echo_mock.assert();
+        prefix_mock.assert();
+    }
+}

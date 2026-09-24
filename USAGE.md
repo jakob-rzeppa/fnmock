@@ -1,28 +1,24 @@
 # Usage
 
-How to use fnmock's fakes and spies, and when reaching for each is the right call.
+How to mock functions with fnmock, and when to use one of the two smaller attributes instead.
 
-For the fake-specific API — the attribute, the accessor and `setup`/`clear`/`is_set` — see
-[docs/FAKE_FEATURES.md](docs/FAKE_FEATURES.md), and [docs/SPY_FEATURES.md](docs/SPY_FEATURES.md) for
-the spy-specific equivalent. For the exhaustive list of what is and isn't supported by each, see
-[docs/LIMITATIONS.md](docs/LIMITATIONS.md).
+For the full API of a mock, see [docs/FEATURES.md](docs/FEATURES.md). For the complete
+list of what is and isn't supported, see [docs/LIMITATIONS.md](docs/LIMITATIONS.md).
 
 ## What fnmock is for
 
-Rust code written in a functional style — modules of plain functions calling other plain
-functions — is awkward to unit-test in isolation.
+Code written in a functional style, with modules of plain functions calling other plain
+functions, is awkward to unit-test in isolation.
 
-The conventional way to fix this is using object-oriented design with traits and structs.
-These can be mocked via `mockall` or similar crates. But if you like a functional
-programming style and don't want to add all this overhead, `fnmock` can give you the
-possibility to use the functions by themselves.
+The usual fix is an object-oriented design with traits and structs. If you prefer the functional style and don't want that overhead, fnmock lets
+you mock the functions themselves.
 
-Just annotate the function where it already lives and replace it directly in tests:
+Annotate the function where it already lives, and control it directly from tests:
 
 ```rust
-#[fnmock::fakeable]
+#[fnmock::mockable]
 fn fetch_user_name(id: u32) -> String {
-    todo!()
+    // real database call
 }
 
 fn greet(id: u32) -> String {
@@ -31,258 +27,216 @@ fn greet(id: u32) -> String {
 
 #[test]
 fn test_greeting() {
-    fetch_user_name_fake().setup(|_| "Test".into());
+    let mock = fetch_user_name_mock();
+    mock.setup(|_| "Test".into());
+    mock.expect(fnmock::predicate::eq(1)).once();
 
     assert_eq!(greet(1), "Hello, Test");
+
+    mock.assert();
 }
 ```
 
-No trait, no dependency injection, no signature change. `greet` keeps calling `fetch_user_name`
-directly, and the test controls what it returns.
-
-The `#[fnmock::spyable]` counterpart: the real body still runs, and the test
-asserts on what it was called with instead of on what it returns:
-
-```rust
-#[fnmock::spyable]
-fn fetch_user_name(id: u32) -> String {
-    format!("user {id}")
-}
-
-#[test]
-fn test_fetch_user_name() {
-    let spy = fetch_user_name_spy();
-    spy.expect(fnmock::predicate::eq(1)).once();
-
-    assert_eq!(fetch_user_name(1), "user 1");   // the real body still runs
-
-    spy.assert();
-}
-```
+There is no trait, no dependency injection and no signature change. `greet` keeps calling
+`fetch_user_name` directly. The test controls what `fetch_user_name` returns and checks how it was
+called.
 
 ## Setup
 
-Both `#[fnmock::fakeable]` and `#[fnmock::spyable]` are applied to production code, so fnmock is a
-regular dependency, not a dev-dependency:
+The attribute is applied to production code, so fnmock is a regular dependency, not a
+dev-dependency:
 
 ```toml
 [dependencies]
 fnmock = "<version>"
 ```
 
-This costs nothing in release builds. The fake lookup and the spy's call recording that the macros
-inject are both `#[cfg(test)]`-gated, so outside of tests the function keeps its original body and
-no fake or spy machinery is compiled at all.
+This costs nothing in release builds. The code the attribute injects is `#[cfg(test)]`-gated, so
+outside of tests the function keeps its original body and no mock code is compiled at all.
 
 ## Test scope
 
-The fake module and `_fake()` accessor, and the spy module and `_spy()` accessor, are all
-`#[cfg(test)]`-gated, so they are only available in test builds. They match the visibility of the
-function they are generated for, so a `pub` function has a `pub` accessor and a `pub(crate)`
-function has a `pub(crate)` accessor.
+The generated module and the `_mock()` accessor are `#[cfg(test)]`-gated, so they only exist in
+test builds. A mock can therefore only be set up from a `#[cfg(test)]` unit test inside the crate
+that defines the item. It can't be set up from an integration test under `tests/`, a doctest, or
+another crate.
 
-## Fakes: the basics
+The accessor has the same visibility as the function it is generated for: a `pub` function has a
+`pub` accessor, and a `pub(crate)` function has a `pub(crate)` accessor.
 
-The attribute generates an accessor named after the function, suffixed with `_fake`:
+## The basics
+
+The attribute generates an accessor named after the function, with a `_mock` suffix:
 
 ```rust
-#[fnmock::fakeable]
+#[fnmock::mockable]
 fn greet(name: String) -> String {
     format!("Real {}", name)
 }
+
 #[test]
 fn test() {
-    assert_eq!(greet("Test".to_string()), "Real Test");   // no fake set -> real body
+    let mock = greet_mock();
+    mock.expect(fnmock::predicate::eq("Test".to_string())).times(2);
 
-    greet_fake().setup(|name| format!("Fake {}", name));
-    assert_eq!(greet("Test".to_string()), "Fake Test");   // fake intercepts
+    assert_eq!(greet("Test".to_string()), "Real Test");   // no closure set up -> real body
 
-    greet_fake().clear();
-    assert_eq!(greet("Test".to_string()), "Real Test");   // back to the real body
+    mock.setup(|name| format!("Fake {}", name));
+    assert_eq!(greet("Test".to_string()), "Fake Test");   // the closure answers ...
+
+    mock.assert();                                        // ... and both calls were recorded
 }
 ```
 
 | Method | Behaviour |
 | --- | --- |
-| `setup(closure)` | Install a fake. Calling it again replaces the previous one. |
-| `clear()` | Remove the fake. |
-| `is_set()` | Whether a fake is currently installed. |
+| `setup(closure)` | Replace the body with a closure. Calling it again replaces the previous closure. |
+| `is_set()` | Whether a closure is currently installed. |
+| `expect(predicate, …)` | Expect calls matching one predicate per parameter. Returns a handle. |
+| `expectf(closure)` | The same, but matching with a closure over all parameters. |
+| `expect_times(n)` / `expect_once()` / `expect_never()` | Expect a total call count, regardless of arguments. |
+| `assert()` | Panic unless every expectation set on this mock is fulfilled. |
+| `clear()` | Reset the mock: remove the closure, and drop every expectation, `expect_times` range and recorded call. |
 
-The closure mirrors the function's signature — same parameters, same return type. Parameter
-patterns carry over too, so a function taking `(left, right): (String, String)` is faked with
-`setup(|(left, right)| ...)`.
+Each call is recorded first. Then, if a closure is installed, the closure answers instead of the
+real body. Two things follow:
 
-For `async` functions, the closure is an ordinary **synchronous** closure returning the output
+- A call the closure answers still counts toward expectations, whether it satisfies them or
+  violates them.
+- A call the closure answers never runs the real body, so the real body's side effects don't
+  happen.
+
+You don't have to use both halves. With only `setup`, `assert()` passes trivially. With only
+expectations, every call runs the real body and is still recorded.
+
+### The closure
+
+The closure mirrors the function's signature: same parameters, same return type.
+
+For `async` functions, the closure is an ordinary **synchronous** closure that returns the output
 type. Don't return a future:
 
 ```rust
-#[fnmock::fakeable]
+#[fnmock::mockable]
 async fn fetch(id: i32) -> String { /* ... */ }
 
-fetch_fake().setup(|id| format!("Fake {}", id));   // not `async move { ... }`
+fetch_mock().setup(|id| format!("Fake {}", id));   // not `async move { ... }`
 ```
 
-## Spies: the basics
+### Expectations
 
-The attribute generates an accessor named after the function, suffixed with `_spy`:
+The handle returned by `expect` / `expectf` can be refined with `times`, `once`, `never`,
+`describe` and `in_sequence`. A `Sequence` can require calls to happen in a particular order, even
+across functions:
 
 ```rust
-#[fnmock::spyable]
-fn greet(name: String) -> String {
-    format!("Real {}", name)
-}
-
-#[test]
-fn test() {
-    let spy = greet_spy();
-    spy.expect(fnmock::predicate::eq("Test".to_string())).once();
-
-    assert_eq!(greet("Test".to_string()), "Real Test");   // the real body always runs
-
-    spy.assert();
-}
+let seq = fnmock::Sequence::new();
+get_user_mock().expect(eq("a")).once().in_sequence(&seq);
+save_user_mock().expect(eq("a")).once().in_sequence(&seq);
 ```
 
-| Method | Behaviour |
-| --- | --- |
-| `expect(predicate, …)` | Expect calls matching one predicate per parameter. Returns a handle. |
-| `expectf(closure)` | Same, but matching with a closure over all parameters. |
-| `expect_times(n)` / `expect_once()` / `expect_never()` | Expect a total call count, regardless of arguments. |
-| `assert()` | Panic unless every expectation set on this spy is fulfilled. |
-
-There is no `clear()` or `is_set()`; a spy has no installed state to remove — it never changes
-what the function does. The handle returned by `expect`/`expectf` can be refined with `times`,
-`once`, `never`, `describe` and `in_sequence`; see
-[docs/SPY_FEATURES.md](docs/SPY_FEATURES.md) for the full expectation DSL, including how
-sequences order calls across functions.
+A call that matches no expectation is not an error. See
+[docs/FEATURES.md](docs/FEATURES.md#expectations) for everything expectations and
+sequences can do.
 
 ## Methods
 
-Applying either attribute to an inherent impl block makes every method in it fakeable or spyable,
-each with its own independent fake or spy. The accessor becomes an associated function:
+Applying the attribute to an inherent impl block gives every method in it its own independent mock.
+The accessor becomes an associated function:
 
 ```rust
-#[fnmock::fakeable]
+#[fnmock::mockable]
 impl UserService {
     fn get(&self, id: u32) -> User { /* ... */ }
 }
 
-UserService::get_fake().setup(|_, id| User { id, name: "Test".into() });
+let mock = UserService::get_mock();
+mock.setup(|_, id| User { id, name: "Test".into() });
+mock.expect(fnmock::predicate::eq(1)).once();
 ```
 
-```rust
-#[fnmock::spyable]
-impl UserService {
-    fn get(&self, id: u32) -> User { /* ... */ }
-}
+The `setup` closure receives the receiver as its **first** argument, hence the leading `_` above.
+Ignore it when the closure doesn't need the instance's state, or bind it when it does. This holds
+for every receiver form (`&self`, `&mut self`, `self`, `Box<Self>`, `Rc<Self>`, `Pin<&mut Self>`).
 
-UserService::get_spy().expect(fnmock::predicate::eq(1)).once();
-```
-
-For a fake, the receiver is passed as the **first** closure argument — hence the leading `_`
-above. Ignore it when the fake doesn't care about the instance state, or bind it when it does.
-This holds for every receiver form (`&self`, `&mut self`, `self`, `Box<Self>`, `Rc<Self>`,
-`Pin<&mut Self>`). A spy never records the receiver — it isn't a call argument the test should match
-on — so `expect`/`expectf` only take a predicate per remaining parameter.
-
-Associated functions without a receiver take no such argument, on either side.
+Expectations never record the receiver, because it isn't a call argument the test should match on.
+`expect` / `expectf` take a predicate for each remaining parameter only. Associated functions
+without a receiver take no such argument in either place.
 
 ## Generics
 
-Fakes and spies for generic functions are both stored per instantiation, so the accessor takes a
-turbofish and each combination of generic arguments gets its own fake or spy, independent of the
-others:
+A mock for a generic function is stored per instantiation. The accessor takes a turbofish, and each
+combination of generic arguments gets its own mock, independent of the others:
 
 ```rust
-#[fnmock::fakeable]
+#[fnmock::mockable]
 fn parse<T: 'static>(input: &str) -> T { /* ... */ }
 
-parse_fake::<u32>().setup(|_| 42);
+let mock = parse_mock::<u32>();   // the closure *and* the expectations apply to u32 only
+mock.setup(|_| 42);
+mock.expect_once();
+
+let value = parse::<u32>("...");  // write the generic arguments out here too
 ```
 
-```rust
-#[fnmock::spyable]
-fn parse<T: 'static>(input: &str) -> T { /* ... */ }
+Always write out the generic arguments on the accessor **and** at the call site. If the compiler
+infers a different instantiation, the failure is **silent**. Say the mock is set up for `T = u32`
+and the call resolves to `T = u64`. Nothing errors: the real body runs, the call is recorded on the
+`u64` mock, and `assert()` on the `u32` mock fails on an expectation that looks like it should have
+been met.
 
-parse_spy::<u32>().expect_once();
-```
-
-Since you need to specify a fake or a set of expectations for each combination of generics, make
-sure to always specify the generics when using the accessor. The compiler might infer the wrong
-types and you are left debugging.
-
-It is also recommended to specify the generics on calls of the faked or spied function, to be sure
-the fake's/spy's generics match the used ones. For simple functions this might be unnecessary, but
-with complexity it is more likely the implementation will not apply to the used generics.
-
-For a fake this matters because the failure is **silent**. If the fake is registered for
-`T = u32` and the call site resolves to `T = u64`, nothing errors — the real implementation just
-runs and your test quietly exercises production code:
-
-```rust
-parse_fake::<u32>().setup(|_| 42);
-let value = parse::<u32>("...");   // be explicit here too
-```
-
-For a spy the failure is just as silent, but the other way round: a call resolving to a different
-instantiation than the one you set expectations on is never recorded, so `spy.assert()` fails on
-an expectation that looks like it should have been satisfied.
-
-Type parameters must be `'static`, since fakes and spies are keyed by `TypeId`. Const parameters
-are keyed by value, so a fake or spy for `foo::<5>()` leaves `foo::<7>()` unaffected. The const
-value isn't accessible inside a fake's closure — hardcode it, as the fake only applies to that one
-value.
+Type parameters must be `'static`, because mocks are keyed by `TypeId`. Const parameters are keyed
+by value, so a mock for `foo::<5>()` leaves `foo::<7>()` unaffected. The const value isn't passed
+to the closure. The closure only applies to that one value, so hardcode it.
 
 For methods, struct generics go on the type and method generics on the accessor:
 
 ```rust
-GenericService::<String>::convert_fake::<i32>().setup(|_, other| other * 2);
-GenericService::<String>::convert_spy::<i32>().expect_once();
+GenericService::<String>::convert_mock::<i32>().setup(|_, other| other * 2);
 ```
 
 ## Test isolation
 
-Fakes and spies both live in thread-local storage, and Rust's test harness runs each `#[test]` on
-its own thread. Two consequences, for either:
+Mocks live in thread-local storage, and Rust's test harness runs each `#[test]` on its own thread.
+This has two consequences:
 
-- **Tests can't leak into each other.** A fake or spy set up in one test is invisible to every
-  other test. You do not need to `clear()` a fake between tests.
-- **Fakes and spies don't cross threads at runtime.** A fake or spy is only visible on the thread
-  that set it up.
+- **Tests can't leak into each other.** A mock set up in one test is invisible to every other
+  test. You don't need to `clear()` a mock between tests.
+- **Mocks don't cross threads at runtime.** A mock is only visible on the thread that set it up.
 
-The second point is the one to watch. If the code under test moves work to another thread, a fake
-won't apply there — and because an unset fake falls through to the real implementation, this fails
-*silently* rather than erroring:
-
-```rust
-#[tokio::test(flavor = "multi_thread")]
-async fn spawned() {
-    fetch_fake().setup(|id| format!("Fake {}", id));
-
-    fetch(1).await;                                   // "Fake 1"  — same thread
-    tokio::spawn(async { fetch(1).await }).await;     // "Real 1"  — worker thread
-}
-```
-
-A spy fails just as silently, but the other way round: a call made on another thread is never
-recorded on the spy set up on the test's thread, so `spy.assert()` fails on an expectation that
-looks like it should have seen the call:
+The second point is the one to watch. If the code under test moves work to another thread, the
+mock fails there in two ways at once, both **silently**. The closure doesn't apply, so the real
+body runs. The call is also recorded on that thread's own mock, not the one the test asserts on:
 
 ```rust
 #[tokio::test(flavor = "multi_thread")]
 async fn spawned() {
-    let spy = fetch_spy();
-    spy.expect_once();
+    let mock = fetch_mock();
+    mock.setup(|id| format!("Fake {}", id));
+    mock.expect_times(2);
 
-    tokio::spawn(async { fetch(1).await }).await;     // recorded on the worker thread's spy, not this one
+    fetch(1).await;                                   // "Fake 1": same thread, recorded here
+    tokio::spawn(async { fetch(1).await }).await;     // "Real 1": worker thread, recorded there
 
-    spy.assert();   // panics: this spy never saw a call
+    mock.assert();   // panics: this mock only saw one call
 }
 ```
 
 Plain `#[tokio::test]` uses the current-thread runtime and is unaffected. Under a multi-threaded
-runtime, it can't be guaranteed that the code under test runs on the same thread as the test itself, so fakes and spies are not guaranteed to work.
+runtime there is no guarantee that the code under test runs on the test's thread, so mocks aren't
+guaranteed to work.
 
-If a test unexpectedly hits real behaviour or a spy assertion fails unexpectedly, check whether
-the call crossed a thread boundary before suspecting the fake or spy. `is_set()` is useful here
-for fakes: assert it on the thread that actually makes the call.
+If a test unexpectedly hits real behaviour, or an assertion unexpectedly fails, check whether the
+call crossed a thread boundary before suspecting the mock. `is_set()` helps here: assert it on the
+thread that actually makes the call.
+
+## Only need one half of a mock?
+
+Two smaller attributes each provide one half of a mock:
+
+- **`#[fnmock::fakeable]`** generates `<fn_name>_fake()` with `setup`, `is_set` and `clear`. It
+  replaces the body and records nothing. It also accepts destructuring parameters, which a mock
+  can't record. See [docs/FAKE.md](docs/FAKE.md).
+- **`#[fnmock::spyable]`** generates `<fn_name>_spy()` with the expectation methods only. The real
+  body always runs. It also accepts `-> impl Trait` and `-> !`, which a mock can't produce. See
+  [docs/SPY.md](docs/SPY.md).

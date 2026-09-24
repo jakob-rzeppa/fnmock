@@ -59,3 +59,27 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn names_shadowing_generated_idents(f: u32, params: u32, function: u32) -> u32 {
+        f + params + function
+    }
+
+    #[test]
+    fn test_names_shadowing_generated_idents() {
+        let mock = names_shadowing_generated_idents_mock();
+        mock.setup(|f, params, function| f * params * function);
+        mock.expect(
+            fnmock::predicate::eq(1),
+            fnmock::predicate::eq(2),
+            fnmock::predicate::eq(3),
+        )
+        .once();
+
+        let res = names_shadowing_generated_idents(1, 2, 3);
+
+        assert_eq!(res, 6);
+        mock.assert();
+    }
+}

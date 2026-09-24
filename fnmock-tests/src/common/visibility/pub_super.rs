@@ -31,3 +31,25 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    mod inner {
+        #[fnmock::mockable]
+        pub(super) fn pub_super_fn(a: String) -> String {
+            format!("Real {}", a)
+        }
+    }
+
+    #[test]
+    fn test_pub_super_mock_accessor_usable_from_parent_module() {
+        let mock = inner::pub_super_fn_mock();
+        mock.setup(|a| format!("Fake {}", a));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let res = inner::pub_super_fn("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

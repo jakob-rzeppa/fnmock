@@ -71,3 +71,25 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct Ref<'a>(&'a str);
+
+    #[fnmock::mockable]
+    fn lifetime_param_type<'a>(r: Ref<'a>) -> usize {
+        r.0.len()
+    }
+
+    #[test]
+    fn test_lifetime_param_type() {
+        let mock = lifetime_param_type_mock();
+        mock.setup(|r: Ref<'_>| r.0.len() + 1);
+        mock.expectf(|r: &Ref<'_>| r.0 == "hi").once();
+
+        let owned = "hi".to_string();
+        let res = lifetime_param_type(Ref(&owned));
+
+        assert_eq!(res, 3);
+        mock.assert();
+    }
+}

@@ -29,7 +29,6 @@ mod impl_block {
     mod associated_function;
     mod async_method;
     mod basic;
-    mod clear_and_is_set;
     mod module_path_isolation;
     mod multiple_methods;
     mod same_method_name_isolation;

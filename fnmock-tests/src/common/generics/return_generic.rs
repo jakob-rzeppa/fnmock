@@ -49,3 +49,22 @@ mod spy {
         spy_i32.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn return_generic<T: Default + 'static>() -> T {
+        T::default()
+    }
+
+    #[test]
+    fn test_return_generic() {
+        let mock = return_generic_mock::<String>();
+        mock.setup(|| "Fake".to_string());
+        mock.expect_once();
+
+        let res = return_generic::<String>();
+
+        assert_eq!(res, "Fake".to_string());
+        mock.assert();
+    }
+}

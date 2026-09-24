@@ -40,3 +40,24 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    /// Before
+    #[fnmock::mockable]
+    /// After
+    fn add_one(value: i32) -> i32 {
+        value + 1
+    }
+
+    #[test]
+    fn test_add_one() {
+        let mock = add_one_mock();
+        mock.setup(|value| value + 10);
+        mock.expect(fnmock::predicate::eq(1)).once();
+
+        let res = add_one(1);
+
+        assert_eq!(res, 11);
+        mock.assert();
+    }
+}

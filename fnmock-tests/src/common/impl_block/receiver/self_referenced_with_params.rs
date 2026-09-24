@@ -48,3 +48,30 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct SelfReferencedWithParams {
+        base: i32,
+    }
+
+    #[fnmock::mockable]
+    impl SelfReferencedWithParams {
+        fn add(&self, a: i32, b: i32) -> i32 {
+            self.base + a + b
+        }
+    }
+
+    #[test]
+    fn test_self_referenced_with_params() {
+        let mock = SelfReferencedWithParams::add_mock();
+        mock.setup(|_, a, b| a * b);
+        mock.expect(fnmock::predicate::eq(3), fnmock::predicate::eq(4))
+            .once();
+
+        let s = SelfReferencedWithParams { base: 10 };
+        let res = s.add(3, 4);
+
+        assert_eq!(res, 12);
+        mock.assert();
+    }
+}

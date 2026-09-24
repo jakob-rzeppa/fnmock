@@ -41,3 +41,26 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn auto_traits(value: Box<dyn Send>) -> usize {
+        let _ = value;
+        1
+    }
+
+    #[test]
+    fn test_auto_traits() {
+        let mock = auto_traits_mock();
+        mock.setup(|value| {
+            let _ = value;
+            2
+        });
+        mock.expect(fnmock::predicate::always()).once();
+
+        let result = auto_traits(Box::new(1usize));
+
+        assert_eq!(result, 2);
+        mock.assert();
+    }
+}

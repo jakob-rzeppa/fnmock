@@ -46,3 +46,36 @@ mod fake {
         assert_eq!(generic_clear_and_is_set(7u8), "Real 7");
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn generic_clear_and_is_set<T: 'static + std::fmt::Display>(a: T) -> String {
+        format!("Real {}", a)
+    }
+
+    #[test]
+    fn test_is_set_transitions() {
+        assert!(!generic_clear_and_is_set_mock::<String>().is_set());
+
+        generic_clear_and_is_set_mock::<String>().setup(|a| format!("Fake {}", a));
+        assert!(generic_clear_and_is_set_mock::<String>().is_set());
+
+        generic_clear_and_is_set_mock::<String>().clear();
+        assert!(!generic_clear_and_is_set_mock::<String>().is_set());
+    }
+
+    #[test]
+    fn test_setup_and_expect_per_instantiation() {
+        let mock_string = generic_clear_and_is_set_mock::<String>();
+        mock_string.setup(|a| format!("Fake {}", a));
+        mock_string.expect_once();
+
+        let mock_i32 = generic_clear_and_is_set_mock::<i32>();
+        mock_i32.expect_never();
+
+        assert_eq!(generic_clear_and_is_set("Test".to_string()), "Fake Test");
+
+        mock_string.assert();
+        mock_i32.assert();
+    }
+}

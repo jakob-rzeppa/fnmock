@@ -36,3 +36,25 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    mod definitions {
+        #[fnmock::mockable]
+        pub fn publicly_visible(a: String) -> String {
+            format!("Real {}", a)
+        }
+    }
+
+    #[test]
+    fn test_pub_mock_accessor_usable_from_another_module() {
+        let mock = definitions::publicly_visible_mock();
+        mock.setup(|a| format!("Fake {}", a));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let res = definitions::publicly_visible("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

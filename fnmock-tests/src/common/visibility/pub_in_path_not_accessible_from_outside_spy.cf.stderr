@@ -1,0 +1,20 @@
+error[E0425]: cannot find function `path_restricted_fn_spy` in module `crate::outer::inner`
+  --> src/common/visibility/pub_in_path_not_accessible_from_outside_spy.cf.rs:16:30
+   |
+ 6 |         #[fnmock::spyable]
+   |         ------------------ similarly named function `path_restricted_fn` defined here
+...
+16 |         crate::outer::inner::path_restricted_fn_spy().expect_once();
+   |                              ^^^^^^^^^^^^^^^^^^^^^^
+   |
+note: found an item that was configured out
+  --> src/common/visibility/pub_in_path_not_accessible_from_outside_spy.cf.rs:6:9
+   |
+ 6 |         #[fnmock::spyable]
+   |         ^^^^^^^^^^^^^^^^^^ the item is gated here
+   = note: this error originates in the attribute macro `fnmock::spyable` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: a function with a similar name exists
+   |
+16 -         crate::outer::inner::path_restricted_fn_spy().expect_once();
+16 +         crate::outer::inner::path_restricted_fn().expect_once();
+   |

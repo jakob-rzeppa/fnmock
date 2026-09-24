@@ -60,3 +60,30 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn higher_ranked_where_predicate<F: 'static>(f: F, s: &str) -> String
+    where
+        for<'x> F: Fn(&'x str) -> String,
+    {
+        f(s)
+    }
+
+    fn uppercase(s: &str) -> String {
+        s.to_uppercase()
+    }
+
+    #[test]
+    fn test_higher_ranked_where_predicate() {
+        let mock = higher_ranked_where_predicate_mock::<fn(&str) -> String>();
+        mock.setup(|_f, s| format!("Fake {s}"));
+        mock.expectf(|_f, s: &str| s == "test").once();
+
+        let f: fn(&str) -> String = uppercase;
+        let res = higher_ranked_where_predicate(f, "test");
+
+        assert_eq!(res, "Fake test");
+        mock.assert();
+    }
+}

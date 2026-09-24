@@ -82,3 +82,45 @@ mod spy {
         spy16.assert();
     }
 }
+
+mod mock {
+    //! Two `#[fnmock::mockable]` impl blocks for the same generic struct, instantiated with
+    //! different concrete type arguments (`Foo<u8>` vs `Foo<u16>`), must have independent mocks.
+
+    struct Foo<T> {
+        value: T,
+    }
+
+    #[fnmock::mockable]
+    impl Foo<u8> {
+        fn bar(&self) -> u8 {
+            self.value
+        }
+    }
+
+    #[fnmock::mockable]
+    impl Foo<u16> {
+        fn bar(&self) -> u16 {
+            self.value
+        }
+    }
+
+    #[test]
+    fn test_mocks_are_independent() {
+        let mock8 = Foo::<u8>::bar_mock();
+        mock8.setup(|_| 9);
+        mock8.expect_once();
+
+        let mock16 = Foo::<u16>::bar_mock();
+        mock16.expect_once();
+
+        let f8 = Foo::<u8> { value: 1 };
+        assert_eq!(f8.bar(), 9);
+
+        let f16 = Foo::<u16> { value: 2 };
+        assert_eq!(f16.bar(), 2);
+
+        mock8.assert();
+        mock16.assert();
+    }
+}

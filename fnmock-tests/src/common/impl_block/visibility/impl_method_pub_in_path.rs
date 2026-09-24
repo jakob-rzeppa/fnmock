@@ -52,3 +52,34 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    mod definitions {
+        pub mod inner {
+            pub struct PubInPathStruct;
+
+            #[fnmock::mockable]
+            impl PubInPathStruct {
+                pub(in crate::common::impl_block::visibility::impl_method_pub_in_path) fn pub_in_path_method(
+                    &self,
+                    a: String,
+                ) -> String {
+                    format!("Real {}", a)
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_pub_in_path_impl_method_mock_accessor_usable_within_declared_path() {
+        let mock = definitions::inner::PubInPathStruct::pub_in_path_method_mock();
+        mock.setup(|_, a| format!("Fake {}", a));
+        mock.expect_once();
+
+        let s = definitions::inner::PubInPathStruct;
+        let res = s.pub_in_path_method("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

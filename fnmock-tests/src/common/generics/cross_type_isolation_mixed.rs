@@ -67,3 +67,27 @@ mod spy {
         spy_i32_4.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn cross_type_isolation_mixed<T: 'static, const C: usize>(a: T) -> usize {
+        let _ = a;
+        C
+    }
+
+    #[test]
+    fn test_mock_isolation_across_instantiations() {
+        let mock_4 = cross_type_isolation_mixed_mock::<String, 4>();
+        mock_4.setup(|_a| 99);
+        mock_4.expect_once();
+
+        let mock_8 = cross_type_isolation_mixed_mock::<String, 8>();
+        mock_8.expect_never();
+
+        let res = cross_type_isolation_mixed::<String, 4>("hi".to_string());
+
+        assert_eq!(res, 99);
+        mock_4.assert();
+        mock_8.assert();
+    }
+}

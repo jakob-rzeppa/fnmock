@@ -58,3 +58,28 @@ mod spy {
         spy_string.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn generic_in_container_param<T: 'static>(items: Vec<T>, first: Option<T>) -> Vec<T> {
+        let mut items = items;
+        items.extend(first);
+        items
+    }
+
+    #[test]
+    fn test_generic_in_container_param() {
+        let mock = generic_in_container_param_mock::<i32>();
+        mock.setup(|items, _first| items);
+        mock.expect(
+            fnmock::predicate::eq(vec![1, 2, 3]),
+            fnmock::predicate::eq(Some(1)),
+        )
+        .once();
+
+        let res = generic_in_container_param(vec![1, 2, 3], Some(1));
+
+        assert_eq!(res, vec![1, 2, 3]);
+        mock.assert();
+    }
+}

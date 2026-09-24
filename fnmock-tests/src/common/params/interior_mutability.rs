@@ -43,3 +43,28 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    use std::{cell::RefCell, rc::Rc};
+
+    #[fnmock::mockable]
+    fn interior_mutability(a: Rc<RefCell<String>>) {
+        a.borrow_mut().push_str(" modified");
+    }
+
+    #[test]
+    fn test_interior_mutability() {
+        let mock = interior_mutability_mock();
+        mock.setup(|a| a.borrow_mut().push_str(" fake modified"));
+        mock.expect(fnmock::predicate::eq(Rc::new(RefCell::new(
+            "hi".to_string(),
+        ))))
+        .once();
+
+        let value = Rc::new(RefCell::new("hi".to_string()));
+        interior_mutability(value.clone());
+
+        assert_eq!(value.borrow().as_str(), "hi fake modified");
+        mock.assert();
+    }
+}

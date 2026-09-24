@@ -42,3 +42,26 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn non_parameter_where<T>(a: T) -> Vec<T>
+    where
+        T: Clone + 'static,
+        Vec<T>: Clone,
+    {
+        vec![a].clone()
+    }
+
+    #[test]
+    fn test_non_parameter_where() {
+        let mock = non_parameter_where_mock::<String>();
+        mock.setup(|a| vec![format!("Fake {}", a)]);
+        mock.expect(fnmock::predicate::eq("hi".to_string())).once();
+
+        let res = non_parameter_where("hi".to_string());
+
+        assert_eq!(res, vec!["Fake hi".to_string()]);
+        mock.assert();
+    }
+}

@@ -3,7 +3,7 @@
 #![deny(unused_must_use)]
 
 #[must_use]
-#[fnmock::fakeable]
+#[fnmock::spyable]
 fn compute(a: i32) -> i32 {
     a + 1
 }

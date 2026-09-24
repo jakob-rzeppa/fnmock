@@ -184,7 +184,7 @@ pub fn build_spy_params(params: &[ParamInfo]) -> syn::Result<SpyParams> {
             CallValue::Tuple(_) | CallValue::Slice(_) => {
                 return Err(syn::Error::new_spanned(
                     &param.pat,
-                    "The #[spyable] attribute only supports plain identifier parameters. This parameter destructures its value, so there is no name to match it under.",
+                    "Recording a call needs a name for each parameter. This parameter destructures its value, so there is no name to match it under.",
                 ));
             }
         };

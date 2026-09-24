@@ -41,3 +41,23 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn single_const_generic<const C: usize>(a: String) -> String {
+        format!("{} {}", a, C)
+    }
+
+    #[test]
+    fn test_single_const_generic() {
+        let mock = single_const_generic_mock::<5>();
+        mock.setup(|a| format!("Fake {} {}", a, 5));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let res = single_const_generic::<5>("Test".to_string());
+
+        assert_eq!(res, "Fake Test 5");
+        mock.assert();
+    }
+}

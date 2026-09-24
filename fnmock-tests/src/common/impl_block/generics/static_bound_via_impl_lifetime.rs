@@ -50,3 +50,30 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct StaticBoundViaImplLifetime;
+
+    #[fnmock::mockable]
+    impl<'a> StaticBoundViaImplLifetime
+    where
+        'a: 'static,
+    {
+        fn show<T: 'a + std::fmt::Display>(&self, value: T) -> String {
+            format!("{value}")
+        }
+    }
+
+    #[test]
+    fn test_static_bound_via_impl_lifetime() {
+        let mock = StaticBoundViaImplLifetime::show_mock::<String>();
+        mock.setup(|_, value| format!("Fake {value}"));
+        mock.expect_once();
+
+        let s = StaticBoundViaImplLifetime;
+        let res = s.show("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

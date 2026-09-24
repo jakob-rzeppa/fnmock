@@ -39,3 +39,27 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn by_ref_and_value(mut a: String, b: &str) -> String {
+        a.push_str(b);
+        a
+    }
+
+    #[test]
+    fn test_by_ref_and_value() {
+        let mock = by_ref_and_value_mock();
+        mock.setup(|a, b| format!("Fake {}{}", a, b));
+        mock.expect(
+            fnmock::predicate::eq("hi".to_string()),
+            fnmock::predicate::eq(" there"),
+        )
+        .once();
+
+        let res = by_ref_and_value("hi".to_string(), " there");
+
+        assert_eq!(res, "Fake hi there");
+        mock.assert();
+    }
+}

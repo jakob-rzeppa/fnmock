@@ -54,3 +54,31 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct GenericStruct<T> {
+        value: T,
+    }
+
+    #[fnmock::mockable]
+    impl<T: Clone + 'static> GenericStruct<T> {
+        fn get(&self) -> T {
+            self.value.clone()
+        }
+    }
+
+    #[test]
+    fn test_generic_struct() {
+        let mock = GenericStruct::<String>::get_mock();
+        mock.setup(|_| "Fake".to_string());
+        mock.expect_once();
+
+        let s = GenericStruct {
+            value: "Test".to_string(),
+        };
+        let res = s.get();
+
+        assert_eq!(res, "Fake");
+        mock.assert();
+    }
+}

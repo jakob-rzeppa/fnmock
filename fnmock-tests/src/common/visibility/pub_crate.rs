@@ -30,3 +30,25 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    mod definitions {
+        #[fnmock::mockable]
+        pub(crate) fn crate_visible(a: String) -> String {
+            format!("Real {}", a)
+        }
+    }
+
+    #[test]
+    fn test_pub_crate_mock_accessor_usable_from_another_module() {
+        let mock = definitions::crate_visible_mock();
+        mock.setup(|a| format!("Fake {}", a));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let res = definitions::crate_visible("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

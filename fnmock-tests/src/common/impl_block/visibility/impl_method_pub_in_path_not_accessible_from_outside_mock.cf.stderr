@@ -1,0 +1,8 @@
+error[E0599]: no associated function or constant named `path_restricted_method_mock` found for struct `MyStruct` in the current scope
+  --> src/common/impl_block/visibility/impl_method_pub_in_path_not_accessible_from_outside_mock.cf.rs:22:19
+   |
+ 6 |         pub struct MyStruct;
+   |         ------------------- associated function or constant `path_restricted_method_mock` not found for this struct
+...
+22 |         MyStruct::path_restricted_method_mock().setup(|_, a| format!("Fake {}", a));
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `MyStruct`

@@ -36,3 +36,23 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn static_reference_param(s: &'static str) -> usize {
+        s.len()
+    }
+
+    #[test]
+    fn test_static_reference_param() {
+        let mock = static_reference_param_mock();
+        mock.setup(|s| s.len() + 1);
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let res = static_reference_param("Test");
+
+        assert_eq!(res, 5);
+        mock.assert();
+    }
+}

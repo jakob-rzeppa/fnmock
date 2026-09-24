@@ -1,9 +1,11 @@
 pub mod function {
     pub mod fake;
+    pub mod mock;
     pub mod spy;
 }
 pub mod impl_block {
     pub mod fake;
+    pub mod mock;
     pub mod spy;
 }
 

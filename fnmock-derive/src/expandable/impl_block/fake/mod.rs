@@ -2,19 +2,17 @@ use syn::parse_quote;
 
 use crate::{
     expandable::{
-        common::fake::{
-            inline_call::build_inline_call,
-            module::{
-                fake_store::build_fake_store, implementation_getter::build_implementation_getter,
-                interface_getter::build_interface_getter, interface_impl::build_interface_impl,
-                interface_struct::build_interface_struct,
+        common::{
+            fake::{inline_call::build_inline_call, module::module_parts::build_module_parts},
+            interface::{
+                interface_getter::build_interface_getter, interface_struct::build_interface_struct,
             },
         },
         impl_block::{ImplExpandable, ImplMethodExpandable},
     },
-    scheme::impl_block::{
-        common::{ImplCommonMethodScheme, ImplCommonScheme},
-        fake::{ImplFakeMethodScheme, ImplFakeScheme},
+    scheme::{
+        common::impl_block::{ImplCommonMethodScheme, ImplCommonScheme},
+        fake::impl_block::{ImplFakeMethodScheme, ImplFakeScheme},
     },
 };
 
@@ -50,9 +48,7 @@ fn create_impl_method_expandable(scheme: ImplFakeMethodScheme) -> ImplMethodExpa
                 generic_scheme,
                 method_generic_params,
             },
-        store_name,
-        fn_closure_trait,
-        fake_call_values,
+        fake,
     } = scheme;
 
     let interface_type: syn::Type = if let Some(generic_scheme) = &generic_scheme {
@@ -62,34 +58,39 @@ fn create_impl_method_expandable(scheme: ImplFakeMethodScheme) -> ImplMethodExpa
         parse_quote! { #interface_name }
     };
 
+    let inline_call = build_inline_call(
+        &module_name,
+        &fake.fake_call_values,
+        generic_scheme.as_ref().map(|g| g.idents.as_slice()),
+    );
+
+    let module_parts = [
+        vec![build_interface_struct(
+            &interface_name,
+            generic_scheme.as_ref(),
+        )],
+        build_module_parts(
+            &display_name,
+            &interface_name,
+            generic_scheme.as_ref(),
+            &fake,
+            true,
+        ),
+        vec![build_interface_getter(
+            &interface_name,
+            generic_scheme.as_ref(),
+        )],
+    ]
+    .concat();
+
     ImplMethodExpandable {
         vis,
-        inline_call: build_inline_call(
-            &module_name,
-            &fake_call_values,
-            generic_scheme.as_ref().map(|g| g.idents.as_slice()),
-        ),
+        inline_call,
         accessor_name,
         method_generic_params,
         interface_type,
         module_name,
-        module_parts: vec![
-            build_fake_store(
-                &store_name,
-                &display_name,
-                &fn_closure_trait,
-                generic_scheme.as_ref().map(|g| g.params.len()),
-            ),
-            build_implementation_getter(&store_name, &fn_closure_trait, generic_scheme.as_ref()),
-            build_interface_struct(&interface_name, generic_scheme.as_ref()),
-            build_interface_impl(
-                &interface_name,
-                &store_name,
-                generic_scheme.as_ref(),
-                &fn_closure_trait,
-            ),
-            build_interface_getter(&interface_name, generic_scheme.as_ref()),
-        ],
+        module_parts,
     }
 }
 
@@ -99,7 +100,10 @@ mod tests {
     use syn::parse_quote;
 
     use super::*;
-    use crate::{item_info::original::OriginalImpl, scheme::common::generic_scheme::GenericScheme};
+    use crate::{
+        item_info::original::OriginalImpl,
+        scheme::{common::generic_scheme::GenericScheme, fake::FakeScheme},
+    };
 
     fn non_generic_method_scheme(
         accessor_name: syn::Ident,
@@ -117,9 +121,11 @@ mod tests {
                 interface_name: interface_name.clone(),
                 generic_scheme: None,
             },
-            store_name,
-            fn_closure_trait: parse_quote!(Fn() -> i32),
-            fake_call_values: vec![],
+            fake: FakeScheme {
+                store_name,
+                fn_closure_trait: parse_quote!(Fn() -> i32),
+                fake_call_values: vec![],
+            },
         }
     }
 

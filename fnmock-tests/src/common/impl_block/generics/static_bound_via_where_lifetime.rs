@@ -60,3 +60,34 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct StaticBoundViaWhereLifetime<T> {
+        value: T,
+    }
+
+    #[fnmock::mockable]
+    impl<'a, T: 'a + Clone> StaticBoundViaWhereLifetime<T>
+    where
+        'a: 'static,
+    {
+        fn get(&self) -> T {
+            self.value.clone()
+        }
+    }
+
+    #[test]
+    fn test_static_bound_via_where_lifetime() {
+        let mock = StaticBoundViaWhereLifetime::<String>::get_mock();
+        mock.setup(|_| "Fake".to_string());
+        mock.expect_once();
+
+        let s = StaticBoundViaWhereLifetime {
+            value: "Test".to_string(),
+        };
+        let res = s.get();
+
+        assert_eq!(res, "Fake");
+        mock.assert();
+    }
+}

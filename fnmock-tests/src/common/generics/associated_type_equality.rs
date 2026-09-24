@@ -37,3 +37,23 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn associated_type_equality<I: Iterator<Item = String> + 'static>(value: I) -> usize {
+        value.count()
+    }
+
+    #[test]
+    fn test_associated_type_equality() {
+        let mock = associated_type_equality_mock::<std::vec::IntoIter<String>>();
+        mock.setup(|_value| 99);
+        mock.expectf(|value: &std::vec::IntoIter<String>| value.len() == 2)
+            .once();
+
+        let res = associated_type_equality(vec!["a".to_string(), "b".to_string()].into_iter());
+
+        assert_eq!(res, 99);
+        mock.assert();
+    }
+}

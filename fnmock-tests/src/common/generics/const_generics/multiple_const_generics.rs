@@ -67,3 +67,23 @@ mod spy {
         spy_3_2.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn multiple_const_generics<const A: usize, const B: usize>(tag: &str) -> usize {
+        let _ = tag;
+        A + B
+    }
+
+    #[test]
+    fn test_multiple_const_generics() {
+        let mock = multiple_const_generics_mock::<2, 3>();
+        mock.setup(|_tag| 99);
+        mock.expect(fnmock::predicate::eq("tag".to_string())).once();
+
+        let res = multiple_const_generics::<2, 3>("tag");
+
+        assert_eq!(res, 99);
+        mock.assert();
+    }
+}

@@ -37,3 +37,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn nested_lifetime_in_container<'a>(items: &'a [&'a str]) -> usize {
+        items.len()
+    }
+
+    #[test]
+    fn test_nested_lifetime_in_container() {
+        let mock = nested_lifetime_in_container_mock();
+        mock.setup(|items| items.len() + 1);
+        mock.expectf(|items: &[&str]| items == ["a", "b"]).once();
+
+        let res = nested_lifetime_in_container(&["a", "b"]);
+
+        assert_eq!(res, 3);
+        mock.assert();
+    }
+}

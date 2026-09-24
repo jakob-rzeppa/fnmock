@@ -6,14 +6,14 @@ A Rust mocking framework for standalone functions and methods in an impl block.
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-fnmock lets you replace or observe a function's behaviour in tests without introducing a trait /
-dependency injection wiring. You annotate the function where it already lives, and the test
-controls what it returns or asserts on how it was called.
+fnmock lets you mock a plain function in tests without adding a trait or dependency-injection
+wiring. You annotate the function where it already lives. The test can then decide what it returns
+and assert on how it was called.
 
 ```rust
-#[fnmock::fakeable]
+#[fnmock::mockable]
 fn fetch_user_name(id: u32) -> String {
-    todo!()
+    // real database call
 }
 
 fn greet(id: u32) -> String {
@@ -22,33 +22,18 @@ fn greet(id: u32) -> String {
 
 #[test]
 fn test_greeting() {
-    fetch_user_name_fake().setup(|_| "Test".into());
+    let mock = fetch_user_name_mock();
+    mock.setup(|_| "Test".into());                  // replace what it returns ...
+    mock.expect(fnmock::predicate::eq(1)).once();   // ... and expect how it is called
 
     assert_eq!(greet(1), "Hello, Test");
+
+    mock.assert();
 }
 ```
 
-`greet` keeps calling `fetch_user_name` directly — no signature changes, no indirection.
-
-A **spy** works the other way round: the real body still runs, but the test can assert on which
-arguments it was called with.
-
-```rust
-#[fnmock::spyable]
-fn fetch_user_name(id: u32) -> String {
-    format!("user {id}")
-}
-
-#[test]
-fn test_fetch_user_name() {
-    let spy = fetch_user_name_spy();
-    spy.expect(fnmock::predicate::eq(1)).once();
-
-    assert_eq!(fetch_user_name(1), "user 1"); // the real body still runs
-
-    spy.assert();
-}
-```
+`greet` keeps calling `fetch_user_name` directly. There are no signature changes and no
+indirection.
 
 ## Installation
 
@@ -59,64 +44,62 @@ The attribute is applied to production code, so fnmock is a regular dependency:
 fnmock = "<version>"
 ```
 
-The fake lookup and the spy's call recording are both `#[cfg(test)]`-gated, so release builds keep
-the original function body and compile no fake or spy machinery at all. The flip side: fakes and
-spies can only be set up from a `#[cfg(test)]` unit test inside the crate that defines the
-annotated item — not from an integration test under `tests/`, a doctest, or another crate. See
+Everything the attribute injects is `#[cfg(test)]`-gated, so release builds keep the original
+function body and compile no mock code at all. The flip side: a mock can only be set up from a
+`#[cfg(test)]` unit test inside the crate that defines the annotated item. It can't be set up from
+an integration test under `tests/`, a doctest, or another crate. See
 [test scope](USAGE.md#test-scope) in USAGE.md.
-
-## Documentation
-
-- **[USAGE.md](USAGE.md)** — how to use fakes: the accessor API, methods and receivers, generics,
-  and how test isolation works.
-- **[docs/FAKE_FEATURES.md](docs/FAKE_FEATURES.md)** — what is specific to `#[fnmock::fakeable]`:
-  the attribute, the `_fake()` accessor, and `setup`/`clear`/`is_set`.
-- **[docs/SPY_FEATURES.md](docs/SPY_FEATURES.md)** — what is specific to `#[fnmock::spyable]`: the
-  attribute, the `_spy()` accessor, the expectation methods, and the expectation DSL: `times`,
-  global counts, sequences and the matching algorithm.
-- **[docs/LIMITATIONS.md](docs/LIMITATIONS.md)** — the shared support matrix: every type, pattern,
-  generic shape, impl block form and isolation rule fnmock has been tested against, with a column
-  for fakes and a column for spies, each cell linked to the test that backs it — so both what works
-  and where the two macros differ are visible at a glance.
-- **fnmock-tests** - fnmock's test cases can be useful for examples on how to use this project.
 
 ## Overview
 
-Applying `#[fnmock::fakeable]` to a function or an inherent impl block generates an accessor named
-after it:
+`#[fnmock::mockable]` works on a free function or an inherent impl block. It generates an accessor
+named after the function: `<fn_name>_mock()`, or `Type::<fn_name>_mock()` for a method.
 
 | Method | Behaviour |
 | --- | --- |
-| `setup(closure)` | Install a fake, replacing any previous one. |
-| `clear()` | Remove the fake; calls run the real body again. |
-| `is_set()` | Whether a fake is currently installed. |
-
-In an impl block every method is faked and accessors are generated as associated functions.
-
-Applying `#[fnmock::spyable]` instead generates a `<fn_name>_spy()` accessor (or, in an impl block,
-`Type::<fn_name>_spy()`) that lets the test set expectations on the arguments a call is made with,
-without changing what the function does:
-
-| Method | Behaviour |
-| --- | --- |
+| `setup(closure)` | Replace the body with a closure of the same signature. Calling it again replaces the previous one. |
+| `is_set()` | Whether a replacement closure is installed. |
 | `expect(predicate, …)` | Expect calls matching one predicate per parameter. |
-| `expectf(closure)` | Same, but matching with a closure over all parameters. |
+| `expectf(closure)` | The same, but matching with a closure over all parameters. |
 | `expect_times(n)` / `expect_once()` / `expect_never()` | Expect this many calls, whatever their arguments. |
-| `assert()` | Panic unless every expectation set on this spy is fulfilled. |
+| `assert()` | Panic unless every expectation is fulfilled. |
+| `clear()` | Reset the mock: remove the closure, and drop every expectation and recorded call. |
 
-The handle returned by `expect`/`expectf` can be refined further with `times`, `once`, `never`,
-`describe` and `in_sequence` — see [docs/SPY_FEATURES.md](docs/SPY_FEATURES.md) for the full
-expectation DSL.
+Every call is recorded, including calls the `setup` closure answers. Without `setup`, the real body
+runs. The handle returned by `expect` / `expectf` can be refined with `times`, `once`, `never`,
+`describe` and `in_sequence`, and a `Sequence` can order calls across functions. See
+[docs/FEATURES.md](docs/FEATURES.md).
 
-Both fakes and spies are stored per thread, and the test harness gives each `#[test]` its own
-thread, so tests cannot leak into one another and no reset step is needed. The flip side is that a
-fake or spy is only visible on the thread that installed it — see
-[test isolation](USAGE.md#test-isolation) for what that means around `tokio::spawn` and
-`std::thread::spawn`.
+Mocks are stored per thread, and the test harness gives each `#[test]` its own thread, so tests
+can't leak into one another and no reset step is needed. The flip side is that a mock is only
+visible on the thread that set it up. See [test isolation](USAGE.md#test-isolation) for what that
+means with `tokio::spawn` and `std::thread::spawn`.
 
-## Work in Progress
+### Only need one half?
 
-- Mocks
+Two smaller attributes each provide one half of a mock:
+
+- **`#[fnmock::fakeable]`** generates `<fn_name>_fake()` with `setup`, `is_set` and `clear`. It
+  replaces the body and records nothing. It also accepts destructuring parameters, which a mock
+  can't record. See [docs/FAKE.md](docs/FAKE.md).
+- **`#[fnmock::spyable]`** generates `<fn_name>_spy()` with the expectation methods only. The real
+  body always runs. It also accepts `-> impl Trait` and `-> !`, which a mock can't produce. See
+  [docs/SPY.md](docs/SPY.md).
+
+## Documentation
+
+- **[USAGE.md](USAGE.md)**: a walkthrough of mocks covering methods and receivers, generics, and
+  how test isolation works.
+- **[docs/FEATURES.md](docs/FEATURES.md)**: the full reference for `#[mockable]`. It
+  covers every accessor method, the fake closure, the expectation methods, sequences and their
+  matching algorithm, `clear()`, and what a mock rejects.
+- **[docs/FAKE.md](docs/FAKE.md)** and
+  **[docs/SPY.md](docs/SPY.md)**: how `#[fakeable]` and `#[spyable]` differ
+  from a mock.
+- **[docs/LIMITATIONS.md](docs/LIMITATIONS.md)**: the support matrix. It lists every type, pattern,
+  generic shape, impl block form and isolation rule fnmock has been tested against, with one column
+  per attribute. Each cell links to the test that backs it.
+- **fnmock-tests**: fnmock's test cases double as usage examples.
 
 ## License
 

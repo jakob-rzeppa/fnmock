@@ -52,3 +52,31 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    use std::rc::Rc;
+
+    struct SelfRc {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl SelfRc {
+        fn get(self: Rc<Self>) -> i32 {
+            self.value
+        }
+    }
+
+    #[test]
+    fn test_self_rc() {
+        let mock = SelfRc::get_mock();
+        mock.setup(|_| 5);
+        mock.expect_once();
+
+        let s = Rc::new(SelfRc { value: 42 });
+        let res = SelfRc::get(s);
+
+        assert_eq!(res, 5);
+        mock.assert();
+    }
+}

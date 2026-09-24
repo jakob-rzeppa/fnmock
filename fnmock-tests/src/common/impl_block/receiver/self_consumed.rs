@@ -48,3 +48,29 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct SelfConsumed {
+        value: i32,
+    }
+
+    #[fnmock::mockable]
+    impl SelfConsumed {
+        fn into_value(self) -> i32 {
+            self.value
+        }
+    }
+
+    #[test]
+    fn test_self_consumed() {
+        let mock = SelfConsumed::into_value_mock();
+        mock.setup(|_| 5);
+        mock.expect_once();
+
+        let s = SelfConsumed { value: 42 };
+        let res = s.into_value();
+
+        assert_eq!(res, 5);
+        mock.assert();
+    }
+}

@@ -1,6 +1,6 @@
 use crate::{
     expandable::function::FunctionExpandable, expanded::function::FunctionExpanded,
-    item_info::function::FunctionInfo, scheme::function::fake::FunctionFakeScheme,
+    item_info::function::FunctionInfo, scheme::fake::function::FunctionFakeScheme,
     strategy::Strategy,
 };
 

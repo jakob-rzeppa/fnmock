@@ -44,3 +44,27 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    struct BasicStruct;
+
+    #[fnmock::mockable]
+    impl BasicStruct {
+        fn basic(&self) -> i32 {
+            42
+        }
+    }
+
+    #[test]
+    fn test_basic() {
+        let mock = BasicStruct::basic_mock();
+        mock.setup(|_| 5);
+        mock.expect_once();
+
+        let s = BasicStruct;
+        let res = s.basic();
+
+        assert_eq!(res, 5);
+        mock.assert();
+    }
+}

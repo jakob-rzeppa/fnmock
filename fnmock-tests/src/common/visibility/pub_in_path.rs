@@ -45,3 +45,29 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    mod definitions {
+        pub mod inner {
+            #[fnmock::mockable]
+            pub(in crate::common::visibility::pub_in_path::mock) fn pub_in_path_fn(
+                a: String,
+            ) -> String {
+                format!("Real {}", a)
+            }
+        }
+    }
+
+    #[test]
+    fn test_pub_in_path_mock_accessor_usable_within_declared_path() {
+        let mock = definitions::inner::pub_in_path_fn_mock();
+        mock.setup(|a| format!("Fake {}", a));
+        mock.expect(fnmock::predicate::eq("Test".to_string()))
+            .once();
+
+        let res = definitions::inner::pub_in_path_fn("Test".to_string());
+
+        assert_eq!(res, "Fake Test");
+        mock.assert();
+    }
+}

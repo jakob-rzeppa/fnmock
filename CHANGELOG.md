@@ -10,6 +10,10 @@ together.
 
 ## [Unreleased]
 
+### Added
+
+- `fnmock` now supports faking and spying on functions and methods at the same time by the `mockable` attribute.
+
 ## [0.2.1] - 2026-09-23
 
 ### Added

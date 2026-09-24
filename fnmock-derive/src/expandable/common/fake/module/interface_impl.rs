@@ -7,11 +7,26 @@ pub fn build_interface_impl(
     store_name: &syn::Ident,
     generic_scheme: Option<&GenericScheme>,
     fn_closure_trait: &syn::TraitBound,
+    include_clear: bool,
 ) -> proc_macro2::TokenStream {
     if let Some(generic_scheme) = generic_scheme {
         let generic_params = &generic_scheme.params;
         let generic_idents = &generic_scheme.idents;
         let generic_keys = &generic_scheme.keys;
+        let clear_method = include_clear.then(|| {
+            quote! {
+                /// Remove the fake implementation for this combination of generic arguments, so
+                /// the real function body runs again.
+                ///
+                /// Fakes are thread-local and each `#[test]` runs on its own thread, so tests never
+                /// leak fakes into each other — you don't need to call this between tests.
+                pub fn clear(&self) {
+                    #store_name.with_borrow_mut(|fake| {
+                        fake.clear_for([#(#generic_keys),*]);
+                    });
+                }
+            }
+        });
         quote! {
             impl<#(#generic_params),*> #interface_name<#(#generic_idents),*> {
                 /// Install a fake implementation for this combination of generic arguments,
@@ -29,16 +44,7 @@ pub fn build_interface_impl(
                     });
                 }
 
-                /// Remove the fake implementation for this combination of generic arguments, so
-                /// the real function body runs again.
-                ///
-                /// Fakes are thread-local and each `#[test]` runs on its own thread, so tests never
-                /// leak fakes into each other — you don't need to call this between tests.
-                pub fn clear(&self) {
-                    #store_name.with_borrow_mut(|fake| {
-                        fake.clear_for([#(#generic_keys),*]);
-                    });
-                }
+                #clear_method
 
                 /// Check whether a fake implementation is currently set for this combination of
                 /// generic arguments.
@@ -56,6 +62,19 @@ pub fn build_interface_impl(
             }
         }
     } else {
+        let clear_method = include_clear.then(|| {
+            quote! {
+                /// Remove the fake implementation, so the real function body runs again.
+                ///
+                /// Fakes are thread-local and each `#[test]` runs on its own thread, so tests never
+                /// leak fakes into each other — you don't need to call this between tests.
+                pub fn clear(&self) {
+                    #store_name.with(|store| {
+                        store.borrow_mut().clear();
+                    });
+                }
+            }
+        });
         quote! {
             impl #interface_name {
                 /// Install a fake implementation, replacing any previously set one.
@@ -69,15 +88,7 @@ pub fn build_interface_impl(
                     });
                 }
 
-                /// Remove the fake implementation, so the real function body runs again.
-                ///
-                /// Fakes are thread-local and each `#[test]` runs on its own thread, so tests never
-                /// leak fakes into each other — you don't need to call this between tests.
-                pub fn clear(&self) {
-                    #store_name.with(|store| {
-                        store.borrow_mut().clear();
-                    });
-                }
+                #clear_method
 
                 /// Check whether a fake implementation is currently set.
                 ///
@@ -105,7 +116,7 @@ mod tests {
         let store_name: syn::Ident = parse_quote!(MY_FUNCTION_STORE);
         let fn_closure_trait: syn::TraitBound = parse_quote!(Fn(i32) -> bool);
 
-        let res = build_interface_impl(&interface_name, &store_name, None, &fn_closure_trait);
+        let res = build_interface_impl(&interface_name, &store_name, None, &fn_closure_trait, true);
 
         let expected = quote! {
             impl MyFunctionInterface {
@@ -147,6 +158,7 @@ mod tests {
             &store_name,
             Some(&generic_scheme),
             &fn_closure_trait,
+            true,
         );
 
         let expected = quote! {
@@ -191,6 +203,7 @@ mod tests {
             &store_name,
             Some(&generic_scheme),
             &fn_closure_trait,
+            true,
         );
 
         let expected = quote! {

@@ -53,3 +53,30 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn higher_ranked_bounds<F>(f: F, s: &str) -> String
+    where
+        F: for<'a> Fn(&'a str) -> String + 'static,
+    {
+        f(s)
+    }
+
+    fn uppercase(s: &str) -> String {
+        s.to_uppercase()
+    }
+
+    #[test]
+    fn test_higher_ranked_bounds() {
+        let mock = higher_ranked_bounds_mock::<fn(&str) -> String>();
+        mock.setup(|_f, s| format!("Fake {}", s));
+        mock.expectf(|_f, s: &str| s == "test").once();
+
+        let f: fn(&str) -> String = uppercase;
+        let res = higher_ranked_bounds(f, "test");
+
+        assert_eq!(res, "Fake test");
+        mock.assert();
+    }
+}

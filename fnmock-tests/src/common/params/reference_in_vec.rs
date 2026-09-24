@@ -34,3 +34,22 @@ mod spy {
         spy.assert();
     }
 }
+
+mod mock {
+    #[fnmock::mockable]
+    fn reference_in_vec(items: Vec<&'static i32>) -> i32 {
+        items.iter().map(|e| (*e).clone()).sum()
+    }
+
+    #[test]
+    fn test_reference_in_vec() {
+        let mock = reference_in_vec_mock();
+        mock.setup(|items: Vec<&i32>| items.iter().map(|e| (*e).clone()).product());
+        mock.expect(fnmock::predicate::eq(vec![&2, &3, &4])).once();
+
+        let result = reference_in_vec(vec![&2, &3, &4]);
+
+        assert_eq!(result, 24);
+        mock.assert();
+    }
+}
