@@ -14,6 +14,10 @@ together.
 
 - `in_sequence` takes `&Sequence` instead of `&mut Sequence`, so a sequence doesn't have to be declared `mut`. Existing calls with `&mut seq` keep compiling.
 
+### Fixed
+
+- A parameter named `implementation` no longer breaks `fakeable` and `mockable`: the generated local that holds the fake no longer shadows it.
+
 ## [0.3.0] - 2026-09-24
 
 ### Added
