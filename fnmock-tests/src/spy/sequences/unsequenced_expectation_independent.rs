@@ -7,13 +7,13 @@ mod spy {
     #[test]
     fn test_unsequenced_expectation_is_independent_of_the_sequence() {
         let spy = independent_fn_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(3))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         // Not in the sequence, so it is not ordered relative to the steps above.
         spy.expect(fnmock::predicate::eq(9)).times(2);
 
@@ -36,13 +36,13 @@ mod mock {
     #[test]
     fn test_unsequenced_expectation_is_independent_of_the_sequence() {
         let mock = independent_fn_mock();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         mock.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock.expect(fnmock::predicate::eq(3))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock.expect(fnmock::predicate::eq(9)).times(2);
 
         independent_fn(9);

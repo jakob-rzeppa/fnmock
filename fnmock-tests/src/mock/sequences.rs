@@ -19,17 +19,17 @@ fn seq_other_mock(id: i32) {
 fn test_mock_and_plain_spy_interleave_in_one_sequence() {
     let mock = seq_mock_mock();
     let spy = seq_plain_spy_spy();
-    let mut seq = fnmock::Sequence::new_strict();
+    let seq = fnmock::Sequence::new_strict();
     mock.setup(|id| id * 2);
     mock.expect(fnmock::predicate::eq(1))
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
     spy.expect(fnmock::predicate::eq(2))
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
     mock.expect(fnmock::predicate::eq(3))
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
 
     assert_eq!(seq_mock(1), 2);
     seq_plain_spy(2);
@@ -44,14 +44,14 @@ fn test_mock_and_plain_spy_interleave_in_one_sequence() {
 fn test_faked_call_out_of_order_panics() {
     let mock = seq_mock_mock();
     let spy = seq_plain_spy_spy();
-    let mut seq = fnmock::Sequence::new_strict();
+    let seq = fnmock::Sequence::new_strict();
     mock.setup(|id| id);
     spy.expect(fnmock::predicate::eq(1))
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
     mock.expect(fnmock::predicate::eq(2))
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
 
     seq_mock(2); // the spy step must come first
 }
@@ -60,15 +60,15 @@ fn test_faked_call_out_of_order_panics() {
 fn test_two_mocks_share_a_sequence() {
     let first = seq_mock_mock();
     let second = seq_other_mock_mock();
-    let mut seq = fnmock::Sequence::new_strict();
+    let seq = fnmock::Sequence::new_strict();
     first
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
     second
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
 
     seq_mock(1);
     seq_other_mock(1);
@@ -81,13 +81,13 @@ fn test_two_mocks_share_a_sequence() {
 fn test_clear_removes_the_mocks_steps_from_a_sequence() {
     let mock = seq_mock_mock();
     let spy = seq_plain_spy_spy();
-    let mut seq = fnmock::Sequence::new_strict();
+    let seq = fnmock::Sequence::new_strict();
     mock.expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
     spy.expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
 
     mock.clear();
 

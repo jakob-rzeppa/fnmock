@@ -13,15 +13,15 @@ mod spy {
     fn test_sequence_spans_two_instantiations() {
         let spy_i32 = sequence_across_instantiations_spy::<i32>();
         let spy_string = sequence_across_instantiations_spy::<String>();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy_i32
             .expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy_string
             .expect(fnmock::predicate::eq("hi".to_string()))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         sequence_across_instantiations(2);
         sequence_across_instantiations("hi".to_string());
@@ -35,15 +35,15 @@ mod spy {
     fn test_strict_sequence_panics_when_instantiations_are_called_in_the_wrong_order() {
         let spy_i32 = sequence_across_instantiations_spy::<i32>();
         let spy_string = sequence_across_instantiations_spy::<String>();
-        let mut seq = fnmock::Sequence::new_strict();
+        let seq = fnmock::Sequence::new_strict();
         spy_i32
             .expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy_string
             .expect(fnmock::predicate::eq("hi".to_string()))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         // The i32 instantiation must be called first.
         sequence_across_instantiations("hi".to_string());
@@ -56,11 +56,11 @@ mod spy {
     fn test_a_call_on_one_instantiation_does_not_advance_another_ones_step() {
         let spy_i32 = sequence_across_instantiations_spy::<i32>();
         let spy_u8 = sequence_across_instantiations_spy::<u8>();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy_u8
             .expect(fnmock::predicate::always())
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         sequence_across_instantiations(2i32);
 
@@ -79,15 +79,15 @@ mod mock {
     fn test_sequence_spans_two_instantiations() {
         let mock_i32 = sequence_across_instantiations_mock::<i32>();
         let mock_string = sequence_across_instantiations_mock::<String>();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         mock_i32
             .expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock_string
             .expect(fnmock::predicate::eq("hi".to_string()))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         sequence_across_instantiations(2);
         sequence_across_instantiations("hi".to_string());

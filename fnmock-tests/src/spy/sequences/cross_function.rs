@@ -13,15 +13,15 @@ mod spy {
     fn test_sequence_spans_two_functions() {
         let spy_a = cross_fn_a_spy();
         let spy_b = cross_fn_b_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy_a
             .expect(fnmock::predicate::eq("a".to_string()))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy_b
             .expect(fnmock::predicate::eq("a".to_string()))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         cross_fn_a("a");
         cross_fn_b("a");
@@ -35,15 +35,15 @@ mod spy {
     fn test_strict_cross_function_sequence_panics_on_wrong_function_order() {
         let spy_a = cross_fn_a_spy();
         let spy_b = cross_fn_b_spy();
-        let mut seq = fnmock::Sequence::new_strict();
+        let seq = fnmock::Sequence::new_strict();
         spy_a
             .expect(fnmock::predicate::eq("a".to_string()))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy_b
             .expect(fnmock::predicate::eq("a".to_string()))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         cross_fn_b("a"); // wrong order: cross_fn_a must be called first
     }
@@ -64,15 +64,15 @@ mod mock {
     fn test_sequence_spans_two_functions() {
         let mock_a = cross_fn_a_mock();
         let mock_b = cross_fn_b_mock();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         mock_a
             .expect(fnmock::predicate::eq("a".to_string()))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock_b
             .expect(fnmock::predicate::eq("a".to_string()))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         cross_fn_a("a");
         cross_fn_b("a");

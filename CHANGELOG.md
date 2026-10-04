@@ -10,6 +10,10 @@ together.
 
 ## [Unreleased]
 
+### Changed
+
+- `in_sequence` takes `&Sequence` instead of `&mut Sequence`, so a sequence doesn't have to be declared `mut`. Existing calls with `&mut seq` keep compiling.
+
 ## [0.3.0] - 2026-09-24
 
 ### Added

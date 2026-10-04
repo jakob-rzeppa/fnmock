@@ -92,14 +92,14 @@ mod spy {
     #[test]
     fn test_global_times_does_not_affect_a_sequence() {
         let spy = global_times_target_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy.expect_times(3); // counts every call, regardless of the sequence's progress
         spy.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(5))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         global_times_target(2);
         global_times_target(9); // matches no argument expectation, but still counted globally

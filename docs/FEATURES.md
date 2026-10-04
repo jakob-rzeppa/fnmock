@@ -256,7 +256,8 @@ mock.expect(eq(2)).times(3).in_sequence(&seq);
 mock.expect(eq(5)).once().in_sequence(&seq);
 ```
 
-A sequence sets the order in which calls have to be made. See
+A sequence sets the order in which calls have to be made. `in_sequence` takes it as `&Sequence`, so
+it needs no `mut` binding and can be shared freely. See
 [basic_order.rs](../fnmock-tests/src/spy/sequences/basic_order.rs). A faked call takes its step in
 a sequence like any other call ([sequences.rs](../fnmock-tests/src/mock/sequences.rs)).
 

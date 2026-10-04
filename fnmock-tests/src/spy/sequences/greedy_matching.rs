@@ -10,12 +10,12 @@ mod spy {
     #[should_panic(expected = "Expectation(s) of the spied function")]
     fn test_earlier_unbounded_step_starves_a_later_step_matching_the_same_arguments() {
         let spy = greedy_fn_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         // No `times`/`once`/`never`: unbounded, so it keeps accepting `(2)` forever.
-        spy.expect(fnmock::predicate::eq(2)).in_sequence(&mut seq);
+        spy.expect(fnmock::predicate::eq(2)).in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         greedy_fn(2);
         greedy_fn(2);
@@ -36,11 +36,11 @@ mod mock {
     #[should_panic(expected = "Expectation(s) of the spied function")]
     fn test_earlier_unbounded_step_starves_a_later_step_matching_the_same_arguments() {
         let mock = greedy_fn_mock();
-        let mut seq = fnmock::Sequence::new();
-        mock.expect(fnmock::predicate::eq(2)).in_sequence(&mut seq);
+        let seq = fnmock::Sequence::new();
+        mock.expect(fnmock::predicate::eq(2)).in_sequence(&seq);
         mock.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         greedy_fn(2);
         greedy_fn(2);

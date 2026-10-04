@@ -72,7 +72,7 @@ impl Sequence {
         Rc::as_ptr(&self.0).cast::<()>()
     }
 
-    pub(crate) fn append_expectation<M: Matcher>(&mut self, expectation: Expectation<M>) {
+    pub(crate) fn append_expectation<M: Matcher>(&self, expectation: Expectation<M>) {
         self.0.borrow_mut().steps.push(Box::new(expectation));
     }
 
@@ -177,7 +177,7 @@ impl Sequence {
     }
 
     /// Remove all steps of matcher type `M` from this sequence.
-    pub(crate) fn clear_expectations_for<M: Matcher>(&mut self) {
+    pub(crate) fn clear_expectations_for<M: Matcher>(&self) {
         let mut guard = self.0.borrow_mut();
 
         let current_step = guard.current_step;
@@ -256,7 +256,7 @@ mod tests {
 
     #[test]
     fn calls_in_order_fulfill_every_step() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(int_step(1, "f"));
         seq.append_expectation(int_step(2, "f"));
 
@@ -268,7 +268,7 @@ mod tests {
 
     #[test]
     fn earliest_matching_step_consumes_the_call_greedily() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(int_step(1, "f"));
         seq.append_expectation(int_step(1, "f"));
 
@@ -282,7 +282,7 @@ mod tests {
 
     #[test]
     fn step_advances_once_its_minimum_call_count_is_reached() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         let mut first = int_step(1, "f");
         first.set_call_range((2..).into());
         seq.append_expectation(first);
@@ -297,7 +297,7 @@ mod tests {
 
     #[test]
     fn lenient_sequence_ignores_a_call_that_would_skip_an_unfinished_step() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         let mut first = int_step(1, "f");
         first.set_call_range((2..).into());
         seq.append_expectation(first);
@@ -315,7 +315,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Call out of sequence")]
     fn strict_sequence_panics_when_a_call_would_skip_an_unfinished_step() {
-        let mut seq = Sequence::new_strict();
+        let seq = Sequence::new_strict();
         let mut first = int_step(1, "f");
         first.set_call_range((2..).into());
         seq.append_expectation(first);
@@ -328,7 +328,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Too many calls of the spied function")]
     fn calling_a_never_step_panics() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         let mut never = int_step(1, "f");
         never.set_call_range(0.into());
         seq.append_expectation(never);
@@ -338,7 +338,7 @@ mod tests {
 
     #[test]
     fn never_step_is_skipped_automatically() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         let mut never = int_step(1, "f");
         never.set_call_range(0.into());
         seq.append_expectation(never);
@@ -351,7 +351,7 @@ mod tests {
 
     #[test]
     fn last_step_keeps_accumulating_matching_calls_once_current() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         let mut last = int_step(1, "f");
         last.set_call_range(5.into());
         seq.append_expectation(last);
@@ -371,7 +371,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Too many calls of the spied function")]
     fn exceeding_a_steps_call_range_panics() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         let mut step = int_step(1, "f");
         step.set_call_range(1.into());
         seq.append_expectation(step);
@@ -382,7 +382,7 @@ mod tests {
 
     #[test]
     fn call_matching_no_step_is_ignored() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(int_step(1, "f"));
 
         record_int(&seq, 99);
@@ -394,7 +394,7 @@ mod tests {
 
     #[test]
     fn orders_calls_across_different_spied_functions() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(int_step(1, "get_user"));
         seq.append_expectation(Expectation::new(StrMatcher("bob"), "save_user"));
 
@@ -408,7 +408,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Call out of sequence")]
     fn strict_sequence_panics_on_out_of_order_call_across_functions() {
-        let mut seq = Sequence::new_strict();
+        let seq = Sequence::new_strict();
         let mut first = int_step(1, "get_user");
         first.set_call_range((2..).into());
         seq.append_expectation(first);
@@ -420,7 +420,7 @@ mod tests {
 
     #[test]
     fn unfulfilled_steps_only_reports_the_requested_matcher_type() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(int_step(1, "get_user"));
         seq.append_expectation(Expectation::new(StrMatcher("bob"), "save_user"));
 
@@ -430,7 +430,7 @@ mod tests {
 
     #[test]
     fn default_sequence_is_lenient_not_strict() {
-        let mut seq = Sequence::default();
+        let seq = Sequence::default();
         let mut first = int_step(1, "f");
         first.set_call_range((2..).into());
         seq.append_expectation(first);
@@ -454,7 +454,7 @@ mod tests {
 
     #[test]
     fn clone_observes_calls_recorded_through_the_original() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(int_step(1, "f"));
         let clone = seq.clone();
 
@@ -466,7 +466,7 @@ mod tests {
     #[test]
     fn unfulfilled_steps_reports_no_step_when_every_unfulfilled_step_is_of_a_different_matcher_type()
      {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(Expectation::new(StrMatcher("bob"), "save_user"));
         seq.append_expectation(int_step(1, "f"));
 
@@ -478,7 +478,7 @@ mod tests {
 
     #[test]
     fn clear_expectations_for_removes_only_that_matcher_types_steps() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(int_step(1, "f"));
         seq.append_expectation(Expectation::new(StrMatcher("bob"), "g"));
 
@@ -490,7 +490,7 @@ mod tests {
 
     #[test]
     fn clear_expectations_for_is_a_noop_when_no_steps_of_that_type_exist() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(Expectation::new(StrMatcher("bob"), "g"));
 
         seq.clear_expectations_for::<IntMatcher>();
@@ -500,7 +500,7 @@ mod tests {
 
     #[test]
     fn clear_expectations_for_on_an_empty_sequence_does_nothing() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
 
         seq.clear_expectations_for::<IntMatcher>();
 
@@ -509,7 +509,7 @@ mod tests {
 
     #[test]
     fn clear_expectations_for_stops_the_cleared_type_from_blocking_the_sequence() {
-        let mut seq = Sequence::new_strict();
+        let seq = Sequence::new_strict();
         let mut blocking = int_step(1, "f");
         blocking.set_call_range((2..).into());
         seq.append_expectation(blocking);
@@ -525,7 +525,7 @@ mod tests {
 
     #[test]
     fn clear_expectations_for_does_not_disturb_current_step_for_types_still_present() {
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         let mut a = int_step(1, "f");
         a.set_call_range(1.into());
         seq.append_expectation(a);

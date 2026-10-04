@@ -12,15 +12,15 @@ fn clear_seq_second(id: i32) {
 fn test_clear_removes_the_spys_steps_from_a_sequence() {
     let first = clear_seq_first_spy();
     let second = clear_seq_second_spy();
-    let mut seq = fnmock::Sequence::new_strict();
+    let seq = fnmock::Sequence::new_strict();
     first
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
     second
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
 
     first.clear();
 
@@ -36,15 +36,15 @@ fn test_clear_removes_the_spys_steps_from_a_sequence() {
 fn test_clear_leaves_other_functions_steps_in_the_sequence() {
     let first = clear_seq_first_spy();
     let second = clear_seq_second_spy();
-    let mut seq = fnmock::Sequence::new();
+    let seq = fnmock::Sequence::new();
     first
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
     second
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
 
     first.clear();
 
@@ -56,22 +56,22 @@ fn test_clear_leaves_other_functions_steps_in_the_sequence() {
 fn test_cleared_spy_can_join_a_new_sequence() {
     let first = clear_seq_first_spy();
     let second = clear_seq_second_spy();
-    let mut old_seq = fnmock::Sequence::new_strict();
+    let old_seq = fnmock::Sequence::new_strict();
     first
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut old_seq);
+        .in_sequence(&old_seq);
     first.clear();
 
-    let mut new_seq = fnmock::Sequence::new_strict();
+    let new_seq = fnmock::Sequence::new_strict();
     second
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut new_seq);
+        .in_sequence(&new_seq);
     first
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut new_seq);
+        .in_sequence(&new_seq);
 
     clear_seq_second(1);
     clear_seq_first(1);

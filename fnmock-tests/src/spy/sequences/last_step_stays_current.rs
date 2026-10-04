@@ -9,13 +9,13 @@ mod spy {
     #[test]
     fn test_last_step_keeps_counting_matching_calls() {
         let spy = last_step_fn_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(7))
             .times(..3)
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         last_step_fn(2);
         last_step_fn(7);
@@ -30,13 +30,13 @@ mod spy {
     #[should_panic(expected = "Too many calls of the spied function")]
     fn test_last_step_panics_once_its_maximum_is_exceeded() {
         let spy = last_step_fn_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(7))
             .times(..3)
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         last_step_fn(2);
         last_step_fn(7);
@@ -54,13 +54,13 @@ mod mock {
     #[test]
     fn test_last_step_keeps_counting_matching_calls() {
         let mock = last_step_fn_mock();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         mock.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock.expect(fnmock::predicate::eq(7))
             .times(..3)
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         last_step_fn(2);
         last_step_fn(7);
