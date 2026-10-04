@@ -7,20 +7,20 @@ mod spy {
     #[test]
     fn test_two_sequences_on_the_same_spy_progress_independently() {
         let spy = multi_seq_fn_spy();
-        let mut seq_a = fnmock::Sequence::new();
-        let mut seq_b = fnmock::Sequence::new();
+        let seq_a = fnmock::Sequence::new();
+        let seq_b = fnmock::Sequence::new();
         spy.expect(fnmock::predicate::eq(1))
             .once()
-            .in_sequence(&mut seq_a);
+            .in_sequence(&seq_a);
         spy.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq_a);
+            .in_sequence(&seq_a);
         spy.expect(fnmock::predicate::eq(3))
             .once()
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_b);
         spy.expect(fnmock::predicate::eq(4))
             .once()
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_b);
 
         multi_seq_fn(1); // seq_a step 1
         multi_seq_fn(3); // seq_b step 1
@@ -40,20 +40,20 @@ mod mock {
     #[test]
     fn test_two_sequences_on_the_same_spy_progress_independently() {
         let mock = multi_seq_fn_mock();
-        let mut seq_a = fnmock::Sequence::new();
-        let mut seq_b = fnmock::Sequence::new();
+        let seq_a = fnmock::Sequence::new();
+        let seq_b = fnmock::Sequence::new();
         mock.expect(fnmock::predicate::eq(1))
             .once()
-            .in_sequence(&mut seq_a);
+            .in_sequence(&seq_a);
         mock.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq_a);
+            .in_sequence(&seq_a);
         mock.expect(fnmock::predicate::eq(3))
             .once()
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_b);
         mock.expect(fnmock::predicate::eq(4))
             .once()
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_b);
 
         multi_seq_fn(1);
         multi_seq_fn(3);

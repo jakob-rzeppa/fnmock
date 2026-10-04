@@ -38,7 +38,8 @@
 //! - `describe`
 //! - `in_sequence`, which adds the expectation to a [`Sequence`]
 //!
-//! A [`Sequence`] orders expectations across several functions.
+//! A [`Sequence`] orders expectations across several functions. `in_sequence` borrows it as
+//! `&Sequence`, so the binding needs no `mut`.
 //!
 //! # Only need one half?
 //!

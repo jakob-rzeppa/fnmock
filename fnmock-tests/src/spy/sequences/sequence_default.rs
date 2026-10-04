@@ -10,13 +10,13 @@ mod spy {
     #[test]
     fn test_default_sequence_is_lenient_not_strict() {
         let spy = default_seq_target_spy();
-        let mut seq = fnmock::Sequence::default();
+        let seq = fnmock::Sequence::default();
         spy.expect(fnmock::predicate::eq(1))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         default_seq_target(2);
         default_seq_target(1);
@@ -35,13 +35,13 @@ mod mock {
     #[test]
     fn test_default_sequence_is_lenient_not_strict() {
         let mock = default_seq_target_mock();
-        let mut seq = fnmock::Sequence::default();
+        let seq = fnmock::Sequence::default();
         mock.expect(fnmock::predicate::eq(1))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         default_seq_target(2);
         default_seq_target(1);

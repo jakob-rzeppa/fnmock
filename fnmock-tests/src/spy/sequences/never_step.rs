@@ -9,16 +9,16 @@ mod spy {
     #[test]
     fn test_never_step_is_skipped_when_not_called() {
         let spy = never_step_fn_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(4))
             .never()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(5))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         never_step_fn(2);
         never_step_fn(5); // advances straight past the never() step, which is already advancable
@@ -32,13 +32,13 @@ mod spy {
     #[should_panic(expected = "Too many calls of the spied function")]
     fn test_never_step_panics_if_called_while_current() {
         let spy = never_step_fn_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(4))
             .never()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         never_step_fn(2);
         never_step_fn(4); // the never() step is current and matches: over its maximum of 0
@@ -54,16 +54,16 @@ mod mock {
     #[test]
     fn test_never_step_is_skipped_when_not_called() {
         let mock = never_step_fn_mock();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         mock.expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock.expect(fnmock::predicate::eq(4))
             .never()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock.expect(fnmock::predicate::eq(5))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         never_step_fn(2);
         never_step_fn(5);

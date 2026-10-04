@@ -9,12 +9,12 @@ mod spy {
     #[test]
     fn test_in_sequence_before_or_after_times_is_equivalent() {
         let spy = chain_order_fn_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy.expect(fnmock::predicate::eq(2))
             .times(2)
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(5))
-            .in_sequence(&mut seq)
+            .in_sequence(&seq)
             .once();
 
         chain_order_fn(2);
@@ -34,12 +34,12 @@ mod mock {
     #[test]
     fn test_in_sequence_before_or_after_times_is_equivalent() {
         let mock = chain_order_fn_mock();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         mock.expect(fnmock::predicate::eq(2))
             .times(2)
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock.expect(fnmock::predicate::eq(5))
-            .in_sequence(&mut seq)
+            .in_sequence(&seq)
             .once();
 
         chain_order_fn(2);

@@ -12,13 +12,13 @@ mod spy {
     #[test]
     fn test_higher_ranked_expectf_participates_in_a_sequence() {
         let spy = lifetime_expectf_in_sequence_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy.expectf(|r: &Ref<'_>| r.0 == "first")
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expectf(|r: &Ref<'_>| r.0 == "second")
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         let first = "first".to_string();
         let second = "second".to_string();
@@ -32,13 +32,13 @@ mod spy {
     #[should_panic(expected = "Call out of sequence")]
     fn test_out_of_order_higher_ranked_expectf_panics_in_a_strict_sequence() {
         let spy = lifetime_expectf_in_sequence_spy();
-        let mut seq = fnmock::Sequence::new_strict();
+        let seq = fnmock::Sequence::new_strict();
         spy.expectf(|r: &Ref<'_>| r.0 == "first")
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expectf(|r: &Ref<'_>| r.0 == "second")
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         let second = "second".to_string();
         lifetime_expectf_in_sequence(Ref(&second));
@@ -56,13 +56,13 @@ mod mock {
     #[test]
     fn test_higher_ranked_expectf_participates_in_a_sequence() {
         let mock = lifetime_expectf_in_sequence_mock();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         mock.expectf(|r: &Ref<'_>| r.0 == "first")
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock.expectf(|r: &Ref<'_>| r.0 == "second")
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         let first = "first".to_string();
         let second = "second".to_string();

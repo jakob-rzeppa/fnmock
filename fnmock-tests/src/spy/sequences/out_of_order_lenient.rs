@@ -10,13 +10,13 @@ mod spy {
     #[test]
     fn test_early_call_is_dropped_without_panicking_then_sequence_completes() {
         let spy = lenient_seq_fn_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy.expect(fnmock::predicate::eq(2))
             .times(3)
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(5))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         lenient_seq_fn(5); // too early: dropped, the sequence stays on the first step
         lenient_seq_fn(2);
@@ -33,13 +33,13 @@ mod spy {
     #[should_panic(expected = "Expectation(s) of the spied function")]
     fn test_lenient_sequence_fails_assert_if_the_dropped_call_is_never_repeated() {
         let spy = lenient_seq_fn_spy();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         spy.expect(fnmock::predicate::eq(2))
             .times(3)
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         spy.expect(fnmock::predicate::eq(5))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         lenient_seq_fn(2);
         lenient_seq_fn(5); // dropped, not a panic: the sequence is still waiting on (2)
@@ -60,13 +60,13 @@ mod mock {
     #[test]
     fn test_early_call_is_dropped_without_panicking_then_sequence_completes() {
         let mock = lenient_seq_fn_mock();
-        let mut seq = fnmock::Sequence::new();
+        let seq = fnmock::Sequence::new();
         mock.expect(fnmock::predicate::eq(2))
             .times(3)
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
         mock.expect(fnmock::predicate::eq(5))
             .once()
-            .in_sequence(&mut seq);
+            .in_sequence(&seq);
 
         lenient_seq_fn(5);
         lenient_seq_fn(2);

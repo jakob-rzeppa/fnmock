@@ -166,7 +166,7 @@ impl<M: Matcher + 'static> SpyStore<M> {
         // We need to remove the expectations from the sequences before clearing the array,
         // since the sequences are shared between different spies.
         self.sequences
-            .iter_mut()
+            .iter()
             .for_each(|seq| seq.clear_expectations_for::<M>());
         self.sequences.clear();
     }
@@ -362,7 +362,7 @@ mod tests {
     #[test]
     fn calls_are_passed_through_to_sequences() {
         let mut store = SpyStore::<IntMatcher>::new("f");
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(int_expectation(1, 1));
         store.add_sequences(vec![seq]);
 
@@ -374,7 +374,7 @@ mod tests {
     #[test]
     fn unfulfilled_sequence_step_is_reported_as_sequenced() {
         let mut store = SpyStore::<IntMatcher>::new("f");
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(int_expectation(1, 1));
         store.add_sequences(vec![seq]);
 
@@ -387,7 +387,7 @@ mod tests {
     #[should_panic(expected = "Call out of sequence")]
     fn strict_sequence_panic_propagates_from_record_call() {
         let mut store = SpyStore::<IntMatcher>::new("f");
-        let mut seq = Sequence::new_strict();
+        let seq = Sequence::new_strict();
         seq.append_expectation(int_expectation(1, 2..));
         seq.append_expectation(int_expectation(2, 1));
         store.add_sequences(vec![seq]);
@@ -413,7 +413,7 @@ mod tests {
     fn clear_removes_own_steps_from_shared_sequences_only() {
         let mut int_store = SpyStore::<IntMatcher>::new("f");
         let mut str_store = SpyStore::<StrMatcher>::new("g");
-        let mut seq = Sequence::new();
+        let seq = Sequence::new();
         seq.append_expectation(int_expectation(1, 1));
         seq.append_expectation(Expectation::new(StrMatcher("bob"), "g"));
         int_store.add_sequences(vec![seq.clone()]);

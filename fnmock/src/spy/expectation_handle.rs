@@ -73,8 +73,11 @@ impl<M: Matcher> ExpectationHandle<M> {
         self
     }
 
-    /// Add a sequence the expectation is appended to in drop.
-    pub fn in_sequence(mut self, sequence: &mut Sequence) -> Self {
+    /// Add the expectation to a [`Sequence`] as its next step. Chain it again to put the
+    /// expectation into several sequences.
+    ///
+    /// The step is appended when the handle is dropped, in the order the handles are dropped.
+    pub fn in_sequence(mut self, sequence: &Sequence) -> Self {
         if let Some(ref mut sequences) = self.sequences {
             sequences.push(sequence.clone());
         } else {
@@ -95,7 +98,7 @@ impl<M: Matcher> Drop for ExpectationHandle<M> {
             )
         };
 
-        let Some(mut sequences) = self.sequences.take() else {
+        let Some(sequences) = self.sequences.take() else {
             unreachable!(
                 "The sequences field in ExpectationHandle is None in drop. This cannot happen because the only place the sequences are taken is in drop and drop cannot be called twice."
             )
@@ -104,7 +107,7 @@ impl<M: Matcher> Drop for ExpectationHandle<M> {
         if sequences.is_empty() {
             (self.expectation_callback)(expectation);
         } else {
-            for sequence in sequences.iter_mut() {
+            for sequence in &sequences {
                 sequence.append_expectation(expectation.clone());
             }
             (self.sequence_callback)(sequences)

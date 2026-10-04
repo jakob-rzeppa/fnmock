@@ -17,23 +17,23 @@ mod spy {
     fn test_one_expectation_ordered_by_two_sequences() {
         let shared = shared_step_spy();
         let preceding = preceding_step_spy();
-        let mut seq_a = fnmock::Sequence::new();
-        let mut seq_b = fnmock::Sequence::new();
+        let seq_a = fnmock::Sequence::new();
+        let seq_b = fnmock::Sequence::new();
 
         // seq_a is "preceding(1), then shared(0)", seq_b is "preceding(2), then shared(0)".
         preceding
             .expect(fnmock::predicate::eq(1))
             .once()
-            .in_sequence(&mut seq_a);
+            .in_sequence(&seq_a);
         preceding
             .expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_b);
         shared
             .expect(fnmock::predicate::eq(0))
             .once()
-            .in_sequence(&mut seq_a)
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_a)
+            .in_sequence(&seq_b);
 
         preceding_step(1);
         preceding_step(2);
@@ -48,14 +48,14 @@ mod spy {
     #[test]
     fn test_one_call_satisfies_the_step_in_both_sequences() {
         let shared = shared_step_spy();
-        let mut seq_a = fnmock::Sequence::new();
-        let mut seq_b = fnmock::Sequence::new();
+        let seq_a = fnmock::Sequence::new();
+        let seq_b = fnmock::Sequence::new();
 
         shared
             .expect(fnmock::predicate::eq(0))
             .once()
-            .in_sequence(&mut seq_a)
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_a)
+            .in_sequence(&seq_b);
 
         shared_step(0);
 
@@ -69,22 +69,22 @@ mod spy {
     fn test_a_call_too_early_for_one_of_the_two_sequences_fails_assert() {
         let shared = shared_step_spy();
         let preceding = preceding_step_spy();
-        let mut seq_a = fnmock::Sequence::new();
-        let mut seq_b = fnmock::Sequence::new();
+        let seq_a = fnmock::Sequence::new();
+        let seq_b = fnmock::Sequence::new();
 
         preceding
             .expect(fnmock::predicate::eq(1))
             .once()
-            .in_sequence(&mut seq_a);
+            .in_sequence(&seq_a);
         preceding
             .expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_b);
         shared
             .expect(fnmock::predicate::eq(0))
             .once()
-            .in_sequence(&mut seq_a)
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_a)
+            .in_sequence(&seq_b);
 
         preceding_step(1);
         // In order for seq_a, but seq_b is still waiting for preceding(2), so seq_b drops it.
@@ -110,22 +110,22 @@ mod mock {
     fn test_one_expectation_ordered_by_two_sequences() {
         let shared = shared_step_mock();
         let preceding = preceding_step_mock();
-        let mut seq_a = fnmock::Sequence::new();
-        let mut seq_b = fnmock::Sequence::new();
+        let seq_a = fnmock::Sequence::new();
+        let seq_b = fnmock::Sequence::new();
 
         preceding
             .expect(fnmock::predicate::eq(1))
             .once()
-            .in_sequence(&mut seq_a);
+            .in_sequence(&seq_a);
         preceding
             .expect(fnmock::predicate::eq(2))
             .once()
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_b);
         shared
             .expect(fnmock::predicate::eq(0))
             .once()
-            .in_sequence(&mut seq_a)
-            .in_sequence(&mut seq_b);
+            .in_sequence(&seq_a)
+            .in_sequence(&seq_b);
 
         preceding_step(1);
         preceding_step(2);

@@ -64,15 +64,15 @@ fn test_clear_on_an_untouched_instantiation_is_a_noop() {
 fn test_clear_removes_only_its_instantiations_sequence_steps() {
     let spy_string = clear_generic_spy::<String>();
     let spy_i32 = clear_generic_spy::<i32>();
-    let mut seq = fnmock::Sequence::new_strict();
+    let seq = fnmock::Sequence::new_strict();
     spy_string
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
     spy_i32
         .expect(fnmock::predicate::always())
         .once()
-        .in_sequence(&mut seq);
+        .in_sequence(&seq);
 
     spy_string.clear();
 
