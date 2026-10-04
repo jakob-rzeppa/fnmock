@@ -152,8 +152,8 @@ mod tests {
         assert_eq!(res.module_parts.len(), 5);
 
         let expected_inline_call: syn::Block = parse_quote! {{
-            if let Some(implementation) = self::my_method_module::implementation() {
-                return implementation();
+            if let Some(__fnmock_call_implementation) = self::my_method_module::implementation() {
+                return __fnmock_call_implementation();
             }
         }};
         assert_eq!(
@@ -185,8 +185,8 @@ mod tests {
         );
 
         let expected_inline_call: syn::Block = parse_quote! {{
-            if let Some(implementation) = self::my_method_module::implementation::<S>() {
-                return implementation();
+            if let Some(__fnmock_call_implementation) = self::my_method_module::implementation::<S>() {
+                return __fnmock_call_implementation();
             }
         }};
         assert_eq!(
@@ -247,8 +247,8 @@ mod tests {
         let expected_method_one_accessor: syn::Ident = parse_quote!(method_one_fake);
         let expected_method_one_module: syn::Ident = parse_quote!(method_one_module);
         let expected_method_one_inline_call: syn::Block = parse_quote! {{
-            if let Some(implementation) = self::method_one_module::implementation() {
-                return implementation();
+            if let Some(__fnmock_call_implementation) = self::method_one_module::implementation() {
+                return __fnmock_call_implementation();
             }
         }};
         let method_one = &res.methods[0];
@@ -273,8 +273,8 @@ mod tests {
         let expected_method_two_accessor: syn::Ident = parse_quote!(method_two_fake);
         let expected_method_two_module: syn::Ident = parse_quote!(method_two_module);
         let expected_method_two_inline_call: syn::Block = parse_quote! {{
-            if let Some(implementation) = self::method_two_module::implementation() {
-                return implementation();
+            if let Some(__fnmock_call_implementation) = self::method_two_module::implementation() {
+                return __fnmock_call_implementation();
             }
         }};
         let method_two = &res.methods[1];
