@@ -5,13 +5,20 @@
 //! tuple and its matcher's own fields. A type that cannot be written in one of those positions is
 //! rejected here rather than at each use site.
 
+use syn::visit::Visit;
+
 /// Reject types that fnmock cannot name in generated code.
+///
+/// `impl Trait` is rejected at any depth (`Vec<impl Trait>`, `Option<impl Trait>`), since the
+/// enclosing type cannot be named either.
 pub fn check_type_is_supported(ty: &syn::Type) -> syn::Result<()> {
-    match ty {
-        syn::Type::ImplTrait(_) => Err(syn::Error::new_spanned(
-            ty,
+    if let Some(impl_trait) = find_impl_trait(ty) {
+        return Err(syn::Error::new_spanned(
+            impl_trait,
             "`impl Trait` is not supported. Please use a generic type parameter instead.",
-        )),
+        ));
+    }
+    match ty {
         syn::Type::Infer(_) => Err(syn::Error::new_spanned(
             ty,
             "The inferred type `_` is not supported. Please specify the type explicitly.",
@@ -26,4 +33,19 @@ pub fn check_type_is_supported(ty: &syn::Type) -> syn::Result<()> {
         )),
         _ => Ok(()),
     }
+}
+
+/// The outermost `impl Trait` in `ty`, if any.
+fn find_impl_trait(ty: &syn::Type) -> Option<&syn::TypeImplTrait> {
+    struct Finder<'ast>(Option<&'ast syn::TypeImplTrait>);
+
+    impl<'ast> Visit<'ast> for Finder<'ast> {
+        fn visit_type_impl_trait(&mut self, impl_trait: &'ast syn::TypeImplTrait) {
+            self.0.get_or_insert(impl_trait);
+        }
+    }
+
+    let mut finder = Finder(None);
+    finder.visit_type(ty);
+    finder.0
 }
