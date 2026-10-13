@@ -68,6 +68,7 @@ mod impl_block {
         mod lifetimes_borrowed_return;
         mod lifetimes_combined;
         mod lifetimes_param_type;
+        mod self_in_method_bounds;
         mod static_bound_via_impl_lifetime;
         mod static_bound_via_where_lifetime;
     }
