@@ -1,20 +1,12 @@
-error[E0425]: cannot find function `private_fn_mock` in module `super::definitions`
+error[E0603]: function `private_fn_mock` is private
   --> src/common/visibility/private_not_accessible_mock.cf.rs:14:29
    |
- 6 |     fn private_fn(a: String) -> String {
-   |     ---------------------------------- similarly named function `private_fn` defined here
-...
 14 |         super::definitions::private_fn_mock().setup(|a| format!("Fake {}", a));
-   |                             ^^^^^^^^^^^^^^^
+   |                             ^^^^^^^^^^^^^^^ private function
    |
-note: found an item that was configured out
+note: the function `private_fn_mock` is defined here
   --> src/common/visibility/private_not_accessible_mock.cf.rs:5:5
    |
  5 |     #[fnmock::mockable]
-   |     ^^^^^^^^^^^^^^^^^^^ the item is gated here
+   |     ^^^^^^^^^^^^^^^^^^^
    = note: this error originates in the attribute macro `fnmock::mockable` (in Nightly builds, run with -Z macro-backtrace for more info)
-help: a function with a similar name exists
-   |
-14 -         super::definitions::private_fn_mock().setup(|a| format!("Fake {}", a));
-14 +         super::definitions::private_fn().setup(|a| format!("Fake {}", a));
-   |

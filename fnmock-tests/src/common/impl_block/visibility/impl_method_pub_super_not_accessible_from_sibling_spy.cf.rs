@@ -1,23 +1,25 @@
-//! A pub(super) impl method should not be accessible from a sibling module,
-//! only from the parent module.
+//! A pub(super) impl method should not be accessible from outside its parent
+//! module, only from the parent module and its descendants.
 
-mod definitions {
-    pub struct MyStruct;
+mod parent {
+    pub mod definitions {
+        pub struct MyStruct;
 
-    #[fnmock::spyable]
-    impl MyStruct {
-        pub(super) fn parent_visible_method(&self, a: String) -> String {
-            format!("Real {}", a)
+        #[fnmock::spyable]
+        impl MyStruct {
+            pub(super) fn parent_visible_method(&self, a: String) -> String {
+                format!("Real {}", a)
+            }
         }
     }
 }
 
 mod sibling {
-    use super::definitions::MyStruct;
+    use crate::parent::definitions::MyStruct;
 
     fn try_access() {
         // Attempting to use the spy accessor for a pub(super) impl method
-        // from a sibling module should fail
+        // from outside the parent module should fail
         MyStruct::parent_visible_method_spy().expect_once();
     }
 }

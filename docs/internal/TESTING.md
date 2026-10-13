@@ -42,10 +42,20 @@ snapshot of the exact expected error. `compile_fail.rs` runs them all through
 ```rust
 #[test]
 fn compile_fail() {
+    let wrapper = concat!(env!("CARGO_MANIFEST_DIR"), "/cfg_test_rustc.sh");
+    unsafe { std::env::set_var("RUSTC_WORKSPACE_WRAPPER", wrapper) };
+
     let t = trybuild::TestCases::new();
     t.compile_fail("src/**/*.cf.rs");
 }
 ```
+
+trybuild builds each fixture as a plain binary, without `cfg(test)`, and discards `RUSTFLAGS`.
+Since everything the macros generate is `#[cfg(test)]`-gated, a fixture built that way would never
+see the accessors or the generated modules. `fnmock-tests/cfg_test_rustc.sh` is therefore set as
+`RUSTC_WORKSPACE_WRAPPER`: cargo only runs it for the fixture crate (not for `fnmock` or other
+dependencies), and it appends `--cfg test`. It is a POSIX shell script, so the compile-fail test
+doesn't run on Windows.
 
 They sit next to the passing tests for the same feature, and most unsupported constructs have a
 `_fake`, a `_spy` and a `_mock` variant.
