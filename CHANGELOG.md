@@ -19,6 +19,7 @@ together.
 - A parameter named `implementation` no longer breaks `fakeable` and `mockable`: the generated local that holds the fake no longer shadows it.
 - A function or method whose body is on one line (`fn f(a: i32) -> i32 { a }`) no longer triggers an `unused_braces` warning, which broke builds with `-D warnings`.
 - `impl Trait` nested inside a parameter or return type (`Vec<impl Display>`, `Option<impl Display>`) is now rejected with fnmock's `impl Trait` error instead of raw compiler errors from the generated code.
+- `Self` in a method's generic bounds (`fn f<T: Into<Self>>(t: T) -> Self`, inline or in a `where` clause) now compiles.
 
 ## [0.3.0] - 2026-09-24
 

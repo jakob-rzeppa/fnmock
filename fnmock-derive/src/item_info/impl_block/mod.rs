@@ -6,6 +6,7 @@ use crate::item_info::{
     generics::{GenericParamInfo, NormalizedGenerics, normalize_generics},
     original::OriginalImpl,
     param_info::{ParamInfo, extract_params},
+    replace_self::ReplaceSelf,
 };
 
 /// Everything shared across every method of one fakeable/spyable inherent impl block, plus one
@@ -101,11 +102,18 @@ fn extract_single_item_impl_info_for_method(
     let method_name = method.sig.ident.clone();
     let visibility = method.vis.clone();
 
+    // The bounds are redeclared on generated items where `Self` no longer names the impl block's
+    // type, so `T: Into<Self>` (inline or in a `where` clause) is rewritten first.
+    let mut generics = method.sig.generics.clone();
+    syn::visit_mut::VisitMut::visit_generics_mut(
+        &mut ReplaceSelf::new(&item_impl.self_ty),
+        &mut generics,
+    );
+
     // The impl block's provably-'static lifetimes are handed down, because the method's own
     // generics do not redeclare them: `impl<'a, T: 'a> Foo<T> where 'a: 'static` has to reach a
     // method that writes `U: 'a`.
-    let method_generics =
-        normalize_generics(&method.sig.generics, &struct_generics.static_lifetimes)?;
+    let method_generics = normalize_generics(&generics, &struct_generics.static_lifetimes)?;
     // We know, there can be no duplicate lifetimes between the struct and method, because Rust would not allow that in the first place.
     // Therefore, we can safely combine the lifetimes from the struct and method into a single list of lifetimes for the function pointer type.
     let lifetimes = struct_generics
@@ -288,6 +296,31 @@ mod tests {
             vec!["S".to_string()]
         );
         assert_eq!(info.functions.len(), 2);
+    }
+
+    #[test]
+    fn test_self_in_method_generic_bounds_is_replaced() {
+        let item_impl: syn::ItemImpl = syn::parse_quote! {
+            impl Foo {
+                fn inline<T: Into<Self> + 'static>(t: T) -> Self { t.into() }
+                fn in_where<T>(t: T) -> Self where T: Into<Self> + 'static { t.into() }
+            }
+        };
+
+        let info = ImplBlockInfo::try_from(item_impl).expect("valid impl block");
+
+        let expected: syn::GenericParam = syn::parse_quote!(T: Into<Foo> + 'static);
+        for function in &info.functions {
+            assert_eq!(
+                function.generic_param_infos[0]
+                    .param
+                    .to_token_stream()
+                    .to_string(),
+                expected.to_token_stream().to_string(),
+                "expected `Self` in the bounds of `{}` to be replaced",
+                function.method_name
+            );
+        }
     }
 
     #[test]
