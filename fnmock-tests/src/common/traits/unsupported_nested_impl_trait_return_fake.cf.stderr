@@ -1,0 +1,5 @@
+error: `impl Trait` is not supported. Please use a generic type parameter instead.
+ --> src/common/traits/unsupported_nested_impl_trait_return_fake.cf.rs:6:52
+  |
+6 | fn returns_nested_impl_trait(value: i32) -> Option<impl std::fmt::Display> {
+  |                                                    ^^^^^^^^^^^^^^^^^^^^^^

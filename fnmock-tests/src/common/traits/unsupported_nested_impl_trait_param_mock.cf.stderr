@@ -1,0 +1,5 @@
+error: `impl Trait` is not supported. Please use a generic type parameter instead.
+ --> src/common/traits/unsupported_nested_impl_trait_param_mock.cf.rs:6:40
+  |
+6 | fn takes_nested_impl_trait(values: Vec<impl std::fmt::Display>) -> usize {
+  |                                        ^^^^^^^^^^^^^^^^^^^^^^
