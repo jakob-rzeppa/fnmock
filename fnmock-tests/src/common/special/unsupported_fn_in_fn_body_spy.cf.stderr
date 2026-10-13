@@ -1,0 +1,9 @@
+error[E0433]: cannot find `inner_spy_module` in `self`
+ --> src/common/special/unsupported_fn_in_fn_body_spy.cf.rs:7:8
+  |
+6 |     #[fnmock::spyable]
+  |     ------------------ in this attribute macro expansion
+7 |     fn inner(a: i32) -> i32 {
+  |        ^^^^^ could not find `inner_spy_module` in the crate root
+  |
+  = note: this error originates in the attribute macro `fnmock::spyable` (in Nightly builds, run with -Z macro-backtrace for more info)

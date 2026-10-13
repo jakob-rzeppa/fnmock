@@ -1,0 +1,16 @@
+error[E0433]: cannot find `counter__get_fake_module` in `self`
+  --> src/common/impl_block/special/unsupported_impl_in_fn_body_fake.cf.rs:10:12
+   |
+ 8 |     #[fnmock::fakeable]
+   |     ------------------- in this attribute macro expansion
+ 9 |     impl Counter {
+10 |         fn get(&self) -> i32 {
+   |            ^^^ could not find `counter__get_fake_module` in the crate root
+   |
+   = note: this error originates in the attribute macro `fnmock::fakeable` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0425]: cannot find type `Counter` in this scope
+ --> src/common/impl_block/special/unsupported_impl_in_fn_body_fake.cf.rs:9:10
+  |
+9 |     impl Counter {
+  |          ^^^^^^^ not found in this scope
