@@ -17,6 +17,7 @@ together.
 ### Fixed
 
 - A parameter named `implementation` no longer breaks `fakeable` and `mockable`: the generated local that holds the fake no longer shadows it.
+- A function or method whose body is on one line (`fn f(a: i32) -> i32 { a }`) no longer triggers an `unused_braces` warning, which broke builds with `-D warnings`.
 
 ## [0.3.0] - 2026-09-24
 

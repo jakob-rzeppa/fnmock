@@ -161,4 +161,5 @@ mod visibility {
 
 mod attributes {
     mod doc_comments;
+    mod single_line_body;
 }
