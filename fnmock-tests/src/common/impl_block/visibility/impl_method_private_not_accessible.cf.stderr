@@ -1,8 +1,8 @@
-error[E0599]: no associated function or constant named `private_method_fake` found for struct `MyStruct` in the current scope
+error[E0624]: associated function `private_method_fake` is private
   --> src/common/impl_block/visibility/impl_method_private_not_accessible.cf.rs:20:19
    |
- 5 |     pub struct MyStruct;
-   |     ------------------- associated function or constant `private_method_fake` not found for this struct
+ 7 |     #[fnmock::fakeable]
+   |     ------------------- private associated function defined here
 ...
 20 |         MyStruct::private_method_fake().setup(|_, a| format!("Fake {}", a));
-   |                   ^^^^^^^^^^^^^^^^^^^ associated function or constant not found in `MyStruct`
+   |                   ^^^^^^^^^^^^^^^^^^^ private associated function
