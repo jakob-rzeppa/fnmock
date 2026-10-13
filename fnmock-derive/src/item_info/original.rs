@@ -13,18 +13,20 @@ impl OriginalFn {
     /// user's function, and the only way to get a `syn::ItemFn` back out of an [`OriginalFn`].
     pub fn into_fn_with_inline_call(self, inline_call: &syn::Block) -> syn::ItemFn {
         let mut item_fn = self.0;
-        let original_block = &item_fn.block;
-
-        let new_block: syn::Block = parse_quote!({
-            #[cfg(test)]
-            #inline_call
-
-            #original_block
-        });
-
-        item_fn.block = Box::new(new_block);
+        splice_inline_call(&mut item_fn.block, inline_call);
         item_fn
     }
+}
+
+/// Prepends `inline_call` under `#[cfg(test)]` to `block`'s statements. The original statements
+/// are spliced in directly rather than nested in their own block: a nested single-line body like
+/// `{ a }` would keep its user span and trip `unused_braces`.
+fn splice_inline_call(block: &mut syn::Block, inline_call: &syn::Block) {
+    let inline_stmt: syn::Stmt = parse_quote! {
+        #[cfg(test)]
+        #inline_call
+    };
+    block.stmts.insert(0, inline_stmt);
 }
 
 /// An inherent impl block's original items, before fnmock injects each method's inline call.
@@ -67,15 +69,7 @@ impl OriginalImpl {
                     )
                 })?;
 
-            let original_block = &method.block;
-            let new_block: syn::Block = parse_quote!({
-                #[cfg(test)]
-                #inline_call
-
-                #original_block
-            });
-
-            method.block = new_block;
+            splice_inline_call(&mut method.block, inline_call);
         }
 
         Ok(item_impl)
@@ -115,9 +109,7 @@ mod tests {
                     my_inline_call();
                 }
 
-                {
-                    42
-                }
+                42
             }
         };
 
@@ -156,9 +148,7 @@ mod tests {
                         my_inline_call();
                     }
 
-                    {
-                        42
-                    }
+                    42
                 }
             }
         };
@@ -202,9 +192,7 @@ mod tests {
                         inline_call_a();
                     }
 
-                    {
-                        1
-                    }
+                    1
                 }
 
                 fn method_b(&self) -> i32 {
@@ -314,9 +302,7 @@ mod tests {
                         inline_call_a();
                     }
 
-                    {
-                        1
-                    }
+                    1
                 }
 
                 fn method_b(&self) -> i32 {
@@ -325,9 +311,7 @@ mod tests {
                         inline_call_b();
                     }
 
-                    {
-                        2
-                    }
+                    2
                 }
             }
         };

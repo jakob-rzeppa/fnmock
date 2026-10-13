@@ -1,8 +1,8 @@
 error[E0425]: cannot find function `path_restricted_fn_spy` in module `crate::outer::inner`
   --> src/common/visibility/pub_in_path_not_accessible_from_outside_spy.cf.rs:16:30
    |
- 6 |         #[fnmock::spyable]
-   |         ------------------ similarly named function `path_restricted_fn` defined here
+ 7 |         pub(in crate::outer) fn path_restricted_fn(a: String) -> String {
+   |         --------------------------------------------------------------- similarly named function `path_restricted_fn` defined here
 ...
 16 |         crate::outer::inner::path_restricted_fn_spy().expect_once();
    |                              ^^^^^^^^^^^^^^^^^^^^^^

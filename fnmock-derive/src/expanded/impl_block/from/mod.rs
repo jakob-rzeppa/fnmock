@@ -137,9 +137,7 @@ mod tests {
                         inline_call();
                     }
 
-                    {
-                        1
-                    }
+                    1
                 }
 
                 pub fn method_two<T: Display + 'static>(&self, t: T) -> String {
@@ -148,9 +146,7 @@ mod tests {
                         inline_call();
                     }
 
-                    {
-                        format!("{} {}", self.0, t)
-                    }
+                    format!("{} {}", self.0, t)
                 }
             }
         };
