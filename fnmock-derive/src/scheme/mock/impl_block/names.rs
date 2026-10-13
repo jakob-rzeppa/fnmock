@@ -1,13 +1,16 @@
 use crate::scheme::common::names::{build_pascal_case_name, snake_case_path};
 
 /// Builds the mock module name, e.g. `UserService` + `get_user` -> `user_service__get_user_mock_module`.
+///
+/// Located at `method_name` so that resolution errors on the module path (e.g. when the impl block
+/// is declared inside a function body) point at the method rather than the attribute.
 pub fn build_module_name(struct_name: &syn::TypePath, method_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
         &format!(
             "{}__{method_name}_mock_module",
             snake_case_path(struct_name)
         ),
-        proc_macro2::Span::mixed_site(),
+        proc_macro2::Span::mixed_site().located_at(method_name.span()),
     )
 }
 

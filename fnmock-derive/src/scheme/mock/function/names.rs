@@ -1,10 +1,13 @@
 use crate::scheme::common::names::snake_to_pascal_case;
 
 /// Builds the mock module name, e.g. `get_user` -> `get_user_mock_module`.
+///
+/// Located at `fn_name` so that resolution errors on the module path (e.g. when the item is declared
+/// inside a function body) point at the function rather than the attribute.
 pub fn build_module_name(fn_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
         &format!("{fn_name}_mock_module"),
-        proc_macro2::Span::mixed_site(),
+        proc_macro2::Span::mixed_site().located_at(fn_name.span()),
     )
 }
 

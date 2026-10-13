@@ -1,0 +1,10 @@
+error[E0433]: cannot find `counter__get_spy_module` in `self`
+  --> src/common/impl_block/special/unsupported_impl_in_fn_body_spy.cf.rs:10:12
+   |
+ 8 |     #[fnmock::spyable]
+   |     ------------------ in this attribute macro expansion
+ 9 |     impl Counter {
+10 |         fn get(&self) -> i32 {
+   |            ^^^ could not find `counter__get_spy_module` in the crate root
+   |
+   = note: this error originates in the attribute macro `fnmock::spyable` (in Nightly builds, run with -Z macro-backtrace for more info)
