@@ -1,6 +1,7 @@
 mod params {
     mod by_ref_and_value;
     mod by_value;
+    mod elided_reference_in_container;
     mod implicit_lifetime;
     mod interior_mutability;
     mod mut_reference;

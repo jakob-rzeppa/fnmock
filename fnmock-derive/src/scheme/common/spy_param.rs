@@ -34,7 +34,11 @@ pub fn spy_param_type_with_lifetime_info(ty: &syn::Type) -> (syn::Type, bool) {
 /// always coerces down to match `'a`.
 pub fn spy_param_type_for_params_tuple(ty: &syn::Type, lifetime: &syn::Lifetime) -> syn::Type {
     let mut stripped = strip_one_reference(ty);
-    SubstituteLifetimes { lifetime }.visit_type_mut(&mut stripped);
+    SubstituteLifetimes {
+        lifetime,
+        fn_sugar_depth: 0,
+    }
+    .visit_type_mut(&mut stripped);
     stripped
 }
 
@@ -45,9 +49,14 @@ fn strip_one_reference(ty: &syn::Type) -> syn::Type {
     }
 }
 
-/// Replaces every non-`'static` lifetime in a `syn::Type` with `lifetime`.
+/// Replaces every non-`'static` lifetime in a `syn::Type` with `lifetime`, and gives `lifetime` to
+/// every reference that names none (`Option<&str>`).
+///
+/// A reference inside `Fn(..) -> ..` sugar or a `fn(..)` pointer is left alone: its elided
+/// lifetimes are higher-ranked, and pinning them to `lifetime` would change the type's meaning.
 struct SubstituteLifetimes<'a> {
     lifetime: &'a syn::Lifetime,
+    fn_sugar_depth: usize,
 }
 
 impl VisitMut for SubstituteLifetimes<'_> {
@@ -55,6 +64,28 @@ impl VisitMut for SubstituteLifetimes<'_> {
         if lifetime.ident != "static" {
             *lifetime = self.lifetime.clone();
         }
+    }
+
+    fn visit_type_reference_mut(&mut self, type_reference: &mut syn::TypeReference) {
+        if type_reference.lifetime.is_none() && self.fn_sugar_depth == 0 {
+            type_reference.lifetime = Some(self.lifetime.clone());
+        }
+        syn::visit_mut::visit_type_reference_mut(self, type_reference);
+    }
+
+    fn visit_type_bare_fn_mut(&mut self, bare_fn: &mut syn::TypeBareFn) {
+        self.fn_sugar_depth += 1;
+        syn::visit_mut::visit_type_bare_fn_mut(self, bare_fn);
+        self.fn_sugar_depth -= 1;
+    }
+
+    fn visit_parenthesized_generic_arguments_mut(
+        &mut self,
+        arguments: &mut syn::ParenthesizedGenericArguments,
+    ) {
+        self.fn_sugar_depth += 1;
+        syn::visit_mut::visit_parenthesized_generic_arguments_mut(self, arguments);
+        self.fn_sugar_depth -= 1;
     }
 }
 
@@ -86,26 +117,52 @@ pub fn type_needs_a_lifetime_outside_fn_sugar(ty: &syn::Type) -> bool {
         return true;
     }
 
-    struct HasNonStaticLifetime(bool);
+    struct HasNonStaticLifetime {
+        found: bool,
+        fn_sugar_depth: usize,
+    }
 
     impl<'ast> Visit<'ast> for HasNonStaticLifetime {
         fn visit_lifetime(&mut self, lifetime: &'ast syn::Lifetime) {
             if lifetime.ident != "static" {
-                self.0 = true;
+                self.found = true;
             }
         }
 
         fn visit_type_reference(&mut self, type_reference: &'ast syn::TypeReference) {
             if is_trait_object_without_explicit_lifetime(&type_reference.elem) {
-                self.0 = true;
+                self.found = true;
+            }
+            // A reference with no lifetime written (`Option<&str>`) still has one to name; but
+            // not inside `Fn(..)` sugar or a `fn(..)` pointer, whose elision is higher-ranked.
+            if type_reference.lifetime.is_none() && self.fn_sugar_depth == 0 {
+                self.found = true;
             }
             syn::visit::visit_type_reference(self, type_reference);
         }
+
+        fn visit_type_bare_fn(&mut self, bare_fn: &'ast syn::TypeBareFn) {
+            self.fn_sugar_depth += 1;
+            syn::visit::visit_type_bare_fn(self, bare_fn);
+            self.fn_sugar_depth -= 1;
+        }
+
+        fn visit_parenthesized_generic_arguments(
+            &mut self,
+            arguments: &'ast syn::ParenthesizedGenericArguments,
+        ) {
+            self.fn_sugar_depth += 1;
+            syn::visit::visit_parenthesized_generic_arguments(self, arguments);
+            self.fn_sugar_depth -= 1;
+        }
     }
 
-    let mut visitor = HasNonStaticLifetime(false);
+    let mut visitor = HasNonStaticLifetime {
+        found: false,
+        fn_sugar_depth: 0,
+    };
     visitor.visit_type(ty);
-    visitor.0
+    visitor.found
 }
 
 /// Whether `ty` is a `dyn Trait` with no explicit lifetime bound (`dyn Trait`, not
@@ -291,6 +348,30 @@ mod tests {
         }
 
         #[test]
+        fn test_reference_without_a_lifetime_in_a_container_is_substituted() {
+            let ty: syn::Type = syn::parse_quote!(Option<&str>);
+
+            assert_eq!(
+                spy_param_type_for_params_tuple(&ty, &lifetime_a())
+                    .to_token_stream()
+                    .to_string(),
+                quote::quote!(Option<&'a str>).to_string()
+            );
+        }
+
+        #[test]
+        fn test_reference_without_a_lifetime_in_fn_sugar_is_kept() {
+            let ty: syn::Type = syn::parse_quote!(Box<dyn Fn(&str) -> usize>);
+
+            assert_eq!(
+                spy_param_type_for_params_tuple(&ty, &lifetime_a())
+                    .to_token_stream()
+                    .to_string(),
+                quote::quote!(Box<dyn Fn(&str) -> usize>).to_string()
+            );
+        }
+
+        #[test]
         fn test_static_lifetime_is_kept() {
             let ty: syn::Type = syn::parse_quote!(Ref<'static>);
 
@@ -370,8 +451,30 @@ mod tests {
         }
 
         #[test]
-        fn test_bare_reference_without_a_lifetime_does_not_need_one() {
+        fn test_reference_without_a_lifetime_needs_one() {
+            // The type has already had its own outer reference stripped, so this `&str` is nested.
             let ty: syn::Type = syn::parse_quote!(&str);
+
+            assert!(type_needs_a_lifetime_outside_fn_sugar(&ty));
+        }
+
+        #[test]
+        fn test_reference_without_a_lifetime_in_a_container_needs_one() {
+            let ty: syn::Type = syn::parse_quote!(Option<&str>);
+
+            assert!(type_needs_a_lifetime_outside_fn_sugar(&ty));
+        }
+
+        #[test]
+        fn test_reference_without_a_lifetime_in_fn_sugar_does_not_need_one() {
+            let ty: syn::Type = syn::parse_quote!(Box<dyn Fn(&str) -> &str>);
+
+            assert!(!type_needs_a_lifetime_outside_fn_sugar(&ty));
+        }
+
+        #[test]
+        fn test_reference_without_a_lifetime_in_fn_pointer_does_not_need_one() {
+            let ty: syn::Type = syn::parse_quote!(fn(&str) -> usize);
 
             assert!(!type_needs_a_lifetime_outside_fn_sugar(&ty));
         }
