@@ -18,6 +18,7 @@ use crate::{
         },
     },
 };
+use syn::ext::IdentExt;
 
 mod names;
 
@@ -106,7 +107,7 @@ fn build_method_scheme(
     let module_name = build_module_name(struct_name, &method_name);
     let accessor_name = build_accessor_name(&method_name);
     let interface_name = build_interface_name(struct_name, &method_name)?;
-    let display_name = method_name.to_string();
+    let display_name = method_name.unraw().to_string();
 
     let (method_generic_params, combined_generic_param_infos) =
         combine_generic_param_infos(struct_generic_param_infos, method_generic_param_infos);

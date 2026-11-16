@@ -94,6 +94,7 @@ mod special {
     mod async_generic_function;
     mod extern_function;
     mod futures;
+    mod raw_identifiers;
     mod unsafe_function;
 }
 

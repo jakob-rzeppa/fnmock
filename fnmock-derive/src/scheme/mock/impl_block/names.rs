@@ -1,4 +1,5 @@
 use crate::scheme::common::names::{build_pascal_case_name, snake_case_path};
+use syn::ext::IdentExt;
 
 /// Builds the mock module name, e.g. `UserService` + `get_user` -> `user_service__get_user_mock_module`.
 ///
@@ -7,8 +8,9 @@ use crate::scheme::common::names::{build_pascal_case_name, snake_case_path};
 pub fn build_module_name(struct_name: &syn::TypePath, method_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
         &format!(
-            "{}__{method_name}_mock_module",
-            snake_case_path(struct_name)
+            "{}__{}_mock_module",
+            snake_case_path(struct_name),
+            method_name.unraw()
         ),
         proc_macro2::Span::mixed_site().located_at(method_name.span()),
     )
@@ -17,7 +19,7 @@ pub fn build_module_name(struct_name: &syn::TypePath, method_name: &syn::Ident) 
 /// Builds the accessor method name, e.g. `get_user` -> `get_user_mock`.
 pub fn build_accessor_name(method_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
-        &format!("{method_name}_mock"),
+        &format!("{}_mock", method_name.unraw()),
         proc_macro2::Span::mixed_site(),
     )
 }

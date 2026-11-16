@@ -1,4 +1,5 @@
 use crate::scheme::common::names::{build_pascal_case_name, snake_case_path};
+use syn::ext::IdentExt;
 
 /// Builds the spy module name, e.g. `UserService` + `get_user` -> `user_service__get_user_spy_module`.
 ///
@@ -6,7 +7,11 @@ use crate::scheme::common::names::{build_pascal_case_name, snake_case_path};
 /// is declared inside a function body) point at the method rather than the attribute.
 pub fn build_module_name(struct_name: &syn::TypePath, method_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
-        &format!("{}__{method_name}_spy_module", snake_case_path(struct_name)),
+        &format!(
+            "{}__{}_spy_module",
+            snake_case_path(struct_name),
+            method_name.unraw()
+        ),
         proc_macro2::Span::mixed_site().located_at(method_name.span()),
     )
 }
@@ -17,7 +22,7 @@ pub fn build_store_name(struct_name: &syn::TypePath, method_name: &syn::Ident) -
         &format!(
             "{}_{}_SPY_STORE",
             snake_case_path(struct_name).to_uppercase(),
-            method_name.to_string().to_uppercase()
+            method_name.unraw().to_string().to_uppercase()
         ),
         proc_macro2::Span::mixed_site(),
     )
@@ -26,7 +31,7 @@ pub fn build_store_name(struct_name: &syn::TypePath, method_name: &syn::Ident) -
 /// Builds the accessor method name, e.g. `get_user` -> `get_user_spy`.
 pub fn build_accessor_name(method_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
-        &format!("{method_name}_spy"),
+        &format!("{}_spy", method_name.unraw()),
         proc_macro2::Span::mixed_site(),
     )
 }

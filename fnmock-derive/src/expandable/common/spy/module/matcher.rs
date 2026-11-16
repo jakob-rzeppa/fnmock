@@ -1,4 +1,5 @@
 use quote::quote;
+use syn::ext::IdentExt;
 
 use crate::scheme::common::generic_scheme::GenericScheme;
 
@@ -105,7 +106,7 @@ pub fn build_matcher(
 
     let format_str = vec!["{}"; param_idents.len()].join(" && ");
     let display_args = param_idents.iter().map(|ident| {
-        let name = ident.to_string();
+        let name = ident.unraw().to_string();
         quote! { #ident.to_string().replacen("var", #name, 1) }
     });
     let predicates_display_arm = supports_expect.then(|| {
