@@ -1,4 +1,5 @@
 use crate::scheme::common::names::snake_to_pascal_case;
+use syn::ext::IdentExt;
 
 /// Builds the mock module name, e.g. `get_user` -> `get_user_mock_module`.
 ///
@@ -6,14 +7,17 @@ use crate::scheme::common::names::snake_to_pascal_case;
 /// inside a function body) point at the function rather than the attribute.
 pub fn build_module_name(fn_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
-        &format!("{fn_name}_mock_module"),
+        &format!("{}_mock_module", fn_name.unraw()),
         proc_macro2::Span::mixed_site().located_at(fn_name.span()),
     )
 }
 
 /// Builds the accessor function name, e.g. `get_user` -> `get_user_mock`.
 pub fn build_accessor_name(fn_name: &syn::Ident) -> syn::Ident {
-    syn::Ident::new(&format!("{fn_name}_mock"), proc_macro2::Span::mixed_site())
+    syn::Ident::new(
+        &format!("{}_mock", fn_name.unraw()),
+        proc_macro2::Span::mixed_site(),
+    )
 }
 
 /// Builds the interface struct name, e.g. `get_user` -> `GetUserMockInterface`.
@@ -21,7 +25,7 @@ pub fn build_interface_name(fn_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
         &format!(
             "{}MockInterface",
-            snake_to_pascal_case(&fn_name.to_string())
+            snake_to_pascal_case(&fn_name.unraw().to_string())
         ),
         proc_macro2::Span::mixed_site(),
     )

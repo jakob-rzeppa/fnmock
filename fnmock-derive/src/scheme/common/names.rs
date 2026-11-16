@@ -1,5 +1,7 @@
 //! Case and path-mangling helpers shared by the fake and spy name builders.
 
+use syn::ext::IdentExt;
+
 /// Mangles every segment of a type path into one snake_case string, e.g. `a::Config` ->
 /// `a__config`. The double underscore is used to separate segments to avoid collisions, e.g. `a::Config` and `a_config` would otherwise both mangle to `a_config`. Each segment's generic
 /// arguments (if any) are folded in too, e.g. `Foo<u8>` -> `foo_u8`, so that two impl blocks for
@@ -11,7 +13,7 @@ pub fn snake_case_path(struct_name: &syn::TypePath) -> String {
         .segments
         .iter()
         .map(|segment| {
-            let base = pascal_to_snake_case(&segment.ident.to_string());
+            let base = pascal_to_snake_case(&segment.ident.unraw().to_string());
             match mangle_generic_arguments(&segment.arguments) {
                 Some(suffix) => format!("{base}_{suffix}"),
                 None => base,
@@ -97,9 +99,26 @@ pub fn build_pascal_case_name(
     Ok(syn::Ident::new(
         &format!(
             "{}{}{suffix}",
-            last_segment.ident,
-            snake_to_pascal_case(&method_name.to_string())
+            last_segment.ident.unraw(),
+            snake_to_pascal_case(&method_name.unraw().to_string())
         ),
         proc_macro2::Span::mixed_site(),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_build_pascal_case_name_strips_raw_prefixes() {
+        let struct_name: syn::TypePath = syn::parse_quote!(r#Keywords);
+        let method_name: syn::Ident = syn::parse_quote!(r#loop);
+        assert_eq!(
+            build_pascal_case_name(&struct_name, &method_name, "Matcher")
+                .expect("valid struct path")
+                .to_string(),
+            "KeywordsLoopMatcher"
+        );
+    }
 }

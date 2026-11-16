@@ -13,6 +13,7 @@ use crate::{
         },
     },
 };
+use syn::ext::IdentExt;
 
 mod names;
 
@@ -55,7 +56,7 @@ impl TryFrom<FunctionInfo> for FunctionFakeScheme {
         let module_name = build_module_name(&value.name);
         let accessor_name = build_accessor_name(&value.name);
         let interface_name = build_interface_name(&value.name);
-        let display_name = value.name.to_string();
+        let display_name = value.name.unraw().to_string();
         let generic_scheme = build_generic_scheme(&value.generic_params);
 
         Ok(FunctionFakeScheme {

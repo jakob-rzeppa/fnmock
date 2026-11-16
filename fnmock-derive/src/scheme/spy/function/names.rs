@@ -1,4 +1,5 @@
 use crate::scheme::common::names::snake_to_pascal_case;
+use syn::ext::IdentExt;
 
 /// Builds the spy module name, e.g. `get_user` -> `get_user_spy_module`.
 ///
@@ -6,7 +7,7 @@ use crate::scheme::common::names::snake_to_pascal_case;
 /// inside a function body) point at the function rather than the attribute.
 pub fn build_module_name(fn_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
-        &format!("{fn_name}_spy_module"),
+        &format!("{}_spy_module", fn_name.unraw()),
         proc_macro2::Span::mixed_site().located_at(fn_name.span()),
     )
 }
@@ -14,20 +15,26 @@ pub fn build_module_name(fn_name: &syn::Ident) -> syn::Ident {
 /// Builds the `thread_local` store name, e.g. `get_user` -> `GET_USER_SPY_STORE`.
 pub fn build_store_name(fn_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
-        &format!("{}_SPY_STORE", fn_name.to_string().to_uppercase()),
+        &format!("{}_SPY_STORE", fn_name.unraw().to_string().to_uppercase()),
         proc_macro2::Span::mixed_site(),
     )
 }
 
 /// Builds the accessor function name, e.g. `get_user` -> `get_user_spy`.
 pub fn build_accessor_name(fn_name: &syn::Ident) -> syn::Ident {
-    syn::Ident::new(&format!("{fn_name}_spy"), proc_macro2::Span::mixed_site())
+    syn::Ident::new(
+        &format!("{}_spy", fn_name.unraw()),
+        proc_macro2::Span::mixed_site(),
+    )
 }
 
 /// Builds the interface struct name, e.g. `get_user` -> `GetUserSpyInterface`.
 pub fn build_interface_name(fn_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
-        &format!("{}SpyInterface", snake_to_pascal_case(&fn_name.to_string())),
+        &format!(
+            "{}SpyInterface",
+            snake_to_pascal_case(&fn_name.unraw().to_string())
+        ),
         proc_macro2::Span::mixed_site(),
     )
 }
@@ -35,7 +42,10 @@ pub fn build_interface_name(fn_name: &syn::Ident) -> syn::Ident {
 /// Builds the matcher enum name, e.g. `get_user` -> `GetUserMatcher`.
 pub fn build_matcher_name(fn_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
-        &format!("{}Matcher", snake_to_pascal_case(&fn_name.to_string())),
+        &format!(
+            "{}Matcher",
+            snake_to_pascal_case(&fn_name.unraw().to_string())
+        ),
         proc_macro2::Span::mixed_site(),
     )
 }
@@ -46,7 +56,7 @@ pub fn build_params_name(fn_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
         &format!(
             "{}MatcherParams",
-            snake_to_pascal_case(&fn_name.to_string())
+            snake_to_pascal_case(&fn_name.unraw().to_string())
         ),
         proc_macro2::Span::mixed_site(),
     )
