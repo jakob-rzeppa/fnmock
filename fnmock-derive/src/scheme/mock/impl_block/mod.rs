@@ -131,7 +131,7 @@ mod tests {
         assert_eq!(method.0.to_string(), "get_user");
         assert_eq!(
             method.1.common.module_name.to_string(),
-            "user_service__get_user_mock_module"
+            "UserService__get_user_mock_method_module"
         );
         assert_eq!(method.1.common.accessor_name.to_string(), "get_user_mock");
         assert_eq!(
@@ -140,11 +140,11 @@ mod tests {
         );
         assert_eq!(
             method.1.fake.store_name.to_string(),
-            "USER_SERVICE_GET_USER_FAKE_STORE"
+            "USERSERVICE_GET_USER_FAKE_STORE"
         );
         assert_eq!(
             method.1.spy.store_name.to_string(),
-            "USER_SERVICE_GET_USER_SPY_STORE"
+            "USERSERVICE_GET_USER_SPY_STORE"
         );
     }
 

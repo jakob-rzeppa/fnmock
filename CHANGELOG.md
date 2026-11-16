@@ -23,6 +23,7 @@ together.
 - A reference with no lifetime written, nested in a container (`Option<&str>`, `Vec<&str>`, `(&str, i32)`), now works for `spyable` and `mockable` instead of failing with raw compiler errors. It no longer has to be spelled `&'static`; match it with `expectf`.
 - Raw identifiers as function, method or type names (`fn r#type`) no longer make the macros panic. The generated names drop the `r#` prefix: `fn r#type` gets the accessor `type_fake`.
 - User items or macros named like std items (`Option`, `Some`, `Box`, `Into`, `Fn`, `Clone`, `ToString`, `format!`, `write!`, `thread_local!`) next to an annotated item no longer break the generated code, which now spells out the full std paths.
+- Items whose generated module names used to collide now compile side by side: a free fn `foo__bar` next to `impl Foo { fn bar }`, and impl blocks for types whose names differ only in case and underscores (`FooBar` and `Foo_bar`). Modules generated for methods keep the type name's case and carry a `_method` marker, e.g. `UserService__get_user_fake_method_module`.
 
 ## [0.3.0] - 2026-09-24
 
