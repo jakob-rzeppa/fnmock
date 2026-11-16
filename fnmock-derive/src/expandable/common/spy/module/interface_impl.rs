@@ -25,7 +25,7 @@ pub fn build_interface_impl(
     include_clear: bool,
 ) -> proc_macro2::TokenStream {
     let marker_construct = build_marker_construct(generic_scheme);
-    let expectf_signature = quote! { Fn(#(&#param_types),*) -> bool };
+    let expectf_signature = quote! { ::std::ops::Fn(#(&#param_types),*) -> bool };
 
     let expect_method = supports_expect.then(|| {
         let expect_params = param_idents.iter().zip(param_types).map(|(ident, ty)| {
@@ -54,7 +54,7 @@ pub fn build_interface_impl(
             }
         });
         let instantiation_name = quote! {
-            format!("{}::<{}>", #display_name, [#(#generic_display_fragments),*].join(", "))
+            ::std::format!("{}::<{}>", #display_name, [#(#generic_display_fragments),*].join(", "))
         };
         let expect_method = match expect_method {
             Some((expect_params, expect_construct_fields)) => quote! {
@@ -81,7 +81,7 @@ pub fn build_interface_impl(
                 pub fn expect(&self)
                     -> ::fnmock::ExpectationHandle<#matcher_type>
                 {
-                    unimplemented!("`.expect()` is not available on this spy; use `.expectf()` instead")
+                    ::std::unimplemented!("`.expect()` is not available on this spy; use `.expectf()` instead")
                 }
             },
         };
@@ -104,12 +104,12 @@ pub fn build_interface_impl(
 
                 /// Expect this many calls of this combination of generic arguments, whatever
                 /// their arguments.
-                pub fn expect_times(&self, call_range: impl Into<::fnmock::spy::call_range::CallRange>) {
+                pub fn expect_times(&self, call_range: impl ::std::convert::Into<::fnmock::spy::call_range::CallRange>) {
                     #store_name.with_borrow_mut(|store| {
                         store.with_store_mut::<#matcher_type, _>(
                             [#(#generic_keys),*],
                             || #instantiation_name,
-                            |spy| spy.set_total_call_range(call_range.into()),
+                            |spy| spy.set_total_call_range(::std::convert::Into::into(call_range)),
                         )
                     });
                 }
@@ -195,7 +195,7 @@ pub fn build_interface_impl(
                 pub fn expect(&self)
                     -> ::fnmock::ExpectationHandle<#matcher_name>
                 {
-                    unimplemented!("`.expect()` is not available on this spy; use `.expectf()` instead")
+                    ::std::unimplemented!("`.expect()` is not available on this spy; use `.expectf()` instead")
                 }
             },
         };
@@ -215,8 +215,8 @@ pub fn build_interface_impl(
                 }
 
                 /// Expect this many calls, whatever their arguments.
-                pub fn expect_times(&self, call_range: impl Into<::fnmock::spy::call_range::CallRange>) {
-                    #store_name.with_borrow_mut(|spy| spy.set_total_call_range(call_range.into()));
+                pub fn expect_times(&self, call_range: impl ::std::convert::Into<::fnmock::spy::call_range::CallRange>) {
+                    #store_name.with_borrow_mut(|spy| spy.set_total_call_range(::std::convert::Into::into(call_range)));
                 }
 
                 /// Expect exactly one call, whatever its arguments.
@@ -296,15 +296,15 @@ mod tests {
 
                 pub fn expectf(
                     &self,
-                    function: impl Fn() -> bool + 'static,
+                    function: impl ::std::ops::Fn() -> bool + 'static,
                 ) -> ::fnmock::ExpectationHandle<PingMatcher> {
                     self.set_expectation(PingMatcher::Function {
                         function: ::std::rc::Rc::new(function),
                     })
                 }
 
-                pub fn expect_times(&self, call_range: impl Into<::fnmock::spy::call_range::CallRange>) {
-                    PING_SPY_STORE.with_borrow_mut(|spy| spy.set_total_call_range(call_range.into()));
+                pub fn expect_times(&self, call_range: impl ::std::convert::Into<::fnmock::spy::call_range::CallRange>) {
+                    PING_SPY_STORE.with_borrow_mut(|spy| spy.set_total_call_range(::std::convert::Into::into(call_range)));
                 }
 
                 pub fn expect_once(&self) {

@@ -8,7 +8,7 @@ pub fn build_spy_store(
 ) -> proc_macro2::TokenStream {
     if let Some(generic_count) = generic_count {
         quote! {
-            thread_local! {
+            ::std::thread_local! {
                 static #store_name: ::std::cell::RefCell<::fnmock::spy::generic_spy_store::GenericSpyStore<#generic_count>> =
                     ::std::cell::RefCell::new(
                         ::fnmock::spy::generic_spy_store::GenericSpyStore::new(#display_name)
@@ -17,7 +17,7 @@ pub fn build_spy_store(
         }
     } else {
         quote! {
-            thread_local! {
+            ::std::thread_local! {
                 static #store_name: ::std::cell::RefCell<::fnmock::spy::spy_store::SpyStore<#matcher_type>> =
                     ::std::cell::RefCell::new(::fnmock::spy::spy_store::SpyStore::new(#display_name));
             }
@@ -40,7 +40,7 @@ mod tests {
         let res = build_spy_store(&store_name, display_name, &matcher_type, None);
 
         let expected = quote! {
-            thread_local! {
+            ::std::thread_local! {
                 static MY_FUNCTION_SPY_STORE: ::std::cell::RefCell<::fnmock::spy::spy_store::SpyStore<MyFunctionMatcher>> =
                     ::std::cell::RefCell::new(::fnmock::spy::spy_store::SpyStore::new("my_function"));
             }
@@ -58,7 +58,7 @@ mod tests {
         let res = build_spy_store(&store_name, display_name, &matcher_type, Some(2));
 
         let expected = quote! {
-            thread_local! {
+            ::std::thread_local! {
                 static MY_FUNCTION_SPY_STORE: ::std::cell::RefCell<::fnmock::spy::generic_spy_store::GenericSpyStore<2usize>> =
                     ::std::cell::RefCell::new(
                         ::fnmock::spy::generic_spy_store::GenericSpyStore::new("my_function")

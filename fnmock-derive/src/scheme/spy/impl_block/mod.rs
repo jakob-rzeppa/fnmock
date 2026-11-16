@@ -347,7 +347,10 @@ mod tests {
             method.1.spy.generic_display_fragments[0]
                 .to_token_stream()
                 .to_string(),
-            quote::quote!(::std::any::type_name::<S>().to_string()).to_string()
+            quote::quote!(::std::string::ToString::to_string(
+                ::std::any::type_name::<S>()
+            ))
+            .to_string()
         );
     }
 
@@ -367,7 +370,7 @@ mod tests {
             method.1.spy.generic_display_fragments[0]
                 .to_token_stream()
                 .to_string(),
-            quote::quote!(N.to_string()).to_string()
+            quote::quote!(::std::string::ToString::to_string(&N)).to_string()
         );
     }
 

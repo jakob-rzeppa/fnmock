@@ -48,9 +48,13 @@ pub fn build_generic_scheme(generic_params: &[GenericParamInfo]) -> Option<Gener
 pub fn build_generic_display_fragment(info: &GenericParamInfo) -> syn::Expr {
     let ident = &info.ident;
     match &info.param {
-        syn::GenericParam::Const(_) => syn::parse_quote! { #ident.to_string() },
+        syn::GenericParam::Const(_) => {
+            syn::parse_quote! { ::std::string::ToString::to_string(&#ident) }
+        }
         // Type params, and lifetimes (which `normalize_generics` never produces a
         // `GenericParamInfo` for in the first place).
-        _ => syn::parse_quote! { ::std::any::type_name::<#ident>().to_string() },
+        _ => {
+            syn::parse_quote! { ::std::string::ToString::to_string(::std::any::type_name::<#ident>()) }
+        }
     }
 }

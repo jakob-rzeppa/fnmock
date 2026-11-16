@@ -95,6 +95,7 @@ mod special {
     mod extern_function;
     mod futures;
     mod raw_identifiers;
+    mod shadowed_prelude_names;
     mod unsafe_function;
 }
 
