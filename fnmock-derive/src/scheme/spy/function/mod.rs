@@ -166,7 +166,10 @@ mod tests {
             scheme.spy.generic_display_fragments[0]
                 .to_token_stream()
                 .to_string(),
-            quote::quote!(::std::any::type_name::<T>().to_string()).to_string()
+            quote::quote!(::std::string::ToString::to_string(
+                ::std::any::type_name::<T>()
+            ))
+            .to_string()
         );
     }
 
@@ -186,7 +189,7 @@ mod tests {
             scheme.spy.generic_display_fragments[0]
                 .to_token_stream()
                 .to_string(),
-            quote::quote!(C.to_string()).to_string()
+            quote::quote!(::std::string::ToString::to_string(&C)).to_string()
         );
     }
 

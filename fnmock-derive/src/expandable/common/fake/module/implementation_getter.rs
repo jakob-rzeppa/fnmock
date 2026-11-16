@@ -11,15 +11,15 @@ pub fn build_implementation_getter(
         let generic_params = &generic_scheme.params;
         let generic_keys = &generic_scheme.keys;
         quote! {
-            pub(super) fn implementation<#(#generic_params),*>() -> Option<::std::rc::Rc<Box<dyn #fn_closure_trait>>> {
+            pub(super) fn implementation<#(#generic_params),*>() -> ::std::option::Option<::std::rc::Rc<::std::boxed::Box<dyn #fn_closure_trait>>> {
                 #store_name.with_borrow(|fake| {
-                    fake.get_for::<Box<dyn #fn_closure_trait>>([#(#generic_keys),*])
+                    fake.get_for::<::std::boxed::Box<dyn #fn_closure_trait>>([#(#generic_keys),*])
                 })
             }
         }
     } else {
         quote! {
-            pub(super) fn implementation() -> Option<::std::rc::Rc<dyn #fn_closure_trait>> {
+            pub(super) fn implementation() -> ::std::option::Option<::std::rc::Rc<dyn #fn_closure_trait>> {
                 #store_name.with(|store| store.borrow().get())
             }
         }
@@ -40,7 +40,7 @@ mod tests {
         let res = build_implementation_getter(&store_name, &fn_closure_trait, None);
 
         let expected = quote! {
-            pub(super) fn implementation() -> Option<::std::rc::Rc<dyn Fn(i32) -> bool>> {
+            pub(super) fn implementation() -> ::std::option::Option<::std::rc::Rc<dyn Fn(i32) -> bool>> {
                 MY_FUNCTION_STORE.with(|store| store.borrow().get())
             }
         };
@@ -63,9 +63,9 @@ mod tests {
             build_implementation_getter(&store_name, &fn_closure_trait, Some(&generic_scheme));
 
         let expected = quote! {
-            pub(super) fn implementation<T>() -> Option<::std::rc::Rc<Box<dyn Fn(T) -> bool>>> {
+            pub(super) fn implementation<T>() -> ::std::option::Option<::std::rc::Rc<::std::boxed::Box<dyn Fn(T) -> bool>>> {
                 MY_FUNCTION_STORE.with_borrow(|fake| {
-                    fake.get_for::<Box<dyn Fn(T) -> bool>>([::std::any::TypeId::of::<T>()])
+                    fake.get_for::<::std::boxed::Box<dyn Fn(T) -> bool>>([::std::any::TypeId::of::<T>()])
                 })
             }
         };
@@ -88,9 +88,9 @@ mod tests {
             build_implementation_getter(&store_name, &fn_closure_trait, Some(&generic_scheme));
 
         let expected = quote! {
-            pub(super) fn implementation<T: Display, const C: u64>() -> Option<::std::rc::Rc<Box<dyn Fn()>>> {
+            pub(super) fn implementation<T: Display, const C: u64>() -> ::std::option::Option<::std::rc::Rc<::std::boxed::Box<dyn Fn()>>> {
                 MY_FUNCTION_STORE.with_borrow(|fake| {
-                    fake.get_for::<Box<dyn Fn()>>([::std::any::TypeId::of::<T>(), C])
+                    fake.get_for::<::std::boxed::Box<dyn Fn()>>([::std::any::TypeId::of::<T>(), C])
                 })
             }
         };

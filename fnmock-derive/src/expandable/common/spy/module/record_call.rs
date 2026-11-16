@@ -45,7 +45,7 @@ pub fn build_record_call(
                 #store_name.with_borrow_mut(|store| {
                     store.with_store_mut::<#matcher_type, _>(
                         [#(#generic_keys),*],
-                        || format!("{}::<{}>", #display_name, [#(#generic_display_fragments),*].join(", ")),
+                        || ::std::format!("{}::<{}>", #display_name, [#(#generic_display_fragments),*].join(", ")),
                         |spy| spy.record_call(&params),
                     )
                 })
@@ -164,7 +164,7 @@ mod tests {
                 FOO_SPY_STORE.with_borrow_mut(|store| {
                     store.with_store_mut::<FooMatcher<T>, _>(
                         [::fnmock::common::generic_key::GenericKeyPart::Type(::std::any::TypeId::of::<T>())],
-                        || format!("{}::<{}>", "foo", [::std::any::type_name::<T>().to_string()].join(", ")),
+                        || ::std::format!("{}::<{}>", "foo", [::std::any::type_name::<T>().to_string()].join(", ")),
                         |spy| spy.record_call(&params),
                     )
                 })

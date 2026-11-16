@@ -17,7 +17,7 @@ pub fn build_inline_call(
     if let Some(generic_idents) = generic_idents {
         parse_quote! {
             {
-                if let Some(#implementation) = self::#module_name::implementation::<#(#generic_idents),*>() {
+                if let ::std::option::Option::Some(#implementation) = self::#module_name::implementation::<#(#generic_idents),*>() {
                     return #implementation(#(#fake_call_values),*);
                 }
             }
@@ -25,7 +25,7 @@ pub fn build_inline_call(
     } else {
         parse_quote! {
             {
-                if let Some(#implementation) = self::#module_name::implementation() {
+                if let ::std::option::Option::Some(#implementation) = self::#module_name::implementation() {
                     return #implementation(#(#fake_call_values),*);
                 }
             }
@@ -48,7 +48,7 @@ mod tests {
         let res = build_inline_call(&module_name, &fake_call_values, None);
 
         let expected: syn::Block = parse_quote! {{
-            if let Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
+            if let ::std::option::Option::Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
                 return __fnmock_call_implementation();
             }
         }};
@@ -67,7 +67,7 @@ mod tests {
         let res = build_inline_call(&module_name, &fake_call_values, None);
 
         let expected: syn::Block = parse_quote! {{
-            if let Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
+            if let ::std::option::Option::Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
                 return __fnmock_call_implementation(a);
             }
         }};
@@ -93,7 +93,7 @@ mod tests {
         let res = build_inline_call(&module_name, &fake_call_values, None);
 
         let expected: syn::Block = parse_quote! {{
-            if let Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
+            if let ::std::option::Option::Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
                 return __fnmock_call_implementation(a, (b, c), [d]);
             }
         }};
@@ -113,7 +113,7 @@ mod tests {
         let res = build_inline_call(&module_name, &fake_call_values, Some(&generic_idents));
 
         let expected: syn::Block = parse_quote! {{
-            if let Some(__fnmock_call_implementation) = self::my_function_module::implementation::<T>() {
+            if let ::std::option::Option::Some(__fnmock_call_implementation) = self::my_function_module::implementation::<T>() {
                 return __fnmock_call_implementation();
             }
         }};
@@ -136,7 +136,7 @@ mod tests {
         let res = build_inline_call(&module_name, &fake_call_values, Some(&generic_idents));
 
         let expected: syn::Block = parse_quote! {{
-            if let Some(__fnmock_call_implementation) = self::my_function_module::implementation::<T, U>() {
+            if let ::std::option::Option::Some(__fnmock_call_implementation) = self::my_function_module::implementation::<T, U>() {
                 return __fnmock_call_implementation(a, b);
             }
         }};
@@ -156,7 +156,7 @@ mod tests {
         let res = build_inline_call(&module_name, &fake_call_values, Some(&generic_idents));
 
         let expected: syn::Block = parse_quote! {{
-            if let Some(__fnmock_call_implementation) = self::my_function_module::implementation::<>() {
+            if let ::std::option::Option::Some(__fnmock_call_implementation) = self::my_function_module::implementation::<>() {
                 return __fnmock_call_implementation();
             }
         }};
@@ -178,7 +178,7 @@ mod tests {
         let res = build_inline_call(&module_name, &fake_call_values, None);
 
         let expected: syn::Block = parse_quote! {{
-            if let Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
+            if let ::std::option::Option::Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
                 return __fnmock_call_implementation((a, b));
             }
         }};
@@ -200,7 +200,7 @@ mod tests {
         let res = build_inline_call(&module_name, &fake_call_values, None);
 
         let expected: syn::Block = parse_quote! {{
-            if let Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
+            if let ::std::option::Option::Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
                 return __fnmock_call_implementation([a, b]);
             }
         }};
@@ -225,7 +225,7 @@ mod tests {
         let res = build_inline_call(&module_name, &fake_call_values, None);
 
         let expected: syn::Block = parse_quote! {{
-            if let Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
+            if let ::std::option::Option::Some(__fnmock_call_implementation) = self::my_function_module::implementation() {
                 return __fnmock_call_implementation(([a, b], (c)));
             }
         }};

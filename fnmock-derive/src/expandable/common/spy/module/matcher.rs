@@ -77,7 +77,7 @@ pub fn build_matcher(
             },
         }
     });
-    let function_signature = quote! { Fn(#(&#param_types),*) -> bool };
+    let function_signature = quote! { ::std::ops::Fn(#(&#param_types),*) -> bool };
 
     let params_fields = params_tuple_types
         .iter()
@@ -107,12 +107,12 @@ pub fn build_matcher(
     let format_str = vec!["{}"; param_idents.len()].join(" && ");
     let display_args = param_idents.iter().map(|ident| {
         let name = ident.unraw().to_string();
-        quote! { #ident.to_string().replacen("var", #name, 1) }
+        quote! { ::std::string::ToString::to_string(#ident).replacen("var", #name, 1) }
     });
     let predicates_display_arm = supports_expect.then(|| {
         quote! {
             Self::Predicates { #(#predicates_pattern_fields),* } => {
-                write!(__fnmock_fmt, #format_str, #(#display_args),*)
+                ::std::write!(__fnmock_fmt, #format_str, #(#display_args),*)
             },
         }
     });
@@ -127,14 +127,15 @@ pub fn build_matcher(
     let (derive_clone, clone_impl) = if has_marker {
         let function_clone_pattern =
             pattern_fields_binding_marker(std::slice::from_ref(&function_field_ident()));
-        let function_clone_fields =
-            quote! { function: function.clone(), _marker: _marker.clone(), };
+        let function_clone_fields = quote! { function: ::std::clone::Clone::clone(function), _marker: ::std::clone::Clone::clone(_marker), };
         let predicates_clone_arm = supports_expect.then(|| {
             let predicates_clone_pattern = pattern_fields_binding_marker(param_idents);
             let predicates_clone_fields = param_idents
                 .iter()
-                .map(|ident| quote! { #ident: #ident.clone(), })
-                .chain(std::iter::once(quote! { _marker: _marker.clone(), }));
+                .map(|ident| quote! { #ident: ::std::clone::Clone::clone(#ident), })
+                .chain(std::iter::once(
+                    quote! { _marker: ::std::clone::Clone::clone(_marker), },
+                ));
             quote! {
                 Self::Predicates { #(#predicates_clone_pattern),* } => Self::Predicates {
                     #(#predicates_clone_fields)*
@@ -158,7 +159,7 @@ pub fn build_matcher(
             },
         )
     } else {
-        (quote! { #[derive(Clone)] }, quote! {})
+        (quote! { #[derive(::std::clone::Clone)] }, quote! {})
     };
 
     quote! {
@@ -194,7 +195,7 @@ pub fn build_matcher(
                 match self {
                     #predicates_display_arm
                     Self::Function { .. } => {
-                        write!(__fnmock_fmt, "a function predicate")
+                        ::std::write!(__fnmock_fmt, "a function predicate")
                     }
                 }
             }
@@ -347,14 +348,14 @@ mod tests {
         let res = non_generic_matcher();
 
         let expected = quote! {
-            #[derive(Clone)]
+            #[derive(::std::clone::Clone)]
             pub enum GetUserMatcher {
                 Predicates {
                     id: ::std::rc::Rc<dyn ::fnmock::Predicate<String>>,
                     uuid: ::std::rc::Rc<dyn ::fnmock::Predicate<str>>,
                 },
                 Function {
-                    function: ::std::rc::Rc<dyn Fn(&String, &str) -> bool>,
+                    function: ::std::rc::Rc<dyn ::std::ops::Fn(&String, &str) -> bool>,
                 },
             }
 
@@ -378,15 +379,15 @@ mod tests {
                 fn fmt(&self, __fnmock_fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                     match self {
                         Self::Predicates { id, uuid } => {
-                            write!(
+                            ::std::write!(
                                 __fnmock_fmt,
                                 "{} && {}",
-                                id.to_string().replacen("var", "id", 1),
-                                uuid.to_string().replacen("var", "uuid", 1)
+                                ::std::string::ToString::to_string(id).replacen("var", "id", 1),
+                                ::std::string::ToString::to_string(uuid).replacen("var", "uuid", 1)
                             )
                         },
                         Self::Function { .. } => {
-                            write!(__fnmock_fmt, "a function predicate")
+                            ::std::write!(__fnmock_fmt, "a function predicate")
                         }
                     }
                 }
@@ -404,11 +405,11 @@ mod tests {
         let res = build_matcher(&matcher_name, &params_name, &[], &[], &[], None, true);
 
         let expected = quote! {
-            #[derive(Clone)]
+            #[derive(::std::clone::Clone)]
             pub enum PingMatcher {
                 Predicates {},
                 Function {
-                    function: ::std::rc::Rc<dyn Fn() -> bool>,
+                    function: ::std::rc::Rc<dyn ::std::ops::Fn() -> bool>,
                 },
             }
 
@@ -431,10 +432,10 @@ mod tests {
                 fn fmt(&self, __fnmock_fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                     match self {
                         Self::Predicates {} => {
-                            write!(__fnmock_fmt, "",)
+                            ::std::write!(__fnmock_fmt, "",)
                         },
                         Self::Function { .. } => {
-                            write!(__fnmock_fmt, "a function predicate")
+                            ::std::write!(__fnmock_fmt, "a function predicate")
                         }
                     }
                 }
@@ -474,7 +475,7 @@ mod tests {
                     _marker: ::std::marker::PhantomData<(T)>,
                 },
                 Function {
-                    function: ::std::rc::Rc<dyn Fn(&T) -> bool>,
+                    function: ::std::rc::Rc<dyn ::std::ops::Fn(&T) -> bool>,
                     _marker: ::std::marker::PhantomData<(T)>,
                 },
             }
@@ -483,12 +484,12 @@ mod tests {
                 fn clone(&self) -> Self {
                     match self {
                         Self::Predicates { a, _marker } => Self::Predicates {
-                            a: a.clone(),
-                            _marker: _marker.clone(),
+                            a: ::std::clone::Clone::clone(a),
+                            _marker: ::std::clone::Clone::clone(_marker),
                         },
                         Self::Function { function, _marker } => Self::Function {
-                            function: function.clone(),
-                            _marker: _marker.clone(),
+                            function: ::std::clone::Clone::clone(function),
+                            _marker: ::std::clone::Clone::clone(_marker),
                         },
                     }
                 }
@@ -514,10 +515,10 @@ mod tests {
                 fn fmt(&self, __fnmock_fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                     match self {
                         Self::Predicates { a, .. } => {
-                            write!(__fnmock_fmt, "{}", a.to_string().replacen("var", "a", 1))
+                            ::std::write!(__fnmock_fmt, "{}", ::std::string::ToString::to_string(a).replacen("var", "a", 1))
                         },
                         Self::Function { .. } => {
-                            write!(__fnmock_fmt, "a function predicate")
+                            ::std::write!(__fnmock_fmt, "a function predicate")
                         }
                     }
                 }
@@ -591,10 +592,10 @@ mod tests {
         );
 
         let expected = quote! {
-            #[derive(Clone)]
+            #[derive(::std::clone::Clone)]
             pub enum LifetimeParamTypeMatcher {
                 Function {
-                    function: ::std::rc::Rc<dyn Fn(&Ref<>) -> bool>,
+                    function: ::std::rc::Rc<dyn ::std::ops::Fn(&Ref<>) -> bool>,
                 },
             }
 
@@ -616,7 +617,7 @@ mod tests {
                 fn fmt(&self, __fnmock_fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                     match self {
                         Self::Function { .. } => {
-                            write!(__fnmock_fmt, "a function predicate")
+                            ::std::write!(__fnmock_fmt, "a function predicate")
                         }
                     }
                 }

@@ -22,6 +22,7 @@ together.
 - `Self` in a method's generic bounds (`fn f<T: Into<Self>>(t: T) -> Self`, inline or in a `where` clause) now compiles.
 - A reference with no lifetime written, nested in a container (`Option<&str>`, `Vec<&str>`, `(&str, i32)`), now works for `spyable` and `mockable` instead of failing with raw compiler errors. It no longer has to be spelled `&'static`; match it with `expectf`.
 - Raw identifiers as function, method or type names (`fn r#type`) no longer make the macros panic. The generated names drop the `r#` prefix: `fn r#type` gets the accessor `type_fake`.
+- User items or macros named like std items (`Option`, `Some`, `Box`, `Into`, `Fn`, `Clone`, `ToString`, `format!`, `write!`, `thread_local!`) next to an annotated item no longer break the generated code, which now spells out the full std paths.
 
 ## [0.3.0] - 2026-09-24
 

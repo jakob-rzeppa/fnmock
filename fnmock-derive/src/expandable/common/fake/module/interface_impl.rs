@@ -40,7 +40,7 @@ pub fn build_interface_impl(
                 /// the real body, and the const value isn't accessible inside the closure.
                 pub fn setup(&self, function: impl #fn_closure_trait + 'static) {
                     #store_name.with_borrow_mut(|fake| {
-                        fake.setup_for::<Box<dyn #fn_closure_trait>>([#(#generic_keys),*], Box::new(function));
+                        fake.setup_for::<::std::boxed::Box<dyn #fn_closure_trait>>([#(#generic_keys),*], ::std::boxed::Box::new(function));
                     });
                 }
 
@@ -165,7 +165,7 @@ mod tests {
             impl<T> MyFunctionInterface<T> {
                 pub fn setup(&self, function: impl Fn(i32) -> bool + 'static) {
                     MY_FUNCTION_STORE.with_borrow_mut(|fake| {
-                        fake.setup_for::<Box<dyn Fn(i32) -> bool>>([::std::any::TypeId::of::<T>()], Box::new(function));
+                        fake.setup_for::<::std::boxed::Box<dyn Fn(i32) -> bool>>([::std::any::TypeId::of::<T>()], ::std::boxed::Box::new(function));
                     });
                 }
 
@@ -210,7 +210,7 @@ mod tests {
             impl<T, const C: u32> MyFunctionInterface<T, C> {
                 pub fn setup(&self, function: impl Fn() + 'static) {
                     MY_FUNCTION_STORE.with_borrow_mut(|fake| {
-                        fake.setup_for::<Box<dyn Fn()>>([::std::any::TypeId::of::<T>(), C], Box::new(function));
+                        fake.setup_for::<::std::boxed::Box<dyn Fn()>>([::std::any::TypeId::of::<T>(), C], ::std::boxed::Box::new(function));
                     });
                 }
 

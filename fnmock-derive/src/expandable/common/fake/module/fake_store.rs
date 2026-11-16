@@ -8,7 +8,7 @@ pub fn build_fake_store(
 ) -> proc_macro2::TokenStream {
     if let Some(generic_count) = generic_count {
         quote! {
-            thread_local! {
+            ::std::thread_local! {
                 static #store_name: ::std::cell::RefCell<::fnmock::fake::generic_fake_store::GenericFakeStore<#generic_count>> =
                     ::std::cell::RefCell::new(
                         ::fnmock::fake::generic_fake_store::GenericFakeStore::new(#display_name)
@@ -17,7 +17,7 @@ pub fn build_fake_store(
         }
     } else {
         quote! {
-            thread_local! {
+            ::std::thread_local! {
                 static #store_name: ::std::cell::RefCell<::fnmock::fake::fake_store::FakeStore<::std::rc::Rc<dyn #fn_closure_trait>>> =
                     ::std::cell::RefCell::new(::fnmock::fake::fake_store::FakeStore::new(#display_name));
             }
@@ -40,7 +40,7 @@ mod tests {
         let res = build_fake_store(&store_name, display_name, &fn_closure_trait, None);
 
         let expected = quote! {
-            thread_local! {
+            ::std::thread_local! {
                 static MY_FUNCTION_STORE: ::std::cell::RefCell<::fnmock::fake::fake_store::FakeStore<::std::rc::Rc<dyn Fn(i32) -> bool>>> =
                     ::std::cell::RefCell::new(::fnmock::fake::fake_store::FakeStore::new("my_function"));
             }
@@ -58,7 +58,7 @@ mod tests {
         let res = build_fake_store(&store_name, display_name, &fn_closure_trait, Some(2));
 
         let expected = quote! {
-            thread_local! {
+            ::std::thread_local! {
                 static MY_FUNCTION_STORE: ::std::cell::RefCell<::fnmock::fake::generic_fake_store::GenericFakeStore<2usize>> =
                     ::std::cell::RefCell::new(
                         ::fnmock::fake::generic_fake_store::GenericFakeStore::new("my_function")

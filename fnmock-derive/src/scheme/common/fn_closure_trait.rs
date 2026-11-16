@@ -28,9 +28,9 @@ pub fn build_fn_closure_trait(
     }
 
     let fn_trait_tokens: proc_macro2::TokenStream = if lifetimes.is_empty() {
-        quote! { Fn(#(#params),*) #output }
+        quote! { ::std::ops::Fn(#(#params),*) #output }
     } else {
-        quote! { for<#(#lifetimes),*> Fn(#(#params),*) #output }
+        quote! { for<#(#lifetimes),*> ::std::ops::Fn(#(#params),*) #output }
     };
     syn::parse2(fn_trait_tokens)
 }
@@ -54,7 +54,7 @@ mod tests {
         let bound = build_fn_closure_trait(&lifetimes, &params, &output)
             .expect("expected build_fn_closure_trait to succeed");
 
-        let expected = parse_trait_bound("Fn(i32, &str) -> bool");
+        let expected = parse_trait_bound("::std::ops::Fn(i32, &str) -> bool");
         assert_eq!(
             bound.to_token_stream().to_string(),
             expected.to_token_stream().to_string()
@@ -70,7 +70,7 @@ mod tests {
         let bound = build_fn_closure_trait(&lifetimes, &params, &output)
             .expect("expected build_fn_closure_trait to succeed");
 
-        let expected = parse_trait_bound("for<'a> Fn(&'a str) -> bool");
+        let expected = parse_trait_bound("for<'a> ::std::ops::Fn(&'a str) -> bool");
         assert_eq!(
             bound.to_token_stream().to_string(),
             expected.to_token_stream().to_string()
