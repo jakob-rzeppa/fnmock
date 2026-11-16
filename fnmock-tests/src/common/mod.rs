@@ -30,6 +30,7 @@ mod impl_block {
     mod associated_function;
     mod async_method;
     mod basic;
+    mod mangled_name_isolation;
     mod module_path_isolation;
     mod multiple_methods;
     mod same_method_name_isolation;

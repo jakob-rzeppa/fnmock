@@ -2,18 +2,22 @@
 
 use syn::ext::IdentExt;
 
-/// Mangles every segment of a type path into one snake_case string, e.g. `a::Config` ->
-/// `a__config`. The double underscore is used to separate segments to avoid collisions, e.g. `a::Config` and `a_config` would otherwise both mangle to `a_config`. Each segment's generic
-/// arguments (if any) are folded in too, e.g. `Foo<u8>` -> `foo_u8`, so that two impl blocks for
-/// the same struct at different concrete type arguments (e.g. `Foo<u8>` and `Foo<u16>`) don't
-/// mangle to the same identifier.
-pub fn snake_case_path(struct_name: &syn::TypePath) -> String {
+/// Mangles a type path into one identifier fragment, e.g. `a::Config` -> `a__Config`, for the
+/// names of the modules generated for impl methods.
+///
+/// Segments keep their case: converting them to snake_case would map different type names to the
+/// same string (`FooBar` and `Foo_bar` both become `foo_bar`). The double underscore separates
+/// segments, so `a::Config` and a type `a_Config` stay distinct. Each segment's generic arguments
+/// (if any) are folded in too, e.g. `Foo<u8>` -> `Foo_u8`, so that two impl blocks for the same
+/// struct at different concrete type arguments (e.g. `Foo<u8>` and `Foo<u16>`) don't mangle to the
+/// same identifier.
+pub fn mangle_type_path(struct_name: &syn::TypePath) -> String {
     struct_name
         .path
         .segments
         .iter()
         .map(|segment| {
-            let base = pascal_to_snake_case(&segment.ident.unraw().to_string());
+            let base = segment.ident.unraw().to_string();
             match mangle_generic_arguments(&segment.arguments) {
                 Some(suffix) => format!("{base}_{suffix}"),
                 None => base,
@@ -23,7 +27,7 @@ pub fn snake_case_path(struct_name: &syn::TypePath) -> String {
         .join("__")
 }
 
-/// Mangles a path segment's generic arguments (if any) into a snake_case suffix, e.g. `<u8>` ->
+/// Mangles a path segment's generic arguments (if any) into a suffix, e.g. `<u8>` ->
 /// `u8`, `<u8, U>` -> `u8_u`. Returns `None` for `PathArguments::None` so non-generic segments'
 /// mangled names are unaffected.
 fn mangle_generic_arguments(arguments: &syn::PathArguments) -> Option<String> {
@@ -58,27 +62,12 @@ pub fn snake_to_pascal_case(s: &str) -> String {
         .collect()
 }
 
-pub fn pascal_to_snake_case(s: &str) -> String {
-    let mut snake = String::new();
-    for (i, c) in s.chars().enumerate() {
-        if c.is_uppercase() {
-            if i != 0 {
-                snake.push('_');
-            }
-            snake.push(c.to_ascii_lowercase());
-        } else {
-            snake.push(c);
-        }
-    }
-    snake
-}
-
 /// Builds a PascalCase name of the form `{Struct}{Method}{suffix}` from the struct path's last
 /// segment and the method name, e.g. `UserService` + `get_user` + `Matcher` ->
 /// `UserServiceGetUserMatcher`.
 ///
 /// Only the last segment is used: these names are all emitted inside the method's own module, so
-/// the leading path segments that [`snake_case_path`] needs for collision avoidance would only add
+/// the leading path segments that [`mangle_type_path`] needs for collision avoidance would only add
 /// noise here.
 ///
 /// # Errors
@@ -109,6 +98,25 @@ pub fn build_pascal_case_name(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_mangle_type_path_keeps_case() {
+        let struct_name: syn::TypePath = syn::parse_quote!(a::UserService);
+        assert_eq!(mangle_type_path(&struct_name), "a__UserService");
+    }
+
+    #[test]
+    fn test_mangle_type_path_distinguishes_names_that_snake_case_alike() {
+        let camel: syn::TypePath = syn::parse_quote!(FooBar);
+        let underscored: syn::TypePath = syn::parse_quote!(Foo_bar);
+        assert_ne!(mangle_type_path(&camel), mangle_type_path(&underscored));
+    }
+
+    #[test]
+    fn test_mangle_type_path_folds_in_generic_arguments() {
+        let struct_name: syn::TypePath = syn::parse_quote!(Foo<u8, String>);
+        assert_eq!(mangle_type_path(&struct_name), "Foo_u8_String");
+    }
 
     #[test]
     fn test_build_pascal_case_name_strips_raw_prefixes() {

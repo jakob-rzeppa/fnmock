@@ -166,7 +166,7 @@ mod tests {
         assert_eq!(method.0.to_string(), "get_user");
         assert_eq!(
             method.1.common.module_name.to_string(),
-            "user_service__get_user_spy_module"
+            "UserService__get_user_spy_method_module"
         );
         assert_eq!(method.1.common.display_name, "get_user");
         assert_eq!(method.1.common.accessor_name.to_string(), "get_user_spy");
@@ -178,7 +178,7 @@ mod tests {
         );
         assert_eq!(
             method.1.spy.store_name.to_string(),
-            "USER_SERVICE_GET_USER_SPY_STORE"
+            "USERSERVICE_GET_USER_SPY_STORE"
         );
         assert_eq!(
             method.1.spy.matcher_name.to_string(),

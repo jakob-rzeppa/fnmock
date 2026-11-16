@@ -1,27 +1,27 @@
-use crate::scheme::common::names::{build_pascal_case_name, snake_case_path};
+use crate::scheme::common::names::{build_pascal_case_name, mangle_type_path};
 use syn::ext::IdentExt;
 
-/// Builds the spy module name, e.g. `UserService` + `get_user` -> `user_service__get_user_spy_module`.
+/// Builds the spy module name, e.g. `UserService` + `get_user` -> `UserService__get_user_spy_method_module`.
 ///
 /// Located at `method_name` so that resolution errors on the module path (e.g. when the impl block
 /// is declared inside a function body) point at the method rather than the attribute.
 pub fn build_module_name(struct_name: &syn::TypePath, method_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
         &format!(
-            "{}__{}_spy_module",
-            snake_case_path(struct_name),
+            "{}__{}_spy_method_module",
+            mangle_type_path(struct_name),
             method_name.unraw()
         ),
         proc_macro2::Span::mixed_site().located_at(method_name.span()),
     )
 }
 
-/// Builds the `thread_local` store name, e.g. `UserService` + `get_user` -> `USER_SERVICE_GET_USER_SPY_STORE`.
+/// Builds the `thread_local` store name, e.g. `UserService` + `get_user` -> `USERSERVICE_GET_USER_SPY_STORE`.
 pub fn build_store_name(struct_name: &syn::TypePath, method_name: &syn::Ident) -> syn::Ident {
     syn::Ident::new(
         &format!(
             "{}_{}_SPY_STORE",
-            snake_case_path(struct_name).to_uppercase(),
+            mangle_type_path(struct_name).to_uppercase(),
             method_name.unraw().to_string().to_uppercase()
         ),
         proc_macro2::Span::mixed_site(),
@@ -71,7 +71,7 @@ mod tests {
         let method_name: syn::Ident = syn::parse_quote!(get_user);
         assert_eq!(
             build_module_name(&struct_name, &method_name).to_string(),
-            "user_service__get_user_spy_module"
+            "UserService__get_user_spy_method_module"
         );
     }
 
@@ -82,11 +82,22 @@ mod tests {
         let method_name: syn::Ident = syn::parse_quote!(basic);
         assert_eq!(
             build_module_name(&struct_name, &method_name).to_string(),
-            "a__config__basic_spy_module"
+            "a__Config__basic_spy_method_module"
         );
         assert_ne!(
             build_module_name(&struct_name, &method_name),
             build_module_name(&other_struct_name, &method_name)
+        );
+    }
+
+    #[test]
+    fn test_build_module_name_has_method_marker() {
+        // A free fn `foo__bar` gets `foo__bar_spy_module`, so the `_method` marker keeps the two apart.
+        let struct_name: syn::TypePath = syn::parse_quote!(foo);
+        let method_name: syn::Ident = syn::parse_quote!(bar);
+        assert_eq!(
+            build_module_name(&struct_name, &method_name).to_string(),
+            "foo__bar_spy_method_module"
         );
     }
 
@@ -107,7 +118,7 @@ mod tests {
         let method_name: syn::Ident = syn::parse_quote!(get_user);
         assert_eq!(
             build_store_name(&struct_name, &method_name).to_string(),
-            "USER_SERVICE_GET_USER_SPY_STORE"
+            "USERSERVICE_GET_USER_SPY_STORE"
         );
     }
 
